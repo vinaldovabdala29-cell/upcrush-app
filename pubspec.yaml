@@ -2,7 +2,7 @@ name: upcrush
 description: "UpCrush — O teu copiloto de conversa."
 publish_to: 'none'
 
-version: 1.0.0+1
+version: 1.0.0+3
 
 environment:
   sdk: ^3.11.1
@@ -16,7 +16,6 @@ dependencies:
   http: ^1.2.0
   shared_preferences: ^2.5.5
   purchases_flutter: ^9.16.0
-  flutter_dotenv: ^5.1.0
 
 dev_dependencies:
   flutter_test:

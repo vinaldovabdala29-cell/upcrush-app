@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../../main.dart';
 import '../services/revenue_cat_service.dart';
@@ -11,7 +12,7 @@ String _t(String key) {
     'see_plans':   {'de':'Pläne sehen','es':'Ver planes','fr':'Voir les plans','it':'Vedi piani','tr':'Planları gör','pl':'Zobacz plany','ru':'Планы','ar':'عرض الخطط','en':'See plans','pt':'Ver planos'},
     'no_payment':  {'de':'Keine Zahlung jetzt','es':'Sin pago ahora','fr':'Pas de paiement','it':'Nessun pagamento','tr':'Şimdi ödeme yok','pl':'Brak płatności','ru':'Без оплаты','ar':'لا دفع الآن','en':'No payment now','pt':'Sem pagamento agora'},
     'trial':       {'de':'3 Tage kostenlos →','es':'Probar gratis 3 días →','fr':'3 jours gratuits →','it':'3 giorni gratis →','tr':'3 gün ücretsiz →','pl':'3 dni gratis →','ru':'3 дня бесплатно →','ar':'3 أيام مجاناً →','en':'Try free 3 days →','pt':'Experimentar 3 dias →'},
-    'trial_sub':   {'de':'3 Tage gratis, dann €6,99/Wo. Jederzeit kündbar.','es':'3 días gratis, luego €6,99/sem.','fr':'3 jours gratuits, puis €6,99/sem.','it':'3 giorni gratis, poi €6,99/sett.','tr':'3 gün ücretsiz, sonra €6,99/hafta.','pl':'3 dni gratis, potem €6,99/tydz.','ru':'3 дня бесплатно, затем €6,99/нед.','ar':'3 أيام مجاناً، ثم €6.99 أسبوعياً.','en':'3 days free, then €6.99/wk. Cancel anytime.','pt':'3 dias grátis, depois €6.99/sem.'},
+    'trial_sub':   {'de':'3 Tage gratis, dann €6,99/Wo. Jederzeit kündbar.','es':'3 días gratis, luego €6,99/sem.','fr':'3 jours gratuits, puis €6,99/sem.','it':'3 giorni gratis, poi €6,49/sett.','tr':'3 gün ücretsiz, sonra €6,49/hafta.','pl':'3 dni gratis, potem €6,49/tydz.','ru':'3 дня бесплатно, затем €6,49/нед.','ar':'3 أيام مجاناً، ثم €6.49 أسبوعياً.','en':'3 days free, then €6.99/wk. Cancel anytime.','pt':'3 dias grátis, depois €6.99/sem.'},
     'plans_title': {'de':'Bereit für\nmehr Dates?','es':'¿Listo para\nmás citas?','fr':'Prêt pour\nplus de dates?','it':'Pronto per\npiù appuntamenti?','tr':'Daha fazla\nrandevu için?','pl':'Gotowy na\nwięcej randek?','ru':'Готов к\nбольшему?','ar':'مستعد لمزيد\nمن المواعيد؟','en':'Ready for\nmore dates?','pt':'Pronto para\nmais datas?'},
     'plans_sub':   {'de':'Keine Verpflichtung. Jederzeit kündbar.','es':'Sin compromiso. Cancela cuando quieras.','fr':'Sans engagement. Annulable à tout moment.','it':'Senza impegno. Cancella quando vuoi.','tr':'Taahhüt yok. İstediğinde iptal et.','pl':'Bez zobowiązań. Anuluj kiedy chcesz.','ru':'Без обязательств. Отмени когда угодно.','ar':'بدون التزام. ألغِ متى تشاء.','en':'No commitment. Cancel anytime.','pt':'Sem compromisso. Cancela quando quiseres.'},
     'feat1':       {'de':'Unbegrenzte Screenshots','es':'Screenshots ilimitados','fr':'Screenshots illimités','it':'Screenshot illimitati','tr':'Sınırsız ekran görüntüsü','pl':'Nieograniczone zrzuty','ru':'Безлимитные скриншоты','ar':'لقطات غير محدودة','en':'Unlimited screenshots','pt':'Screenshots ilimitados'},
@@ -458,7 +459,7 @@ class _PaywallPlansState extends State<_PaywallPlans> {
                       const SizedBox(height: 10),
                       Text(_t('weekly'), style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500)),
                       Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                        const Text("€6.99", style: TextStyle(color: Colors.white, fontSize: 40,
+                        Text(Platform.isIOS ? "€9.99" : "€6.49", style: TextStyle(color: Colors.white, fontSize: 40,
                           fontWeight: FontWeight.w900, letterSpacing: -1)),
                         const SizedBox(width: 4),
                         Padding(padding: const EdgeInsets.only(bottom: 6),
@@ -471,7 +472,7 @@ class _PaywallPlansState extends State<_PaywallPlans> {
                       const Text("€0.00", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
                       const SizedBox(height: 8),
                       Text(_t('after_trial'), style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
-                      const Text("€6.99/sem", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                      Text(Platform.isIOS ? "€9.99/sem" : "€6.49/sem", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
                     ]),
                   ]))),
               const Spacer(),

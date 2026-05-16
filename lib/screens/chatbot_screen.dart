@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../../../main.dart';
 import '../services/credits_service.dart';
 import '../widgets/paywall_screen.dart';
@@ -19,7 +18,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   final List<Map<String, String>> _messages = [];
   bool _loading = false;
 
-  String get _apiKey => dotenv.env['OPENAI_API_KEY'] ?? '';
+  static const String _apiKey = String.fromEnvironment('OPENAI_API_KEY');
 
   bool get _dark => isDarkModeNotifier.value;
   Color get _bg => _dark ? const Color(0xFF0A0A10) : const Color(0xFFF2F2F7);

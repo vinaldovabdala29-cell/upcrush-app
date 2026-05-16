@@ -1,9 +1,8 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class AIService {
-  static String get _apiKey => dotenv.env['OPENAI_API_KEY'] ?? '';
+  static const String _apiKey = String.fromEnvironment('OPENAI_API_KEY');
 
   // ─── IDIOMAS ──────────────────────────────────────────────────────────────
   static const Map<String, String> _idiomaNomes = {

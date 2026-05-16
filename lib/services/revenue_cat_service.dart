@@ -1,17 +1,18 @@
 import 'package:purchases_flutter/purchases_flutter.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:io';
 import 'credits_service.dart';
 
 class RevenueCatService {
-  static const String _apiKey = "test_XXXXXXXXXXXXXXXXXXXXXXXX";
-
-  static const String _weeklyId  = "replysnap_weekly";
-  static const String _weekly2Id = "replysnap_weekly2";
-  static const String _monthlyId = "replysnap_monthly";
+  // Android key — começa com "goog_"
+  static const String _androidKey = "goog_FEoxrNpkLgRjsZTtNJZEYuVDqua";
+  // iOS key — começa com "appl_"
+  static const String _iosKey = "appl_COLOCA_AQUI_A_TUA_KEY_IOS";
 
   static Future<void> init() async {
     await Purchases.setLogLevel(LogLevel.debug);
-    final config = PurchasesConfiguration(_apiKey);
+    final key = Platform.isIOS ? _iosKey : _androidKey;
+    final config = PurchasesConfiguration(key);
     await Purchases.configure(config);
     await _syncPremiumStatus();
   }
@@ -36,22 +37,19 @@ class RevenueCatService {
   }
 
   static Future<PurchaseServiceResult> buyWeekly() async {
-    return await _purchase(_weeklyId);
-  }
-
-  static Future<PurchaseServiceResult> _purchase(String productId) async {
     try {
-      final products = await Purchases.getProducts([productId]);
+      // Usa Offerings em vez de getProducts — funciona melhor no Android
+      final offerings = await Purchases.getOfferings();
+      final package = offerings.current?.weekly ??
+          offerings.current?.availablePackages.firstOrNull;
 
-      if (products.isEmpty) {
-        return PurchaseServiceResult(success: false, error: "Produto não encontrado");
+      if (package == null) {
+        return PurchaseServiceResult(
+            success: false, error: "Produto não encontrado");
       }
 
-      // Na v9.x purchaseStoreProduct não retorna CustomerInfo diretamente
-      // Fazemos a compra e depois buscamos o CustomerInfo separadamente
-      await Purchases.purchaseStoreProduct(products.first);
+      await Purchases.purchasePackage(package);
 
-      // Verifica o estado após compra
       final info = await Purchases.getCustomerInfo();
       final isPremium = info.entitlements.active.containsKey("premium");
 
@@ -60,7 +58,8 @@ class RevenueCatService {
         return PurchaseServiceResult(success: true);
       }
 
-      return PurchaseServiceResult(success: false, error: "Compra não confirmada");
+      return PurchaseServiceResult(
+          success: false, error: "Compra não confirmada");
 
     } catch (e) {
       final err = e.toString().toLowerCase();
@@ -81,7 +80,8 @@ class RevenueCatService {
         return PurchaseServiceResult(success: true, restored: true);
       }
 
-      return PurchaseServiceResult(success: false, error: "Nenhuma compra encontrada");
+      return PurchaseServiceResult(
+          success: false, error: "Nenhuma compra encontrada");
     } catch (e) {
       return PurchaseServiceResult(success: false, error: e.toString());
     }
