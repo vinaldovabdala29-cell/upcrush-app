@@ -1,8 +1,9 @@
 import 'dart:convert';
+import '../config.dart';
 import 'package:http/http.dart' as http;
 
 class AIService {
-  static const String _apiKey = String.fromEnvironment('OPENAI_API_KEY');
+  static const String _apiKey = Config.openAiKey;
 
   // ─── IDIOMAS ──────────────────────────────────────────────────────────────
   static const Map<String, String> _idiomaNomes = {
@@ -169,37 +170,21 @@ BUBBLE COLOR RULE (secondary confirmation):
 
 SPECIFIC APP RULES:
 - WhatsApp: green bubble right = ME, white bubble left = HER
-- iMessage: blue bubble right = ME, gray bubble left = HER
+- iMessage: blue bubble right = ME, gray bubble left = HER  
 - Instagram DM: blue bubble right = ME, gray bubble left = HER
 - Telegram: blue/colored right = ME, white left = HER
 - Tinder/Bumble/Hinge: colored right = ME, gray/white left = HER
 
-HOW TO READ THE FULL CONVERSATION:
-STEP 1 — Read ALL visible messages from TOP to BOTTOM
-- Understand the full history, tone, and dynamics between both people
-- Note the emotional vibe: is she interested? playful? cold? testing?
-- Understand what topics came up, what was said before
-
-STEP 2 — Identify the LAST 6 messages (3 from each side if possible)
-- These are the most important for context
-- Pay special attention to the FLOW of the conversation
-
-STEP 3 — Find HER LAST message
-- The very last bubble on the LEFT side
-- This is EXACTLY what you must respond to
-- Use the FULL conversation context to make the reply feel connected and natural
-
-CONTEXT USAGE:
-- If she mentioned something earlier (hobby, place, joke), reference it subtly
-- If the conversation was cold/dry, use a more playful/surprising tone
-- If it was warm and flowing, keep that energy
-- Never reply as if you just started talking — you know the full context
+FINDING HER LAST MESSAGE:
+- Scroll to the BOTTOM of the conversation
+- Find the LAST bubble on the LEFT side — that is HER most recent message
+- That is EXACTLY what you must respond to
+- Read the full conversation for context
 
 STYLE: $estiloDesc
 
 RULES:
 - Respond ONLY to her last message (the last LEFT bubble)
-- Use the full conversation context to make replies feel natural and connected
 - NEVER use generic filler phrases
 - NEVER be submissive or desperate
 - Maximum 1 emoji per response
@@ -232,7 +217,7 @@ FORMAT: Exactly 6 responses, one per line, nothing else. No intro text.
               },
               {
                 "type": "text",
-                "text": "Analyze this FULL conversation screenshot carefully. RIGHT side = ME, LEFT side = HER. Read ALL messages from top to bottom to understand the full context and dynamics. Focus especially on the last 6 messages. Find HER LAST message (last LEFT bubble) and generate 6 replies in $idioma that feel naturally connected to the full conversation.",
+                "text": "Look at this conversation screenshot. RIGHT side bubbles = ME. LEFT side bubbles = HER. Find HER LAST message (last bubble on the LEFT). Generate 6 responses in $idioma that I can send her right now.",
               },
             ],
           },
@@ -342,45 +327,40 @@ FORMAT: Exactly 6 openers, one per line, nothing else.
     final cultura = _idiomaCultura[lang] ?? _idiomaCultura['en']!;
 
     final system = """
-You are an expert at creating FIRST MESSAGES for dating apps based on profile screenshots.
+You are a dating expert who writes COLD OPENERS — the very FIRST message to send on a dating app to someone you have NEVER spoken to before.
 $cultura
 
 LANGUAGE RULE — CRITICAL:
 You MUST write ONLY in $idioma. Never mix languages.
 
-YOUR GOAL:
-Generate 6 unique OPENING messages — the very FIRST message to send to someone you have NEVER talked to before.
-These are NOT replies to a conversation. These are cold openers to START a conversation.
+CRITICAL: You are writing message number 1. There is NO previous conversation. She has NEVER heard from you.
 
 HOW TO ANALYZE THE PROFILE:
-- Look at ALL visible elements: photos, bio, interests, job, location, prompts, captions
-- Find 3-5 specific unique details only visible in THIS profile
-- Each opener must reference something SPECIFIC from the profile
-- Never write something that could be sent to anyone else
+STEP 1 — Scan everything visible: photos (what is she doing? where? what objects?), bio text, job, prompts, captions
+STEP 2 — Pick the 3 most unique/interesting details specific to THIS profile
+STEP 3 — Build each opener around one of those specific details
 
-WHAT MAKES A GREAT OPENER:
-- Specific reference to a photo, bio detail, or interest
-- A smart or funny observation that shows you actually looked at the profile
-- An intriguing question she has NEVER been asked before
-- Shows personality and confidence — not desperation
-- Short and punchy — makes her WANT to reply
+QUALITY CHECK: Could you send the same opener to 1000 different girls? If YES — too generic, rewrite.
 
-WHAT NEVER WORKS:
-- "Hey, how are you?" — NEVER
-- "You're beautiful/cute/hot" — NEVER
-- Generic openers that could go to anyone — NEVER
-- Long messages — NEVER
-- Asking about her day — NEVER
+GOOD OPENER EXAMPLES:
+- "Rock climbing AND a dog named after a philosopher? Either the most interesting bio I have seen or you are testing me"
+- "Your travel photos make me think you are either a photographer or really good at pretending"
+- "The fact that your bio says you make great pasta is either impressive or a trap"
+
+BAD OPENERS — NEVER:
+- "Hey, how are you?" ❌
+- "You seem interesting" ❌
+- "I love your smile" ❌
+- Anything generic that ignores her profile ❌
 
 STYLE: $estiloDesc
 
 RULES:
 - Maximum 2 lines per opener
-- 100% personalized to what you see in THIS profile
-- Sound like a confident, interesting man
-- Max 1 emoji per opener, many with none
-- NO numbers, NO dashes, NO explanations, NO labels
-- Each opener must be completely different from the others
+- 100% based on THIS specific profile — no generic openers
+- Each of the 6 openers references a different detail from her profile
+- Max 1 emoji per opener, most with none
+- NO numbers, NO dashes, NO labels, NO explanations
 
 FORMAT: Exactly 6 openers in $idioma, one per line, nothing else. No intro text.
 """;

@@ -27,3 +27,6 @@ ios/Pods/
 .idea/
 .vscode/
 *.iml
+
+# Local config with API key
+lib/config.dart

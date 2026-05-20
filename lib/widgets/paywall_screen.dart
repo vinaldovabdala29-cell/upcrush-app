@@ -459,7 +459,7 @@ class _PaywallPlansState extends State<_PaywallPlans> {
                       const SizedBox(height: 10),
                       Text(_t('weekly'), style: const TextStyle(color: Colors.white70, fontSize: 14, fontWeight: FontWeight.w500)),
                       Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                        Text(Platform.isIOS ? "€9.99" : "€6.49", style: TextStyle(color: Colors.white, fontSize: 40,
+                        Text(Platform.isIOS ? "€9.99" : "€6.99", style: TextStyle(color: Colors.white, fontSize: 40,
                           fontWeight: FontWeight.w900, letterSpacing: -1)),
                         const SizedBox(width: 4),
                         Padding(padding: const EdgeInsets.only(bottom: 6),
@@ -472,7 +472,7 @@ class _PaywallPlansState extends State<_PaywallPlans> {
                       const Text("€0.00", style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800)),
                       const SizedBox(height: 8),
                       Text(_t('after_trial'), style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
-                      Text(Platform.isIOS ? "€9.99/sem" : "€6.49/sem", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
+                      Text(Platform.isIOS ? "€9.99/sem" : "€6.99/sem", style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700)),
                     ]),
                   ]))),
               const Spacer(),

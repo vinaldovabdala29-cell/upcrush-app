@@ -7,7 +7,7 @@ class RevenueCatService {
   // Android key — começa com "goog_"
   static const String _androidKey = "goog_FEoxrNpkLgRjsZTtNJZEYuVDqua";
   // iOS key — começa com "appl_"
-  static const String _iosKey = "appl_COLOCA_AQUI_A_TUA_KEY_IOS";
+  static const String _iosKey = "appl_dmwoiqiILydfkRwbGekYzLFWRRb";
 
   static Future<void> init() async {
     await Purchases.setLogLevel(LogLevel.debug);

@@ -17,16 +17,14 @@ class CreditsService {
     return true; // galeria sempre abre
   }
 
-  // Mostra paywall após scan se não é premium
+  // MODO TESTE — paywall desativado
   static Future<bool> shouldShowPaywallAfterScan() async {
-    return !(await isPremium());
+    return false;
   }
 
   // ─── CHATBOT — 3 mensagens grátis ────────────────────────────────────────
   static Future<bool> canUseChat() async {
-    if (await isPremium()) return true;
-    final used = await getChatUsesUsed();
-    return used < _freeChatMessages;
+    return true; // MODO TESTE
   }
 
   static Future<int> getChatUsesUsed() async {
