@@ -1,0 +1,30 @@
+workflows:
+  ios-workflow:
+    name: iOS Workflow
+    environment:
+      vars:
+        BUNDLE_ID: "com.upcrush.app"
+      xcode: latest
+      flutter: latest
+    scripts:
+      - name: Create config.dart
+        script: |
+          cat > lib/config.dart << EOF
+          class Config {
+            static const String openAiKey = "$OPENAI_API_KEY";
+          }
+          EOF
+      - name: Get Flutter packages
+        script: flutter pub get
+      - name: Build iOS
+        script: |
+          flutter build ipa --release \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
