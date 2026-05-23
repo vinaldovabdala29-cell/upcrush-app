@@ -41,19 +41,18 @@ class _ResultScreenState extends State<ResultScreen> {
   static const _accent = Color(0xFFFF2D55);
   static const _success = Color(0xFF34C759);
 
-  final List<Map<String, dynamic>> estilos = [
-    {"key": "natural",    "label": "Natural",    "subtitle": "Tom casual",        "icon": Icons.chat_bubble_outline_rounded,      "colors": [Color(0xFF636366), Color(0xFF48484A)], "shadow": Color(0xFF636366)},
-    {"key": "charmoso",   "label": "Charmoso",   "subtitle": "Confiante",         "icon": Icons.favorite_outline_rounded,         "colors": [Color(0xFFFF2D55), Color(0xFFFF6B81)], "shadow": Color(0xFFFF2D55)},
-    {"key": "engraçado",  "label": "Engraçado",  "subtitle": "Humor inteligente", "icon": Icons.sentiment_very_satisfied_rounded, "colors": [Color(0xFFFF9500), Color(0xFFFFCC02)], "shadow": Color(0xFFFF9500)},
-    {"key": "direto",     "label": "Direto",     "subtitle": "Assertivo",         "icon": Icons.bolt_rounded,                     "colors": [Color(0xFF007AFF), Color(0xFF5AC8FA)], "shadow": Color(0xFF007AFF)},
-    {"key": "misterioso", "label": "Misterioso", "subtitle": "Intrigante",        "icon": Icons.nightlight_round,                 "colors": [Color(0xFF5856D6), Color(0xFFAF52DE)], "shadow": Color(0xFF5856D6)},
+  List<Map<String, dynamic>> _getEstilos(String lang) => [
+    {"key": "engraçado",  "label": lang=='de'?'Lustig':lang=='es'?'Gracioso':lang=='fr'?'Drôle':lang=='pt'?'Engraçado':lang=='it'?'Divertente':lang=='tr'?'Komik':lang=='ru'?'Смешной':'Funny', "icon": Icons.sentiment_very_satisfied_rounded, "colors": [Color(0xFFFF9500), Color(0xFFFFCC02)], "shadow": Color(0xFFFF9500)},
+    {"key": "picante",    "label": lang=='de'?'Pikant':lang=='es'?'Picante':lang=='fr'?'Piquant':lang=='pt'?'Picante':lang=='it'?'Piccante':lang=='tr'?'Ateşli':lang=='ru'?'Пикантный':'Spicy', "icon": Icons.local_fire_department_rounded, "colors": [Color(0xFFFF2D55), Color(0xFFFF6B81)], "shadow": Color(0xFFFF2D55)},
+    {"key": "misterioso", "label": lang=='de'?'Mysteriös':lang=='es'?'Misterioso':lang=='fr'?'Mystérieux':lang=='pt'?'Misterioso':lang=='it'?'Misterioso':lang=='tr'?'Gizemli':lang=='ru'?'Загадочный':'Mysterious', "icon": Icons.nightlight_round, "colors": [Color(0xFF5856D6), Color(0xFFAF52DE)], "shadow": Color(0xFF5856D6)},
+    {"key": "direto",     "label": lang=='de'?'Direkt':lang=='es'?'Directo':lang=='fr'?'Direct':lang=='pt'?'Direto':lang=='it'?'Diretto':lang=='tr'?'Doğrudan':lang=='ru'?'Прямой':'Direct', "icon": Icons.bolt_rounded, "colors": [Color(0xFF007AFF), Color(0xFF5AC8FA)], "shadow": Color(0xFF007AFF)},
   ];
 
   @override
   void initState() {
     super.initState();
     replies = widget.replies;
-    estiloAtual = widget.style;
+    estiloAtual = (['engraçado','picante','misterioso','direto'].contains(widget.style)) ? widget.style : 'picante';
   }
 
   Future<void> copy(String text, int index) async {
@@ -93,7 +92,11 @@ class _ResultScreenState extends State<ResultScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ValueListenableBuilder(
+      valueListenable: appLangNotifier,
+      builder: (context, lang, _) {
+        final estilos = _getEstilos(lang.languageCode);
+        return Scaffold(
       backgroundColor: _bg,
       appBar: AppBar(
         backgroundColor: _bg,
@@ -269,6 +272,8 @@ class _ResultScreenState extends State<ResultScreen> {
           ),
         ),
       ),
+        );
+      },
     );
   }
 }

@@ -6,6 +6,7 @@ import '../theme/app_localizations.dart';
 import 'screenshot_screen.dart';
 import 'chatbot_screen.dart';
 import 'opener_screen.dart';
+import 'pick_lines_screen.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -44,7 +45,7 @@ class _HomeBody extends StatelessWidget {
         builder: (context, dark, _) => SettingsSheet(
           isDarkMode: dark,
           onThemeChanged: (val) => isDarkModeNotifier.value = val,
-          onLanguageChanged: (lang) {},  // changeLanguage already updates globally
+          onLanguageChanged: (lang) {},
         ),
       ),
     );
@@ -103,40 +104,35 @@ class _HomeBody extends StatelessWidget {
                   ),
                   const SizedBox(height: 28),
 
-                  // ── Nome premium ─────────────────────────────────────────
-                  ShaderMask(
-                    shaderCallback: (bounds) => const LinearGradient(
-                      colors: [Color(0xFF1C1C1E), Color(0xFF1C1C1E)],
-                    ).createShader(bounds),
-                    child: RichText(
-                      text: TextSpan(children: [
-                        TextSpan(
-                          text: "Up",
-                          style: TextStyle(
-                            fontSize: 42,
-                            fontWeight: FontWeight.w900,
-                            color: isDark ? Colors.white : const Color(0xFF1C1C1E),
-                            letterSpacing: -1.5,
-                            height: 1.0,
-                          ),
+                  // ── Nome ─────────────────────────────────────────────
+                  RichText(
+                    text: TextSpan(children: [
+                      TextSpan(
+                        text: "Up",
+                        style: TextStyle(
+                          fontSize: 42,
+                          fontWeight: FontWeight.w900,
+                          color: isDark ? Colors.white : const Color(0xFF1C1C1E),
+                          letterSpacing: -1.5,
+                          height: 1.0,
                         ),
-                        const TextSpan(
-                          text: "Crush",
-                          style: TextStyle(
-                            fontSize: 42,
-                            fontWeight: FontWeight.w900,
-                            color: Color(0xFFFF2D55),
-                            letterSpacing: -1.5,
-                            height: 1.0,
-                          ),
+                      ),
+                      const TextSpan(
+                        text: "Crush",
+                        style: TextStyle(
+                          fontSize: 42,
+                          fontWeight: FontWeight.w900,
+                          color: Color(0xFFFF2D55),
+                          letterSpacing: -1.5,
+                          height: 1.0,
                         ),
-                      ]),
-                    ),
+                      ),
+                    ]),
                   ),
 
                   const SizedBox(height: 10),
 
-                  // ── Tagline premium com badge ─────────────────────────────
+                  // ── Badge ─────────────────────────────────────────────
                   Row(children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -169,40 +165,86 @@ class _HomeBody extends StatelessWidget {
                     ),
                   ]),
                   const SizedBox(height: 36),
+
                   Expanded(
-                    child: Column(
-                      children: [
-                        FeatureCard(
-                          title: appLang.featureScreenshot,
-                          subtitle: appLang.featureScreenshotSub,
-                          icon: Icons.camera_alt_rounded,
-                          iconBgColors: const [Color(0xFFFF2D55), Color(0xFFFF6B81)],
-                          iconShadowColor: const Color(0xFFFF2D55),
-                          isDarkMode: isDark,
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScreenshotScreen())),
-                        ),
-                        const SizedBox(height: 14),
-                        FeatureCard(
-                          title: "UpCrush AI",
-                          subtitle: appLang.languageCode == 'de' ? "Dein persönlicher Dating-Coach" : appLang.languageCode == 'es' ? "Tu coach de dating personal" : appLang.languageCode == 'pt' ? "O teu coach de dating pessoal" : "Your personal dating coach",
-                          icon: Icons.auto_awesome_rounded,
-                          iconBgColors: const [Color(0xFFFF2D55), Color(0xFFFF6B81)],
-                          iconShadowColor: const Color(0xFFFF2D55),
-                          isDarkMode: isDark,
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatbotScreen())),
-                        ),
-                        const SizedBox(height: 14),
-                        FeatureCard(
-                          title: appLang.featureOpener,
-                          subtitle: appLang.featureOpenerSub,
-                          icon: Icons.favorite_rounded,
-                          iconBgColors: const [Color(0xFF007AFF), Color(0xFF5AC8FA)],
-                          iconShadowColor: const Color(0xFF007AFF),
-                          isDarkMode: isDark,
-                          onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OpenerScreen())),
-                        ),
-                        // ← "Powered by GPT-4o Vision" REMOVIDO
-                      ],
+                    child: SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          // ── 1. Screenshot ──────────────────────────────
+                          FeatureCard(
+                            title: appLang.featureScreenshot,
+                            subtitle: appLang.featureScreenshotSub,
+                            icon: Icons.camera_alt_rounded,
+                            iconBgColors: const [Color(0xFFFF2D55), Color(0xFFFF6B81)],
+                            iconShadowColor: const Color(0xFFFF2D55),
+                            isDarkMode: isDark,
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScreenshotScreen())),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // ── 2. Get Pick Lines ──────────────────────────
+                          FeatureCard(
+                            title: "Get Pick Lines",
+                            subtitle: appLang.languageCode == 'de'
+                                ? "Eröffne jedes Gespräch mit Stil"
+                                : appLang.languageCode == 'es'
+                                    ? "Abre cada conversación con estilo"
+                                    : appLang.languageCode == 'pt'
+                                        ? "Abre cada conversa com estilo"
+                                        : "Open every conversation with style",
+                            icon: Icons.rocket_launch_rounded,
+                            iconBgColors: const [Color(0xFFFF9500), Color(0xFFFFCC02)],
+                            iconShadowColor: const Color(0xFFFF9500),
+                            isDarkMode: isDark,
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PickLinesScreen())),
+                          ),
+                          const SizedBox(height: 14),
+
+                          // ── 3. Create Opener ───────────────────────────
+                          FeatureCard(
+                            title: appLang.featureOpener,
+                            subtitle: appLang.languageCode == 'de'
+                                ? "Analysiere ihr Profil und erstelle die perfekte erste Nachricht"
+                                : appLang.languageCode == 'es'
+                                    ? "Analiza su perfil y genera el primer mensaje perfecto"
+                                    : appLang.languageCode == 'pt'
+                                        ? "Analisa o perfil dela e gera a primeira mensagem perfeita"
+                                        : "Analyze her profile and generate the perfect first message",
+                            icon: Icons.chat_bubble_rounded,
+                            iconBgColors: const [Color(0xFF007AFF), Color(0xFF5AC8FA)],
+                            iconShadowColor: const Color(0xFF007AFF),
+                            isDarkMode: isDark,
+                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OpenerScreen())),
+                          ),
+                          const SizedBox(height: 10),
+
+                          // ── 4. Chat IA (botão pequeno preto) ──────────
+                          Center(
+                            child: GestureDetector(
+                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatbotScreen())),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
+                                decoration: BoxDecoration(
+                                  color: Colors.black,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2)),
+                                  ],
+                                ),
+                                child: const Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 13),
+                                    SizedBox(width: 6),
+                                    Text("Chat IA", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
+                      ),
                     ),
                   ),
                 ],

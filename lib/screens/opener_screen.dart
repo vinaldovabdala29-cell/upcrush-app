@@ -53,9 +53,18 @@ class _OpenerScreenState extends State<OpenerScreen>
   }
 
   Future<void> _processarImagem() async {
+    // ── Verificar créditos ────────────────────────────────────────────────
+    final podeUsar = await CreditsService.canUseScanner();
+    if (!mounted) return;
+
+    if (!podeUsar) {
+      await Navigator.pushReplacement(context, MaterialPageRoute(
+        fullscreenDialog: true, builder: (_) => const PaywallFlow()));
+      return;
+    }
+
     final picker = ImagePicker();
     try {
-      // ── Galeria abre SEMPRE ───────────────────────────────────────────
       final img = await picker.pickImage(
           source: ImageSource.gallery, imageQuality: 85);
 
@@ -64,7 +73,7 @@ class _OpenerScreenState extends State<OpenerScreen>
         return;
       }
 
-      // ── Mostra scan animado ───────────────────────────────────────────
+
       setState(() {
         _imagemSelecionada = File(img.path);
         _analisando = true;
@@ -74,23 +83,8 @@ class _OpenerScreenState extends State<OpenerScreen>
       final bytes = await File(img.path).readAsBytes();
       final base64Image = base64Encode(bytes);
 
-      // ── Se não é premium → paywall APÓS galeria ───────────────────────
-      final devePaywall = await CreditsService.shouldShowPaywallAfterScan();
-      if (devePaywall && mounted) {
-        await Navigator.push(context, MaterialPageRoute(
-          fullscreenDialog: true, builder: (_) => const PaywallFlow()));
-        final isPremium = await CreditsService.isPremium();
-        if (!isPremium && mounted) {
-          Navigator.pop(context);
-          return;
-        }
-      }
-
-      if (!mounted) return;
-
-      // ── Gera openers de abertura personalizados ao perfil ─────────────
       final replies = await AIService.gerarOpenerDeImagem(
-          base64Image, "charmoso", appLang.languageCode);
+          base64Image, "picante", appLang.languageCode);
 
       if (!mounted) return;
 
@@ -100,7 +94,7 @@ class _OpenerScreenState extends State<OpenerScreen>
           replies: replies,
           originalPrompt: "opener:$base64Image",
           ultimaMensagem: "",
-          style: "charmoso", // opener default
+          style: "picante",
         ),
       ));
     } catch (e) {
@@ -108,7 +102,7 @@ class _OpenerScreenState extends State<OpenerScreen>
         setState(() {
           _analisando = false;
           _erro = true;
-          _erroMsg = appLang.errorGeneral;
+          _erroMsg = e.toString();
         });
       }
     }

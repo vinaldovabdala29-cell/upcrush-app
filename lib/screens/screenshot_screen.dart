@@ -55,7 +55,6 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   Future<void> _processarImagem() async {
     final picker = ImagePicker();
     try {
-      // Galeria abre sempre
       final img = await picker.pickImage(
         source: ImageSource.gallery, imageQuality: 85);
 
@@ -73,7 +72,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
       final bytes = await File(img.path).readAsBytes();
       final base64Image = base64Encode(bytes);
 
-      // Paywall após galeria se não é premium
+      // Paywall após galeria
       final devePaywall = await CreditsService.shouldShowPaywallAfterScan();
       if (devePaywall && mounted) {
         await Navigator.push(context, MaterialPageRoute(
@@ -84,17 +83,17 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
       if (!mounted) return;
 
       final replies = await AIService.gerarRespostaDeImagem(
-        base64Image, "natural", appLang.languageCode);
+        base64Image, "picante", appLang.languageCode);
 
       if (!mounted) return;
 
       Navigator.pushReplacement(context, MaterialPageRoute(
         builder: (_) => ResultScreen(
-          title: "Respostas",
+          title: appLang.screenshotTitle,
           replies: replies,
           originalPrompt: "imagem:$base64Image",
           ultimaMensagem: "",
-          style: "natural",
+          style: "picante",
         ),
       ));
     } catch (e) {

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../../../main.dart';
-import '../config.dart';
+import '../../../config.dart';
 import '../services/credits_service.dart';
 import '../widgets/paywall_screen.dart';
 
