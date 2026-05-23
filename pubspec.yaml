@@ -2,7 +2,7 @@ name: upcrush
 description: "UpCrush — O teu copiloto de conversa."
 publish_to: 'none'
 
-version: 1.0.0+14
+version: 1.0.0+15
 
 environment:
   sdk: ^3.11.1
@@ -10,6 +10,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  url_launcher: ^6.2.5
 
   cupertino_icons: ^1.0.8
   image_picker: ^1.1.2
