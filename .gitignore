@@ -19,14 +19,9 @@ ios/Flutter/Flutter.podspec
 ios/.symlinks/
 ios/Pods/
 
-# Secrets — NUNCA vai para o GitHub
+# Secrets
 .env
 *.env
-
-# IDE
-.idea/
-.vscode/
-*.iml
 
 # Local config with API key
 lib/config.dart
