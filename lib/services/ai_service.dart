@@ -25,13 +25,13 @@ class AIService {
   };
 
   static Map<String, String> _estiloPrompts(String lang) => {
-    'engraçado': '''Gen Z funny energy — witty, unexpected, makes her laugh AND feel attracted. Playful teasing with attitude. Examples: "Voce tem cara de quem comeca inocente e termina causando confusao", "Deixa eu adivinhar, voce esta aqui pra me desviar do meu plano de dominar o universo", "Voce e real ou so um sonho que eu tive?", "Seu sorriso deve ter um desconto ne". Short, punchy, never try-hard.''',
+    'engraçado': 'Witty and playful Gen Z style. Clever humor that creates attraction. Unexpected and fun. Short and punchy. Never generic.',
 
-    'picante': '''Gen Z seductive energy — confident, creates tension, smart double meaning. Makes her imagine more. Examples: "Claro, mas so se voce prometer que o resultado vai ser... delicioso", "Apenas esperando voce me surpreender sabia?", "Voce sabe que seu sorriso e tao irresistivel que eu poderia me perder nele por horas", "Vamos fazer as futuras conversas tao boas que o passado vai ficar com inveja". Bold but not vulgar.''',
+    'picante': 'Confident and charming Gen Z style. Creates romantic tension with clever wordplay. Bold but tasteful. Makes her smile and think.',
 
-    'misterioso': '''Gen Z mysterious energy — says just enough to create curiosity, pulls her in. Unpredictable and magnetic. Examples: "Se voce fosse um personagem de filme por que eu deveria ser seu par romantico?", "Se voce tivesse que me convencer a sair com voce em uma frase qual seria?", "Voce e tao enigmatica estou intrigado", "Voce vai me deixar curioso ou nao?". Leaves her wanting more.''',
+    'misterioso': 'Intriguing and magnetic Gen Z style. Says just enough to spark curiosity. Unpredictable and interesting. Leaves her wanting more.',
 
-    'direto': '''Gen Z direct energy — confident, no games, says exactly what he wants. Casual but bold. Examples: "Que tal continuarmos essa conversa em um encontro?", "Entao vamos deixar de lado o chat e combinar um encontro?", "Juntos somos a combinacao perfeita: eu trago a conversa voce traz o charme", "Pode ser mais legal se a gente se conhecer melhor". Short sentences, in control.''',
+    'direto': 'Confident and straightforward Gen Z style. Says exactly what he wants with calm confidence. Short powerful sentences. No games.',
   };
 
   // RESPOSTA DE TEXTO
@@ -47,12 +47,12 @@ LANGUAGE RULE: Respond ONLY in $idioma. Never mix languages.
 The last message in the conversation is from her. Write 6 confident replies for me to send.
 STYLE: $estiloDesc
 RULES:
-- Reply specifically to her last message — twist her words cleverly
-- Gen Z energy: casual, confident, spontaneous, never scripted
-- Short and punchy — 1-2 lines max
+- Reply specifically to her last message
+- Gen Z energy: casual, confident, spontaneous
+- Short and punchy, 1-2 lines max
 - Max 1 emoji, many with none
-- No generic phrases, no "haha", no "wow"
-- Sound like a real person, not an AI
+- No generic phrases
+- Sound like a real person
 FORMAT: Exactly 6 responses, one per line, nothing else.
 """;
     return _chamarAPI(system, "Conversation:\n\n$conversa\n\nGenerate 6 responses for me to send her.");
@@ -179,19 +179,9 @@ You generate bold flirty pick-up lines for adult dating apps (18+ audience). Gen
 $cultura
 LANGUAGE RULE: Write ONLY in $idioma. Never mix languages.
 
-QUALITY STANDARD:
-- Voce tem cara de quem comeca inocente e termina causando confusao
-- Seu sorriso deve ter um desconto ne?
-- Voce e real ou so um sonho que eu tive?
-- Claro mas so se voce prometer que o resultado vai ser... delicioso
-- I am like a Rubik Cube, the more you play with me the harder I get
-- They say kissing is a language of love, want to start a conversation?
-- Voce vai me deixar curioso ou nao?
-- Vamos quebrar coracoes mas so um de cada vez
-
-STYLE: Confident, Gen Z casual energy, smart double meaning, playful tension, 1-2 lines max.
-Mix: funny and flirty, bold and charming, mysterious, suggestive but clever.
-NEVER: generic, bland, try-hard, creepy, boring.
+STYLE: Confident Gen Z energy, clever wordplay, playful tension, 1-2 lines max.
+Mix: funny and charming, bold and witty, mysterious and intriguing.
+NEVER: generic, bland, try-hard, creepy, boring, explicit.
 FORMAT: Exactly 6 pick-up lines in $idioma, one per line, nothing else.
 """;
     return _chamarAPI(system, "Generate 6 bold flirty pick-up lines in $idioma for an adult audience. Mix funny, suggestive, mysterious and provocative.");
@@ -219,8 +209,18 @@ FORMAT: Exactly 6 pick-up lines in $idioma, one per line, nothing else.
   static List<String> _parse(String responseBody) {
     final data = jsonDecode(responseBody);
     final content = data["choices"][0]["message"]["content"].toString();
-    final explicativos = ['here are', 'these are', 'below', 'responses:', 'options:',
-      'aqui estao', 'hier sind', 'voila', 'respostas:', 'opcoes:'];
+    final explicativos = [
+      'here are', 'these are', 'below', 'responses:', 'options:',
+      'aqui estao', 'aqui estão', 'hier sind', 'voila', 'respostas:',
+      'opcoes:', 'here is', 'aqui esta', 'aqui está', 'sure here',
+      'claro aqui', 'claro!', 'sure!', 'of course', 'certainly',
+      'i cannot', 'i can not', 'i am sorry', "i'm sorry",
+      'desculpe', 'lo siento', 'entschuldigung',
+      'as requested', 'como pedido', 'como solicitado',
+      'here you go', 'aqui vao', 'aqui vão',
+      '6 response', '6 message', '6 mensagem', '6 resposta',
+      'seis resposta', 'seis mensagem',
+    ];
     final lista = content.split('\n')
         .map((e) => e.trim())
         .map((e) => e.replaceAll(RegExp(r'^\d+[.)]\s*'), ''))
