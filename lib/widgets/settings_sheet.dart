@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../main.dart';
 import 'paywall_screen.dart';
 
@@ -34,7 +35,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
   ];
 
   bool get _dark => widget.isDarkMode;
-  Color get _bg => _dark ? const Color(0xFF2C2C2C) : Colors.white;
+  Color get _bg => _dark ? const Color(0xFF0A0A10) : Colors.white;
   Color get _textPrimary => _dark ? Colors.white : const Color(0xFF1C1C1E);
   Color get _textSecondary => _dark ? Colors.white38 : Colors.black38;
   Color get _divider => _dark ? Colors.white10 : Colors.black.withOpacity(0.06);
@@ -227,66 +228,21 @@ class _SettingsSheetState extends State<SettingsSheet> {
               _buildItem("💎", _premiumLabel(lang.languageCode),
                   onTap: _openPaywall, isAccent: true),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
-              // UpCrush com gradiente
-              ShaderMask(
-                shaderCallback: (bounds) => const LinearGradient(
-                  colors: [Color(0xFFFF2D55), Color(0xFFFF6B35)],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
-                ).createShader(bounds),
-                blendMode: BlendMode.srcIn,
-                child: const Text("UpCrush",
-                  style: TextStyle(fontSize: 18,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.white,
-                    letterSpacing: -0.5)),
-              ),
-
+              Text("UpCrush", style: TextStyle(fontSize: 16,
+                  fontWeight: FontWeight.w800, color: _textPrimary, letterSpacing: -0.5)),
               const SizedBox(height: 10),
 
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                GestureDetector(
-                  onTap: () {
-                    Clipboard.setData(const ClipboardData(
-                        text: "https://upcrush.app/terms"));
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: const Text("Link copiado!"),
-                      backgroundColor: const Color(0xFF34C759),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      duration: const Duration(seconds: 2),
-                    ));
-                  },
-                  child: Text("Terms", style: TextStyle(fontSize: 12,
-                      color: _textSecondary,
-                      decoration: TextDecoration.underline,
-                      decorationColor: _textSecondary))),
-                Text("  ·  ", style: TextStyle(color: _textSecondary, fontSize: 12)),
-                GestureDetector(
-                  onTap: () {
-                    Clipboard.setData(const ClipboardData(
-                        text: "https://upcrush.app/privacy"));
-                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      content: const Text("Link copiado!"),
-                      backgroundColor: const Color(0xFF34C759),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12)),
-                      duration: const Duration(seconds: 2),
-                    ));
-                  },
-                  child: Text("Privacy", style: TextStyle(fontSize: 12,
-                      color: _textSecondary,
-                      decoration: TextDecoration.underline,
-                      decorationColor: _textSecondary))),
+                GestureDetector(onTap: () {},
+                  child: Text("Terms", style: TextStyle(fontSize: 13,
+                      color: _textSecondary, decoration: TextDecoration.underline))),
+                Text("  ·  ", style: TextStyle(color: _textSecondary, fontSize: 13)),
+                GestureDetector(onTap: () {},
+                  child: Text("Privacy", style: TextStyle(fontSize: 13,
+                      color: _textSecondary, decoration: TextDecoration.underline))),
               ]),
-
-              const SizedBox(height: 6),
-              Text("v1.0.0", style: TextStyle(
-                  fontSize: 11, color: _textSecondary.withOpacity(0.5))),
 
               SizedBox(height: MediaQuery.of(context).padding.bottom + 20),
             ],
@@ -381,7 +337,7 @@ class _LangPickerSheetState extends State<_LangPickerSheet> {
   }
 
   bool get _dark => widget.isDark;
-  Color get _bg => _dark ? const Color(0xFF2C2C2C) : Colors.white;
+  Color get _bg => _dark ? const Color(0xFF0A0A10) : Colors.white;
   Color get _surface => _dark ? Colors.white.withOpacity(0.06) : const Color(0xFFF2F2F7);
   Color get _textPrimary => _dark ? Colors.white : const Color(0xFF1C1C1E);
   Color get _textSecondary => _dark ? Colors.white38 : Colors.black38;
