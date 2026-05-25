@@ -75,6 +75,19 @@ class _SettingsSheetState extends State<SettingsSheet> {
   String _themeLabel(String code, bool isDark) {
     if (isDark) {
       switch (code) {
+         case 'de': return 'Dunkelmodus';
+        case 'es': return 'Modo oscuro';
+        case 'fr': return 'Mode sombre';
+        case 'it': return 'Modalità scura';
+        case 'tr': return 'Koyu mod';
+        case 'pl': return 'Tryb ciemny';
+        case 'ru': return 'Тёмный режим';
+        case 'ar': return 'الوضع الداكن';
+        case 'en': return 'Dark mode';
+        default:   return 'Modo escuro';
+      }
+    } else {
+      switch (code) {
         case 'de': return 'Hellmodus';
         case 'es': return 'Modo claro';
         case 'fr': return 'Mode clair';
@@ -85,19 +98,6 @@ class _SettingsSheetState extends State<SettingsSheet> {
         case 'ar': return 'الوضع الفاتح';
         case 'en': return 'Light mode';
         default:   return 'Modo claro';
-      }
-    } else {
-      switch (code) {
-        case 'de': return 'Dunkelmodus';
-        case 'es': return 'Modo oscuro';
-        case 'fr': return 'Mode sombre';
-        case 'it': return 'Modalità scura';
-        case 'tr': return 'Koyu mod';
-        case 'pl': return 'Tryb ciemny';
-        case 'ru': return 'Тёмный режим';
-        case 'ar': return 'الوضع الداكن';
-        case 'en': return 'Dark mode';
-        default:   return 'Modo escuro';
       }
     }
   }

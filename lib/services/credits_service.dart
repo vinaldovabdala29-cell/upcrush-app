@@ -3,28 +3,25 @@ import 'package:shared_preferences/shared_preferences.dart';
 class CreditsService {
   static const String _keyIsPremium = 'is_premium';
   static const String _keyChatUses = 'chat_uses_used';
-
-  // Chatbot: 3 mensagens grátis (para sempre, não reset diário)
   static const int _freeChatMessages = 3;
 
-  // ─── Inicializar ──────────────────────────────────────────────────────────
-  static Future<void> init() async {
-    // Nada a inicializar — sem reset diário
-  }
+  static Future<void> init() async {}
 
-  // ─── SCREENSHOT e OPENER — abre galeria primeiro, paywall depois ─────────
+  // SCREENSHOT e OPENER — abre galeria primeiro, paywall depois
   static Future<bool> canUseScanner() async {
     return true; // galeria sempre abre
   }
 
-  // MODO TESTE — paywall desativado
   static Future<bool> shouldShowPaywallAfterScan() async {
-    return false;
+    final premium = await isPremium();
+    return !premium; // mostra paywall se NAO eh premium
   }
 
-  // ─── CHATBOT — 3 mensagens grátis ────────────────────────────────────────
+  // CHATBOT — 3 mensagens grátis
   static Future<bool> canUseChat() async {
-    return true; // MODO TESTE
+    if (await isPremium()) return true;
+    final used = await getChatUsesUsed();
+    return used < _freeChatMessages;
   }
 
   static Future<int> getChatUsesUsed() async {
@@ -46,7 +43,7 @@ class CreditsService {
     await prefs.setInt(_keyChatUses, used + 1);
   }
 
-  // ─── Premium ──────────────────────────────────────────────────────────────
+  // Premium
   static Future<bool> isPremium() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool(_keyIsPremium) ?? false;
@@ -57,7 +54,6 @@ class CreditsService {
     await prefs.setBool(_keyIsPremium, value);
   }
 
-  // ─── Para testes ─────────────────────────────────────────────────────────
   static Future<void> resetForTesting() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_keyIsPremium);
