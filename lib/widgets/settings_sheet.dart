@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:url_launcher/url_launcher.dart';
 import '../../../main.dart';
-import '../services/credits_service.dart';
 import 'paywall_screen.dart';
 
 class SettingsSheet extends StatefulWidget {
@@ -75,19 +73,6 @@ class _SettingsSheetState extends State<SettingsSheet> {
   String _themeLabel(String code, bool isDark) {
     if (isDark) {
       switch (code) {
-         case 'de': return 'Dunkelmodus';
-        case 'es': return 'Modo oscuro';
-        case 'fr': return 'Mode sombre';
-        case 'it': return 'Modalità scura';
-        case 'tr': return 'Koyu mod';
-        case 'pl': return 'Tryb ciemny';
-        case 'ru': return 'Тёмный режим';
-        case 'ar': return 'الوضع الداكن';
-        case 'en': return 'Dark mode';
-        default:   return 'Modo escuro';
-      }
-    } else {
-      switch (code) {
         case 'de': return 'Hellmodus';
         case 'es': return 'Modo claro';
         case 'fr': return 'Mode clair';
@@ -98,6 +83,19 @@ class _SettingsSheetState extends State<SettingsSheet> {
         case 'ar': return 'الوضع الفاتح';
         case 'en': return 'Light mode';
         default:   return 'Modo claro';
+      }
+    } else {
+      switch (code) {
+        case 'de': return 'Dunkelmodus';
+        case 'es': return 'Modo oscuro';
+        case 'fr': return 'Mode sombre';
+        case 'it': return 'Modalità scura';
+        case 'tr': return 'Koyu mod';
+        case 'pl': return 'Tryb ciemny';
+        case 'ru': return 'Тёмный режим';
+        case 'ar': return 'الوضع الداكن';
+        case 'en': return 'Dark mode';
+        default:   return 'Modo escuro';
       }
     }
   }
@@ -226,19 +224,8 @@ class _SettingsSheetState extends State<SettingsSheet> {
 
               _buildItem("🔗", _shareLabel(lang.languageCode), onTap: _shareApp),
               _buildItem("📧", _supportLabel(lang.languageCode), onTap: _openEmail),
-              FutureBuilder<bool>(
-                future: CreditsService.isPremium(),
-                builder: (context, snap) {
-                  final isPremium = snap.data ?? false;
-                  return _buildItem(
-                    isPremium ? "✅" : "💎",
-                    isPremium ? "UpCrush Pro" : _premiumLabel(lang.languageCode),
-                    onTap: isPremium ? () {} : _openPaywall,
-                    isAccent: !isPremium,
-                    trailing: isPremium ? const SizedBox.shrink() : null,
-                  );
-                },
-              ),
+              _buildItem("💎", _premiumLabel(lang.languageCode),
+                  onTap: _openPaywall, isAccent: true),
 
               const SizedBox(height: 20),
 
@@ -247,13 +234,11 @@ class _SettingsSheetState extends State<SettingsSheet> {
               const SizedBox(height: 10),
 
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                GestureDetector(
-                  onTap: () async { try { await launchUrl(Uri.parse('https://sites.google.com/view/upcrush-terms/p%C3%A1gina-inicial'), mode: LaunchMode.externalApplication); } catch (_) {} },
+                GestureDetector(onTap: () {},
                   child: Text("Terms", style: TextStyle(fontSize: 13,
                       color: _textSecondary, decoration: TextDecoration.underline))),
                 Text("  ·  ", style: TextStyle(color: _textSecondary, fontSize: 13)),
-                GestureDetector(
-                  onTap: () async { try { await launchUrl(Uri.parse('https://sites.google.com/view/upcrush-privacy-policy/p%C3%A1gina-inicial'), mode: LaunchMode.externalApplication); } catch (_) {} },
+                GestureDetector(onTap: () {},
                   child: Text("Privacy", style: TextStyle(fontSize: 13,
                       color: _textSecondary, decoration: TextDecoration.underline))),
               ]),
@@ -301,7 +286,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
   }
 
   Widget _buildItem(String icon, String label, {
-    required VoidCallback onTap, Widget? trailing, bool isAccent = false}) {
+    required VoidCallback onTap, Widget? trailing, bool isAccent = false, bool showArrow = true}) {
     return Column(children: [
       InkWell(
         onTap: onTap,
@@ -314,7 +299,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                 color: isAccent ? _accent : _textPrimary)),
             const Spacer(),
             if (trailing != null) trailing
-            else Icon(Icons.arrow_forward_ios, size: 14, color: _textSecondary),
+            else if (showArrow) Icon(Icons.arrow_forward_ios, size: 14, color: _textSecondary),
           ]),
         ),
       ),
