@@ -1,9 +1,13 @@
+// lib/widgets/paywall_screen.dart
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../main.dart';
 import '../services/revenue_cat_service.dart';
 import '../services/credits_service.dart';
 import '../theme/paywall_strings.dart';
+import 'paywall_price_card.dart';
+import 'paywall_features.dart';
+import 'paywall_trial_text.dart';
 
 Future<void> _openUrl(String url) async {
   try {
@@ -19,17 +23,15 @@ class PaywallFlow extends StatefulWidget {
 
 class _PaywallFlowState extends State<PaywallFlow> {
   bool _loading = false;
-  String _price = '5.99';
-  String _perWeekPrice = '5.99';
+  // Começa vazio — mostra loading até buscar o preço real
+  String _price = '';
 
   @override
   void initState() {
     super.initState();
+    // Busca o preço real da App Store/Play Store via RevenueCat
     RevenueCatService.getPrice().then((p) {
-      if (mounted) setState(() {
-        _price = p;
-        _perWeekPrice = p;
-      });
+      if (mounted) setState(() => _price = p);
     });
   }
 
@@ -86,6 +88,14 @@ class _PaywallFlowState extends State<PaywallFlow> {
         final size = MediaQuery.of(context).size;
         final isTablet = size.shortestSide >= 600;
         final bottom = MediaQuery.of(context).padding.bottom;
+
+        // Mostra loading enquanto busca o preço
+        if (_price.isEmpty) {
+          return const Scaffold(
+            backgroundColor: Colors.white,
+            body: Center(child: CircularProgressIndicator(
+              color: Color(0xFFFF2D55), strokeWidth: 2)));
+        }
 
         return Scaffold(
           backgroundColor: Colors.white,
@@ -164,94 +174,16 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
                     SizedBox(height: isTablet ? 40 : 28),
 
-                    // ── Features ──────────────────────────────────────
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: isTablet ? 28 : 20,
-                        vertical: isTablet ? 20 : 14),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF8F8F8),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: Colors.black.withOpacity(0.06))),
-                      child: Column(children: [
-                        _feat("📸", PS.get('feat1', l), isTablet),
-                        _feat("❤️", PS.get('feat2', l), isTablet),
-                        _feat("🤖", PS.get('feat3', l), isTablet),
-                        _feat("⚡", PS.get('feat4', l), isTablet),
-                      ])),
+                    // ── Features (ficheiro separado) ───────────────────
+                    PaywallFeatures(lang: l, isTablet: isTablet),
 
                     SizedBox(height: isTablet ? 28 : 20),
 
-                    // ── Price card ────────────────────────────────────
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(isTablet ? 28 : 22),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFF2D55), Color(0xFFFF6B81)],
-                          begin: Alignment.topLeft, end: Alignment.bottomRight),
-                        borderRadius: BorderRadius.circular(22),
-                        boxShadow: [BoxShadow(
-                          color: const Color(0xFFFF2D55).withOpacity(0.35),
-                          blurRadius: 20, offset: const Offset(0, 8))]),
-                      child: Row(children: [
-                        Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          // 3 dias grátis — some após primeiro pagamento
-                          FutureBuilder<bool>(
-                            future: CreditsService.isPremium(),
-                            builder: (_, snap) {
-                              if (snap.data == true) return const SizedBox.shrink();
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.25),
-                                      borderRadius: BorderRadius.circular(8)),
-                                    child: Text(PS.get('free_days', l), style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: isTablet ? 13 : 11,
-                                      fontWeight: FontWeight.w800, letterSpacing: 0.8))),
-                                  SizedBox(height: isTablet ? 14 : 10),
-                                ]);
-                            }),
-                          Text(PS.get('weekly', l), style: TextStyle(
-                            color: Colors.white70,
-                            fontSize: isTablet ? 16 : 14,
-                            fontWeight: FontWeight.w500)),
-                          Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                            Text(_price, style: TextStyle(
-                              color: Colors.white,
-                              fontSize: isTablet ? 52 : 40,
-                              fontWeight: FontWeight.w900, letterSpacing: -1)),
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 6),
-                              child: Text(PS.get('per_week', l), style: TextStyle(
-                                color: Colors.white60,
-                                fontSize: isTablet ? 16 : 14))),
-                          ]),
-                        ]),
-                        const Spacer(),
-                        Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                          Text(PS.get('today', l), style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
-                            fontSize: isTablet ? 14 : 12)),
-                          const Text("0.00", style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800)),
-                          SizedBox(height: isTablet ? 12 : 8),
-                          Text(PS.get('after_trial', l), style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
-                            fontSize: isTablet ? 14 : 12)),
-                          Text("$_perWeekPrice${PS.get('per_week', l)}", style: TextStyle(
-                            color: Colors.white,
-                            fontSize: isTablet ? 16 : 14,
-                            fontWeight: FontWeight.w700)),
-                        ]),
-                      ])),
+                    // ── Price Card (ficheiro separado) ────────────────
+                    PaywallPriceCard(
+                      price: _price,
+                      lang: l,
+                      isTablet: isTablet),
 
                     SizedBox(height: isTablet ? 28 : 20),
 
@@ -293,20 +225,11 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
                     SizedBox(height: isTablet ? 12 : 8),
 
-                    // ── Trial sub — some após primeiro pagamento ───────
-                    FutureBuilder<bool>(
-                      future: CreditsService.isPremium(),
-                      builder: (_, snap) {
-                        if (snap.data == true) return const SizedBox.shrink();
-                        return Text(
-                          PS.get('trial_sub', l).replaceAll('5,99', _price).replaceAll('5.99', _price),
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: Colors.black54,
-                            fontSize: isTablet ? 15 : 13,
-                            fontWeight: FontWeight.w500,
-                            height: 1.5));
-                      }),
+                    // ── Trial sub (ficheiro separado) ─────────────────
+                    PaywallTrialText(
+                      price: _price,
+                      lang: l,
+                      isTablet: isTablet),
 
                     SizedBox(height: isTablet ? 16 : 12),
 
@@ -329,21 +252,6 @@ class _PaywallFlowState extends State<PaywallFlow> {
       },
     );
   }
-
-  Widget _feat(String emoji, String label, bool isTablet) => Padding(
-    padding: EdgeInsets.symmetric(vertical: isTablet ? 8 : 5),
-    child: Row(children: [
-      Text(emoji, style: TextStyle(fontSize: isTablet ? 22 : 17)),
-      SizedBox(width: isTablet ? 16 : 12),
-      Text(label, style: TextStyle(
-        color: const Color(0xFF1C1C1E),
-        fontSize: isTablet ? 16 : 14,
-        fontWeight: FontWeight.w500)),
-      const Spacer(),
-      Icon(Icons.check_circle_rounded,
-        color: const Color(0xFF34C759),
-        size: isTablet ? 22 : 17),
-    ]));
 
   Widget _link(String t, VoidCallback onTap, bool isTablet) => GestureDetector(
     onTap: onTap,
