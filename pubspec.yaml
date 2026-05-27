@@ -2,7 +2,7 @@ name: upcrush
 description: "UpCrush — O teu copiloto de conversa."
 publish_to: 'none'
 
-version: 1.0.0+27
+version: 1.0.0+28
 
 environment:
   sdk: ^3.11.1
