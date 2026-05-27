@@ -21,7 +21,7 @@ class PaywallTrialText extends StatelessWidget {
       future: CreditsService.isPremium(),
       builder: (_, snap) {
         if (snap.data == true) return const SizedBox.shrink();
-        // Substitui {price} pelo preco real do RevenueCat (ex: €6,99 / $5.99)
+        // Substitui {price} pelo preço real do RevenueCat
         final text = PS.get('trial_sub', lang).replaceAll('{price}', price);
         return Text(text,
           textAlign: TextAlign.center,
