@@ -34,15 +34,22 @@ class RevenueCatService {
     }
   }
 
-  // Retorna o preco real do produto na moeda local do utilizador
+  // Retorna o preco real formatado na moeda local (ex: €6,99 / $5.99 / R$29,90)
   static Future<String> getPrice() async {
     try {
       final offerings = await Purchases.getOfferings();
       final package = offerings.current?.weekly ??
           offerings.current?.availablePackages.firstOrNull;
-      return package?.storeProduct.priceString ?? "5.99";
+
+      if (package == null) return '';
+
+      final product = package.storeProduct;
+      final price = product.priceString; // já vem formatado com moeda local
+      debugPrint("RevenueCat price: $price | currency: ${product.currencyCode}");
+      return price;
     } catch (e) {
-      return "5.99";
+      debugPrint("RevenueCat getPrice error: $e");
+      return '';
     }
   }
 

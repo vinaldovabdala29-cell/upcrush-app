@@ -22,12 +22,12 @@ class PaywallTrialText extends StatelessWidget {
       builder: (_, snap) {
         if (snap.data == true) return const SizedBox.shrink();
         // Substitui placeholder pelo preco real do RevenueCat
-        final text = PS.get('trial_sub', lang)
-          .replaceAll('5,99', price)
-          .replaceAll('5.99', price)
-          .replaceAll('6,99', price)
-          .replaceAll('6.99', price)
-          .replaceAll(r'$$', '');  // remove $$ acidental
+        // Remove qualquer preco hardcoded e substitui pelo preco real
+        var text = PS.get('trial_sub', lang);
+        // Substitui padroes de preco (ex: €5,99 / €6,99 / $5.99)
+        text = text.replaceAllMapped(
+          RegExp(r'[\$€£¥₩]?\s?\d+[.,]\d{2}'),
+          (_) => price);
         return Text(text,
           textAlign: TextAlign.center,
           style: TextStyle(
