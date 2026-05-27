@@ -40,6 +40,7 @@ void main() async {
   }
   isDarkModeNotifier.value = prefs.getBool('is_dark_mode') ?? false;
 
+
   await Future.wait([
     CreditsService.init(),
     RevenueCatService.init(),

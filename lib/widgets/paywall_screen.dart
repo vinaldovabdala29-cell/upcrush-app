@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../main.dart';
@@ -20,6 +19,19 @@ class PaywallFlow extends StatefulWidget {
 
 class _PaywallFlowState extends State<PaywallFlow> {
   bool _loading = false;
+  String _price = '5.99';
+  String _perWeekPrice = '5.99';
+
+  @override
+  void initState() {
+    super.initState();
+    RevenueCatService.getPrice().then((p) {
+      if (mounted) setState(() {
+        _price = p;
+        _perWeekPrice = p;
+      });
+    });
+  }
 
   Future<void> _handlePurchase() async {
     setState(() => _loading = true);
@@ -74,7 +86,6 @@ class _PaywallFlowState extends State<PaywallFlow> {
         final size = MediaQuery.of(context).size;
         final isTablet = size.shortestSide >= 600;
         final bottom = MediaQuery.of(context).padding.bottom;
-        final price = "€5.99";
 
         return Scaffold(
           backgroundColor: Colors.white,
@@ -83,12 +94,12 @@ class _PaywallFlowState extends State<PaywallFlow> {
               child: Padding(
                 padding: EdgeInsets.symmetric(
                   horizontal: isTablet ? size.width * 0.15 : 28,
-                  vertical: 24,
-                ),
+                  vertical: 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // ── Close ────────────────────────────────────────────
+
+                    // ── Close ─────────────────────────────────────────
                     Align(
                       alignment: Alignment.topRight,
                       child: GestureDetector(
@@ -104,7 +115,7 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
                     SizedBox(height: isTablet ? 32 : 20),
 
-                    // ── Logo ─────────────────────────────────────────────
+                    // ── Logo ──────────────────────────────────────────
                     RichText(text: TextSpan(children: [
                       TextSpan(text: "Up", style: TextStyle(
                         fontSize: isTablet ? 48 : 38,
@@ -118,7 +129,7 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
                     SizedBox(height: isTablet ? 8 : 6),
 
-                    // ── Badge ────────────────────────────────────────────
+                    // ── Badge ─────────────────────────────────────────
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
                       decoration: BoxDecoration(
@@ -133,7 +144,7 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
                     SizedBox(height: isTablet ? 40 : 28),
 
-                    // ── Title ────────────────────────────────────────────
+                    // ── Title ─────────────────────────────────────────
                     Text(PS.get('plans_title', l),
                       textAlign: TextAlign.center,
                       style: TextStyle(
@@ -153,7 +164,7 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
                     SizedBox(height: isTablet ? 40 : 28),
 
-                    // ── Features ─────────────────────────────────────────
+                    // ── Features ──────────────────────────────────────
                     Container(
                       width: double.infinity,
                       padding: EdgeInsets.symmetric(
@@ -172,7 +183,7 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
                     SizedBox(height: isTablet ? 28 : 20),
 
-                    // ── Price card ───────────────────────────────────────
+                    // ── Price card ────────────────────────────────────
                     Container(
                       width: double.infinity,
                       padding: EdgeInsets.all(isTablet ? 28 : 22),
@@ -204,15 +215,14 @@ class _PaywallFlowState extends State<PaywallFlow> {
                                       fontSize: isTablet ? 13 : 11,
                                       fontWeight: FontWeight.w800, letterSpacing: 0.8))),
                                   SizedBox(height: isTablet ? 14 : 10),
-                                ],
-                              );
+                                ]);
                             }),
                           Text(PS.get('weekly', l), style: TextStyle(
                             color: Colors.white70,
                             fontSize: isTablet ? 16 : 14,
                             fontWeight: FontWeight.w500)),
                           Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                            Text(price, style: TextStyle(
+                            Text(_price, style: TextStyle(
                               color: Colors.white,
                               fontSize: isTablet ? 52 : 40,
                               fontWeight: FontWeight.w900, letterSpacing: -1)),
@@ -228,15 +238,15 @@ class _PaywallFlowState extends State<PaywallFlow> {
                           Text(PS.get('today', l), style: TextStyle(
                             color: Colors.white.withOpacity(0.6),
                             fontSize: isTablet ? 14 : 12)),
-                          Text("€0.00", style: TextStyle(
+                          const Text("0.00", style: TextStyle(
                             color: Colors.white,
-                            fontSize: isTablet ? 26 : 22,
+                            fontSize: 22,
                             fontWeight: FontWeight.w800)),
                           SizedBox(height: isTablet ? 12 : 8),
                           Text(PS.get('after_trial', l), style: TextStyle(
                             color: Colors.white.withOpacity(0.6),
                             fontSize: isTablet ? 14 : 12)),
-                          Text("€5.99${PS.get('per_week', l)}", style: TextStyle(
+                          Text("$_perWeekPrice${PS.get('per_week', l)}", style: TextStyle(
                             color: Colors.white,
                             fontSize: isTablet ? 16 : 14,
                             fontWeight: FontWeight.w700)),
@@ -245,7 +255,7 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
                     SizedBox(height: isTablet ? 28 : 20),
 
-                    // ── No payment ───────────────────────────────────────
+                    // ── No payment ────────────────────────────────────
                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                       Container(width: 16, height: 16,
                         decoration: const BoxDecoration(
@@ -260,7 +270,7 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
                     SizedBox(height: isTablet ? 16 : 12),
 
-                    // ── CTA Button ───────────────────────────────────────
+                    // ── CTA Button ────────────────────────────────────
                     SizedBox(
                       width: double.infinity,
                       height: isTablet ? 64 : 56,
@@ -283,13 +293,13 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
                     SizedBox(height: isTablet ? 12 : 8),
 
-                    // ── Trial sub — some após primeiro pagamento ──────────
+                    // ── Trial sub — some após primeiro pagamento ───────
                     FutureBuilder<bool>(
                       future: CreditsService.isPremium(),
                       builder: (_, snap) {
                         if (snap.data == true) return const SizedBox.shrink();
                         return Text(
-                          PS.get('trial_sub', l),
+                          PS.get('trial_sub', l).replaceAll('5,99', _price).replaceAll('5.99', _price),
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: Colors.black54,
@@ -300,7 +310,7 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
                     SizedBox(height: isTablet ? 16 : 12),
 
-                    // ── Terms · Privacy ──────────────────────────────────
+                    // ── Terms · Privacy ───────────────────────────────
                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                       _link("Terms", () => _openUrl(
                         'https://sites.google.com/view/upcrush-terms/p%C3%A1gina-inicial'), isTablet),

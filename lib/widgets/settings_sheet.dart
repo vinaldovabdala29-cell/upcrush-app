@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../main.dart';
 import 'paywall_screen.dart';
 
@@ -71,20 +72,9 @@ class _SettingsSheetState extends State<SettingsSheet> {
   }
 
   String _themeLabel(String code, bool isDark) {
+    // Mostra o modo OPOSTO — se está escuro mostra "Modo claro" e vice-versa
     if (isDark) {
-      switch (code) {
-        case 'de': return 'Hellmodus';
-        case 'es': return 'Modo claro';
-        case 'fr': return 'Mode clair';
-        case 'it': return 'Modalità chiara';
-        case 'tr': return 'Açık mod';
-        case 'pl': return 'Tryb jasny';
-        case 'ru': return 'Светлый режим';
-        case 'ar': return 'الوضع الفاتح';
-        case 'en': return 'Light mode';
-        default:   return 'Modo claro';
-      }
-    } else {
+      // Está em modo escuro → opção para mudar para claro
       switch (code) {
         case 'de': return 'Dunkelmodus';
         case 'es': return 'Modo oscuro';
@@ -96,6 +86,20 @@ class _SettingsSheetState extends State<SettingsSheet> {
         case 'ar': return 'الوضع الداكن';
         case 'en': return 'Dark mode';
         default:   return 'Modo escuro';
+      }
+    } else {
+      // Está em modo claro → opção para mudar para escuro
+      switch (code) {
+        case 'de': return 'Hellmodus';
+        case 'es': return 'Modo claro';
+        case 'fr': return 'Mode clair';
+        case 'it': return 'Modalità chiara';
+        case 'tr': return 'Açık mod';
+        case 'pl': return 'Tryb jasny';
+        case 'ru': return 'Светлый режим';
+        case 'ar': return 'الوضع الفاتح';
+        case 'en': return 'Light mode';
+        default:   return 'Modo claro';
       }
     }
   }
@@ -234,11 +238,13 @@ class _SettingsSheetState extends State<SettingsSheet> {
               const SizedBox(height: 10),
 
               Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-                GestureDetector(onTap: () {},
+                GestureDetector(
+                  onTap: () async { try { await launchUrl(Uri.parse('https://sites.google.com/view/upcrush-terms/p%C3%A1gina-inicial'), mode: LaunchMode.externalApplication); } catch (_) {} },
                   child: Text("Terms", style: TextStyle(fontSize: 13,
                       color: _textSecondary, decoration: TextDecoration.underline))),
                 Text("  ·  ", style: TextStyle(color: _textSecondary, fontSize: 13)),
-                GestureDetector(onTap: () {},
+                GestureDetector(
+                  onTap: () async { try { await launchUrl(Uri.parse('https://sites.google.com/view/upcrush-privacy-policy/p%C3%A1gina-inicial'), mode: LaunchMode.externalApplication); } catch (_) {} },
                   child: Text("Privacy", style: TextStyle(fontSize: 13,
                       color: _textSecondary, decoration: TextDecoration.underline))),
               ]),
@@ -286,7 +292,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
   }
 
   Widget _buildItem(String icon, String label, {
-    required VoidCallback onTap, Widget? trailing, bool isAccent = false, bool showArrow = true}) {
+    required VoidCallback onTap, Widget? trailing, bool isAccent = false}) {
     return Column(children: [
       InkWell(
         onTap: onTap,
@@ -299,7 +305,7 @@ class _SettingsSheetState extends State<SettingsSheet> {
                 color: isAccent ? _accent : _textPrimary)),
             const Spacer(),
             if (trailing != null) trailing
-            else if (showArrow) Icon(Icons.arrow_forward_ios, size: 14, color: _textSecondary),
+            else Icon(Icons.arrow_forward_ios, size: 14, color: _textSecondary),
           ]),
         ),
       ),

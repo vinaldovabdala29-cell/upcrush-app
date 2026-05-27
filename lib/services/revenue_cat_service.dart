@@ -4,9 +4,7 @@ import 'dart:io';
 import 'credits_service.dart';
 
 class RevenueCatService {
-  // Android key — começa com "goog_"
   static const String _androidKey = "goog_FEoxrNpkLgRjsZTtNJZEYuVDqua";
-  // iOS key — começa com "appl_"
   static const String _iosKey = "appl_dmwoiqiILydfkRwbGekYzLFWRRb";
 
   static Future<void> init() async {
@@ -36,9 +34,20 @@ class RevenueCatService {
     }
   }
 
+  // Retorna o preco real do produto na moeda local do utilizador
+  static Future<String> getPrice() async {
+    try {
+      final offerings = await Purchases.getOfferings();
+      final package = offerings.current?.weekly ??
+          offerings.current?.availablePackages.firstOrNull;
+      return package?.storeProduct.priceString ?? "5.99";
+    } catch (e) {
+      return "5.99";
+    }
+  }
+
   static Future<PurchaseServiceResult> buyWeekly() async {
     try {
-      // Usa Offerings em vez de getProducts — funciona melhor no Android
       final offerings = await Purchases.getOfferings();
       final package = offerings.current?.weekly ??
           offerings.current?.availablePackages.firstOrNull;
