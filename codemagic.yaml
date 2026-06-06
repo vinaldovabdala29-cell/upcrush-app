@@ -9,11 +9,12 @@ workflows:
     scripts:
       - name: Create config.dart
         script: |
-          cat > lib/config.dart << EOF
+          cat > lib/config.dart << DART
           class Config {
             static const String openAiKey = "$OPENAI_API_KEY";
+            static const String anthropicKey = "$ANTHROPIC_API_KEY";
           }
-          EOF
+          DART
       - name: Get Flutter packages
         script: flutter pub get
       - name: Build iOS
@@ -28,3 +29,11 @@ workflows:
         key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
+        submit_to_app_store: true
+        release_type: AFTER_APPROVAL
+        whats_new:
+          default: "Bug fixes and performance improvements."
+          de-DE: "Verbesserungen und Fehlerbehebungen."
+          en-US: "Bug fixes and performance improvements."
+          pt-BR: "Correções de bugs e melhorias de desempenho."
+          es-ES: "Correcciones de errores y mejoras de rendimiento."
