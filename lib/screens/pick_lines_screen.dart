@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/ai_service.dart';
-import '../services/credits_service.dart';
-import '../widgets/paywall_screen.dart';
 import '../../../main.dart';
+import '../services/revenue_cat_service.dart';
+import '../widgets/paywall_screen.dart';
 
 class PickLinesScreen extends StatefulWidget {
   const PickLinesScreen({super.key});
@@ -29,20 +29,19 @@ class _PickLinesScreenState extends State<PickLinesScreen> {
   @override
   void initState() {
     super.initState();
+    isDarkModeNotifier.addListener(() { if (mounted) setState(() {}); });
     WidgetsBinding.instance.addPostFrameCallback((_) => _gerar());
   }
 
   Future<void> _gerar() async {
-    final devePaywall = await CreditsService.shouldShowPaywallAfterScan();
-    if (devePaywall && mounted) {
-      await Navigator.push(context, MaterialPageRoute(
+    final premium = await RevenueCatService.isPremium();
+    if (!mounted) return;
+    if (!premium) {
+      final result = await Navigator.push(context, MaterialPageRoute(
         fullscreenDialog: true, builder: (_) => const PaywallFlow()));
-      final premium = await CreditsService.isPremium();
-      if (!premium) { if (mounted) Navigator.pop(context); return; }
+      if (result != true) { if (mounted) Navigator.pop(context); return; }
     }
-
     setState(() { _loading = true; _copied = false; });
-
     try {
       final lines = await AIService.gerarPickLines(appLang.languageCode);
       setState(() {
@@ -94,7 +93,6 @@ class _PickLinesScreenState extends State<PickLinesScreen> {
           ),
           body: Column(
             children: [
-              // ── Cantada no centro ─────────────────────────────────────
               Expanded(
                 child: Center(
                   child: Padding(
@@ -188,8 +186,6 @@ class _PickLinesScreenState extends State<PickLinesScreen> {
                   ),
                 ),
               ),
-
-              // ── Botão Gerar ───────────────────────────────────────────
               Padding(
                 padding: EdgeInsets.fromLTRB(16, 0, 16, MediaQuery.of(context).padding.bottom + 16),
                 child: SizedBox(

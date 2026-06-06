@@ -186,12 +186,12 @@ class _HomeBody extends StatelessWidget {
                           FeatureCard(
                             title: "Get Pick Lines",
                             subtitle: appLang.languageCode == 'de'
-                                ? "Eröffne jedes Gespräch mit Stil"
+                                ? "Deine perfekte Anmachzeile"
                                 : appLang.languageCode == 'es'
-                                    ? "Abre cada conversación con estilo"
+                                    ? "Tu cantada perfecta"
                                     : appLang.languageCode == 'pt'
-                                        ? "Abre cada conversa com estilo"
-                                        : "Open every conversation with style",
+                                        ? "Sua cantada perfeita"
+                                        : "Your perfect pick-up line",
                             icon: Icons.rocket_launch_rounded,
                             iconBgColors: const [Color(0xFFFF9500), Color(0xFFFFCC02)],
                             iconShadowColor: const Color(0xFFFF9500),
@@ -218,7 +218,7 @@ class _HomeBody extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
 
-                          // ── 4. Chat IA (botão pequeno preto) ──────────
+                          // ── 4. Chat IA ────────────────────────────────
                           Center(
                             child: GestureDetector(
                               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatbotScreen())),

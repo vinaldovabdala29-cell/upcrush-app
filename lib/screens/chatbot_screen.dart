@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import '../../../main.dart';
 import '../../../config.dart';
-import '../services/credits_service.dart';
+import '../services/revenue_cat_service.dart';
 import '../widgets/paywall_screen.dart';
 
 class ChatbotScreen extends StatefulWidget {
@@ -20,6 +20,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   bool _loading = false;
 
   static const String _apiKey = Config.openAiKey;
+  static const String _anthropicKey = Config.anthropicKey;
 
   bool get _dark => isDarkModeNotifier.value;
   Color get _bg => _dark ? const Color(0xFF0A0A10) : const Color(0xFFF2F2F7);
@@ -97,21 +98,13 @@ RULES:
     final text = _controller.text.trim();
     if (text.isEmpty || _loading) return;
 
-    // ── CHATBOT: 3 mensagens grátis, paywall na 4ª ──────────────────────
-    final podeUsar = await CreditsService.canUseChat();
-    if (!podeUsar) {
-      if (mounted) {
-        await Navigator.push(context, MaterialPageRoute(
-          fullscreenDialog: true,
-          builder: (_) => const PaywallFlow(),
-        ));
-        final isPremium = await CreditsService.isPremium();
-        if (!isPremium) return;
-      } else {
-        return;
-      }
+    final premium = await RevenueCatService.isPremium();
+    if (!mounted) return;
+    if (!premium) {
+      final result = await Navigator.push(context, MaterialPageRoute(
+        fullscreenDialog: true, builder: (_) => const PaywallFlow()));
+      if (result != true) return;
     }
-    await CreditsService.useChatCredit();
 
     setState(() {
       _messages.add({"role": "user", "content": text});
@@ -121,7 +114,6 @@ RULES:
     _scrollToBottom();
 
     try {
-      // Constrói histórico para a API (exclui mensagem de boas-vindas do sistema)
       final apiMessages = <Map<String, String>>[];
       for (final msg in _messages) {
         if (msg["role"] == "user" || (msg["role"] == "assistant" && msg != _messages.first)) {
@@ -129,33 +121,59 @@ RULES:
         }
       }
 
-      final response = await http.post(
-        Uri.parse("https://api.openai.com/v1/chat/completions"),
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Bearer $_apiKey",
-        },
-        body: jsonEncode({
-          "model": "gpt-4o",
-          "messages": [
-            {"role": "system", "content": _systemPrompt},
-            ...apiMessages,
-          ],
-          "temperature": 0.85,
-          "max_tokens": 600,
-        }),
-      );
+      String? reply;
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final reply = data["choices"][0]["message"]["content"].toString();
+      // Tenta OpenAI primeiro
+      try {
+        final response = await http.post(
+          Uri.parse("https://api.openai.com/v1/chat/completions"),
+          headers: {"Content-Type": "application/json", "Authorization": "Bearer $_apiKey"},
+          body: jsonEncode({
+            "model": "gpt-4o",
+            "messages": [
+              {"role": "system", "content": _systemPrompt},
+              ...apiMessages,
+            ],
+            "temperature": 0.85,
+            "max_tokens": 600,
+          }),
+        );
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          reply = data["choices"][0]["message"]["content"].toString();
+        } else {
+          throw Exception("OpenAI error \${response.statusCode}");
+        }
+      } catch (_) {
+        // Fallback Anthropic
+        final response = await http.post(
+          Uri.parse("https://api.anthropic.com/v1/messages"),
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": _anthropicKey,
+            "anthropic-version": "2023-06-01",
+          },
+          body: jsonEncode({
+            "model": "claude-sonnet-4-5",
+            "max_tokens": 600,
+            "system": _systemPrompt,
+            "messages": apiMessages,
+          }),
+        );
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          reply = data["content"][0]["text"].toString();
+        } else {
+          throw Exception("Anthropic error \${response.statusCode}");
+        }
+      }
+
+      if (reply != null) {
         setState(() {
-          _messages.add({"role": "assistant", "content": reply});
+          _messages.add({"role": "assistant", "content": reply!});
           _loading = false;
         });
         _scrollToBottom();
-      } else {
-        throw Exception("Error ${response.statusCode}");
       }
     } catch (e) {
       setState(() {
