@@ -211,7 +211,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
 
   Widget _buildImagePreview() {
     return Container(
-      height: 320,
+      height: 340,
       width: double.infinity,
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
       decoration: BoxDecoration(
@@ -220,7 +220,10 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
       child: ClipRRect(
         borderRadius: BorderRadius.circular(18),
         child: Stack(fit: StackFit.expand, children: [
-          Image.file(_imagem!, fit: BoxFit.cover, alignment: Alignment.bottomCenter),
+          InteractiveViewer(
+            minScale: 1.0,
+            maxScale: 3.0,
+            child: Image.file(_imagem!, fit: BoxFit.cover, alignment: Alignment.topCenter)),
           if (_analisando) Container(color: Colors.black.withOpacity(0.25)),
           Positioned(top: 10, left: 10, child: _corner(top: true, left: true)),
           Positioned(top: 10, right: 10, child: _corner(top: true, left: false)),
