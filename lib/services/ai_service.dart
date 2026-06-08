@@ -25,6 +25,90 @@ class AIService {
     'ar': 'Arabic Gen Z dating culture. Charming, confident, clever.',
   };
 
+  // ─── EXEMPLOS NATIVOS DE PICK LINES POR IDIOMA ────────────────────────────
+  static const Map<String, List<String>> _pickLineExemplos = {
+    'pt': [
+      'Tem espaço pra mais uma língua na sua boca?',
+      'Que tal um encontro? Eu prometo não morder... a menos que você peça',
+      'Perigo detectado. Tarde demais pra fugir.',
+      'Assim a gente não vai a lugar nenhum — a não ser que seja esse o plano',
+      'Você tem cara de quem mente no currículo e ainda consegue o emprego',
+      'Denunciando seu perfil por perturbar a paz mental',
+    ],
+    'de': [
+      'Ist noch Platz für eine weitere Zunge in deinem Mund?',
+      'Gefahr erkannt. Zu spät zum Fliehen.',
+      'Ich zeige dein Profil an. Straftat: Störung des Seelenfriedens',
+      'So kommen wir nirgendwo hin — es sei denn, das war der Plan',
+      'Du siehst aus wie das Problem, für das man sich später bedankt',
+      'Ich versuche höflich zu sein, aber du machst es nicht leicht',
+    ],
+    'en': [
+      'Is there room for another tongue in your mouth?',
+      'Danger detected. Too late to run.',
+      'Reporting your profile. Crime: disturbing the peace',
+      'So we are not going anywhere — unless that was the plan all along',
+      'You look like the kind of problem you are grateful for later',
+      'I am trying to be polite but you are not making it easy',
+    ],
+    'es': [
+      '¿Hay espacio para otra lengua en tu boca?',
+      'Peligro detectado. Ya es tarde para huir.',
+      'Te denuncio el perfil. Delito: perturbar la paz mental',
+      'Así no llegaremos a ningún lado — a menos que ese sea el plan',
+      'Pareces el tipo de problema rico del que uno se arrepiente después',
+      'Intento ser educado pero tú no lo pones fácil',
+    ],
+    'fr': [
+      'Il y a de la place pour une autre langue dans ta bouche?',
+      'Danger détecté. Trop tard pour fuir.',
+      'Je signale ton profil. Crime: perturbation de la paix mentale',
+      'On n\'ira nulle part comme ça — à moins que c\'était le plan',
+      'Tu ressembles au genre de problème savoureux dont on se repent après',
+      'J\'essaie d\'être poli mais tu ne facilites pas les choses',
+    ],
+    'it': [
+      'C\'è spazio per un\'altra lingua nella tua bocca?',
+      'Pericolo rilevato. Troppo tardi per fuggire.',
+      'Denuncio il tuo profilo. Reato: disturbo della pace mentale',
+      'Così non andremo da nessuna parte — a meno che non fosse il piano',
+      'Sembri il tipo di problema gustoso di cui ci si pente dopo',
+      'Sto cercando di essere educato ma tu non lo rendi facile',
+    ],
+    'tr': [
+      'Ağzında başka bir dil için yer var mı?',
+      'Tehlike algılandı. Kaçmak için çok geç.',
+      'Profilini şikayet ediyorum. Suç: zihin huzurunu bozmak',
+      'Bu şekilde hiçbir yere varamayız — bu plan değilse',
+      'Sonradan teşekkür edilen tatlı sorun türüne benziyorsun',
+      'Nazik olmaya çalışıyorum ama kolaylaştırmıyorsun',
+    ],
+    'pl': [
+      'Czy jest miejsce na jeszcze jeden język w twoich ustach?',
+      'Niebezpieczeństwo wykryte. Za późno na ucieczkę.',
+      'Zgłaszam twój profil. Przestępstwo: zakłócanie spokoju ducha',
+      'Tak nigdzie nie dojdziemy — chyba że to był plan',
+      'Wyglądasz jak rodzaj problemu, za który się później dziękuje',
+      'Staram się być grzeczny, ale ty mi nie ułatwiasz',
+    ],
+    'ru': [
+      'Есть место ещё для одного языка в твоём рту?',
+      'Опасность обнаружена. Слишком поздно бежать.',
+      'Сообщаю о твоём профиле. Преступление: нарушение душевного покоя',
+      'Так мы никуда не придём — если только это не был план',
+      'Ты похожа на тот вид проблемы, за который потом благодарят',
+      'Я стараюсь быть вежливым, но ты не облегчаешь задачу',
+    ],
+    'ar': [
+      'هل يوجد مكان لسان آخر في فمك؟',
+      'تم اكتشاف الخطر. فات الأوان للهروب.',
+      'أبلغ عن ملفك الشخصي. الجريمة: إزعاج راحة البال',
+      'لن نصل إلى أي مكان هكذا — إلا إذا كان هذا هو الخطة',
+      'تبدين كنوع المشكلة التي يُشكر عليها لاحقاً',
+      'أحاول أن أكون مؤدباً لكنك لا تسهلين الأمر',
+    ],
+  };
+
   static String _getEstiloSystem(String estilo, String lang, String idioma, String cultura) {
 
     String exemplos() {
@@ -394,29 +478,29 @@ class AIService {
   static Future<List<String>> gerarPickLines(String lang) async {
     final idioma = _idiomaNomes[lang] ?? 'English';
     final cultura = _idiomaCultura[lang] ?? _idiomaCultura['en']!;
+
+    // Exemplos nativos no idioma correto — evita repetição
+    final exemplosNativos = _pickLineExemplos[lang] ?? _pickLineExemplos['en']!;
+    final exStr = exemplosNativos.map((e) => '- "$e"').join('\n');
+
     final system = 'You are the undisputed Gen Z seduction master. Every line makes her drop what she is doing and reply.\n'
         '$cultura\n'
-        'LANGUAGE: Write ONLY in $idioma.\n'
-        'CERTIFIED LINES (match this EXACT energy and boldness for $idioma):\n'
-        '- "Tem espaço pra mais uma língua na sua boca?"\n'
-        '- "Que tal um encontro? Eu prometo não morder... a menos que você peça"\n'
-        '- "Perigo detectado. Tarde demais pra fugir."\n'
-        '- "Assim a gente não vai a lugar nenhum — a não ser que seja esse o plano"\n'
-        '- "Você tem cara de quem mente no currículo e ainda consegue o emprego"\n'
-        '- "Tô tentando ser educado mas você não facilita"\n'
-        '- "Posso te salvar nos contatos como problema gostoso?"\n'
-        '- "Você faz isso com todo mundo ou só com quem merece atenção?"\n'
-        '- "Teu sorriso é tão irresistível que eu precisaria de proteção"\n'
-        '- "Denunciando seu perfil por perturbar a paz mental"\n'
-        'ENERGY: Bold. Psychological tension. Double meaning. Makes her laugh AND feel something at the same time.\n'
+        'LANGUAGE: Write ONLY in $idioma. Every single line MUST be in $idioma.\n'
+        'CERTIFIED NATIVE EXAMPLES IN $idioma (match this EXACT energy and boldness):\n'
+        '$exStr\n'
+        'CRITICAL: Create 6 NEW ORIGINAL lines in $idioma. '
+        'DO NOT copy or translate the examples — use them only as style reference.\n'
+        'Each generation must produce different lines from previous ones.\n'
+        'ENERGY: Bold. Psychological tension. Double meaning. Makes her laugh AND feel something.\n'
         'GOAL: She drops what she is doing and replies immediately.\n'
-        'NEVER: wifi, coffee dates, "you are beautiful", generic, boring, try-hard, explicit.\n'
+        'NEVER: wifi, coffee dates, generic compliments, boring, try-hard, explicit.\n'
         'FORMAT: Exactly 6 lines in $idioma, one per line, nothing else.';
+
     return _chamarDual(
       system,
-      'Generate 6 irresistible Gen Z pick-up lines in $idioma. '
-      'They must create instant psychological tension and make her reply immediately. '
-      'Match the certified examples energy. Output only the 6 lines.',
+      'Generate 6 BRAND NEW irresistible Gen Z pick-up lines in $idioma. '
+      'They must be original — not copies of the examples. '
+      'Create instant psychological tension. Output only the 6 lines in $idioma.',
     );
   }
 

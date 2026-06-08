@@ -1,8 +1,8 @@
-name: upcrush
-description: "UpCrush — O teu copiloto de conversa."
+name: upcrush ai
+description: "UpCrush AI— O teu copiloto de conversa."
 publish_to: 'none'
 
-version: 1.0.3
+version: 1.0.4
 
 environment:
   sdk: ^3.11.1
