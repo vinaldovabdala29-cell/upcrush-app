@@ -4,7 +4,6 @@ import '../widgets/settings_sheet.dart';
 import '../../../main.dart';
 import '../theme/app_localizations.dart';
 import 'screenshot_screen.dart';
-import 'chatbot_screen.dart';
 import 'opener_screen.dart';
 import 'pick_lines_screen.dart';
 
@@ -218,31 +217,6 @@ class _HomeBody extends StatelessWidget {
                           ),
                           const SizedBox(height: 10),
 
-                          // ── 4. Chat IA ────────────────────────────────
-                          Center(
-                            child: GestureDetector(
-                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatbotScreen())),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
-                                decoration: BoxDecoration(
-                                  color: Colors.black,
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(color: Colors.black.withOpacity(0.3), blurRadius: 6, offset: const Offset(0, 2)),
-                                  ],
-                                ),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 13),
-                                    SizedBox(width: 6),
-                                    Text("Chat IA", style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w700)),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 20),
                         ],
                       ),
                     ),

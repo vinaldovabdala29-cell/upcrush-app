@@ -81,20 +81,11 @@ class _OpenerScreenState extends State<OpenerScreen>
     }
     final picker = ImagePicker();
     try {
-      final img = await picker.pickImage(source: ImageSource.gallery, imageQuality: 45);
+      final img = await picker.pickImage(source: ImageSource.gallery, imageQuality: 25);
       if (img == null) { if (mounted) Navigator.pop(context); return; }
-
       final bytes = await File(img.path).readAsBytes();
       final base64 = base64Encode(bytes);
-
-      setState(() {
-        _imagem = File(img.path);
-        _base64Image = base64;
-        _analisando = true;
-        _erro = false;
-        _respostas = [];
-      });
-
+      setState(() { _imagem = File(img.path); _base64Image = base64; _analisando = true; _erro = false; _respostas = []; });
       final respostas = await AIService.gerarOpenerDeImagem(base64, _estiloAtual, appLang.languageCode);
       if (!mounted) return;
       setState(() { _respostas = respostas; _analisando = false; });
@@ -109,9 +100,7 @@ class _OpenerScreenState extends State<OpenerScreen>
     try {
       final respostas = await AIService.gerarOpenerDeImagem(_base64Image!, estilo, appLang.languageCode);
       if (mounted) setState(() { _respostas = respostas; _loadingEstilo = false; });
-    } catch (e) {
-      if (mounted) setState(() => _loadingEstilo = false);
-    }
+    } catch (e) { if (mounted) setState(() => _loadingEstilo = false); }
   }
 
   Future<void> _gerarDiferente() async {
@@ -120,9 +109,7 @@ class _OpenerScreenState extends State<OpenerScreen>
     try {
       final respostas = await AIService.gerarOpenerDeImagem(_base64Image!, _estiloAtual, appLang.languageCode);
       if (mounted) setState(() { _respostas = respostas; _loadingEstilo = false; });
-    } catch (e) {
-      if (mounted) setState(() => _loadingEstilo = false);
-    }
+    } catch (e) { if (mounted) setState(() => _loadingEstilo = false); }
   }
 
   Future<void> _copiar(String texto, int index) async {
@@ -210,24 +197,35 @@ class _OpenerScreenState extends State<OpenerScreen>
   }
 
   Widget _buildImagePreview() {
-    return Container(
-      height: 320,
-      width: double.infinity,
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4))]),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(18),
-        child: Stack(fit: StackFit.expand, children: [
-          Image.file(_imagem!, fit: BoxFit.cover),
-          if (_analisando) Container(color: Colors.black.withOpacity(0.25)),
-          Positioned(top: 10, left: 10, child: _corner(top: true, left: true)),
-          Positioned(top: 10, right: 10, child: _corner(top: true, left: false)),
-          Positioned(bottom: 10, left: 10, child: _corner(top: false, left: true)),
-          Positioned(bottom: 10, right: 10, child: _corner(top: false, left: false)),
-        ]),
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.fromLTRB(16, 8, 16, 6),
+          child: Text('UpCrush AI',
+            style: TextStyle(
+              color: Color(0xFFFF2D55),
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5))),
+        Container(
+          height: 360,
+          width: double.infinity,
+          margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4))]),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: Stack(fit: StackFit.expand, children: [
+              Image.file(_imagem!, fit: BoxFit.cover),
+              if (_analisando) Container(color: Colors.black.withOpacity(0.25)),
+              Positioned(top: 8, left: 8, child: _corner(top: true, left: true)),
+              Positioned(top: 8, right: 8, child: _corner(top: true, left: false)),
+              Positioned(bottom: 8, left: 8, child: _corner(top: false, left: true)),
+              Positioned(bottom: 8, right: 8, child: _corner(top: false, left: false)),
+            ]))),
+      ],
     );
   }
 
@@ -334,7 +332,7 @@ class _OpenerScreenState extends State<OpenerScreen>
       ]));
     }
     return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       itemCount: _respostas.length,
       itemBuilder: (_, index) {
         final isCopied = _copiedIndex == index;
@@ -343,31 +341,29 @@ class _OpenerScreenState extends State<OpenerScreen>
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 200),
             margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
               color: isCopied ? _success.withOpacity(_dark ? 0.12 : 0.08) : _cardBg,
-              borderRadius: BorderRadius.circular(18),
+              borderRadius: BorderRadius.circular(16),
               border: Border.all(
                 color: isCopied ? _success.withOpacity(0.4) : _cardBorder,
                 width: isCopied ? 1.5 : 1),
               boxShadow: _dark ? [] : [
-                BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 10, offset: const Offset(0, 3)),
-                BoxShadow(color: Colors.white.withOpacity(0.8), blurRadius: 0, offset: const Offset(0, 1)),
-              ]),
+                BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(child: Text(_respostas[index],
-                style: TextStyle(color: _textPrimary, fontSize: 14, height: 1.5, fontWeight: FontWeight.w400))),
-              const SizedBox(width: 12),
+                style: TextStyle(color: _textPrimary, fontSize: 13, height: 1.4, fontWeight: FontWeight.w400))),
+              const SizedBox(width: 10),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
                   color: isCopied ? _success.withOpacity(0.12) : _accent.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(10),
                   border: Border.all(color: isCopied ? _success.withOpacity(0.4) : _accent.withOpacity(0.2))),
                 child: Text(
                   isCopied ? appLang.resultCopied : appLang.resultCopy,
-                  style: TextStyle(color: isCopied ? _success : _accent, fontSize: 11, fontWeight: FontWeight.w600))),
+                  style: TextStyle(color: isCopied ? _success : _accent, fontSize: 10, fontWeight: FontWeight.w600))),
             ]),
           ),
         );
