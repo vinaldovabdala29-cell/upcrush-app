@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/ai_service.dart';
-import '../services/revenue_cat_service.dart';
-import '../widgets/paywall_screen.dart';
 import '../../../main.dart';
 
 class PickLinesScreen extends StatefulWidget {
@@ -71,13 +69,6 @@ class _PickLinesScreenState extends State<PickLinesScreen>
   }
 
   Future<void> _gerar() async {
-    final premium = await RevenueCatService.isPremium();
-    if (!mounted) return;
-    if (!premium) {
-      final result = await Navigator.push(context, MaterialPageRoute(
-        fullscreenDialog: true, builder: (_) => const PaywallFlow()));
-      if (result != true) { if (mounted) Navigator.pop(context); return; }
-    }
     setState(() { _loading = true; _copied = false; });
     try {
       final lines = await AIService.gerarPickLines(appLang.languageCode);

@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/ai_service.dart';
-import '../services/revenue_cat_service.dart';
-import '../widgets/paywall_screen.dart';
 import '../widgets/background_blobs.dart';
 import '../../../main.dart';
 
@@ -72,13 +70,6 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   void _onThemeChange() { if (mounted) setState(() {}); }
 
   Future<void> _processarImagem() async {
-    final premium = await RevenueCatService.isPremium();
-    if (!mounted) return;
-    if (!premium) {
-      final result = await Navigator.push(context, MaterialPageRoute(
-        fullscreenDialog: true, builder: (_) => const PaywallFlow()));
-      if (result != true) { if (mounted) Navigator.pop(context); return; }
-    }
     final picker = ImagePicker();
     try {
       final img = await picker.pickImage(source: ImageSource.gallery, imageQuality: 25);
