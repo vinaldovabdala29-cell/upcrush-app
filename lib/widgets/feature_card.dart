@@ -3,113 +3,87 @@ import 'package:flutter/material.dart';
 class FeatureCard extends StatelessWidget {
   final String title;
   final String subtitle;
+  final VoidCallback onTap;
   final IconData icon;
   final List<Color> iconBgColors;
   final Color iconShadowColor;
   final bool isDarkMode;
-  final VoidCallback onTap;
+  final Color? subtitleColor;
 
   const FeatureCard({
     super.key,
     required this.title,
     required this.subtitle,
+    required this.onTap,
     required this.icon,
     required this.iconBgColors,
     required this.iconShadowColor,
     required this.isDarkMode,
-    required this.onTap,
+    this.subtitleColor,
   });
 
   @override
   Widget build(BuildContext context) {
+    final cardBg = isDarkMode
+        ? Colors.white.withOpacity(0.06)
+        : Colors.white.withOpacity(0.9);
+    final titleColor = isDarkMode ? Colors.white : const Color(0xFF1C1C1E);
+    final subColor = subtitleColor
+        ?? (isDarkMode ? Colors.white.withOpacity(0.85) : const Color(0xFF333333));
+
     return GestureDetector(
       onTap: onTap,
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 26),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 22),
         decoration: BoxDecoration(
-          color: isDarkMode
-              ? Colors.white.withOpacity(0.06)
-              : Colors.white.withOpacity(0.75),
+          color: cardBg,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isDarkMode
-                ? Colors.white.withOpacity(0.07)
-                : Colors.white.withOpacity(0.9),
-          ),
-          boxShadow: isDarkMode
-              ? []
-              : [
-                  BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 16, offset: const Offset(0, 4)),
-                  BoxShadow(color: Colors.white.withOpacity(0.8), blurRadius: 0, offset: const Offset(0, 1)),
-                ],
-        ),
-        child: Row(
-          children: [
-            // Ícone grande como o Plug AI
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: iconBgColors,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: iconShadowColor.withOpacity(0.4),
-                    blurRadius: 14,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Icon(icon, color: Colors.white, size: 30),
-            ),
-
-            const SizedBox(width: 20),
-
-            // Texto
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: isDarkMode ? Colors.white : const Color(0xFF1C1C1E),
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                  const SizedBox(height: 5),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: isDarkMode
-                          ? Colors.white.withOpacity(0.4)
-                          : Colors.black.withOpacity(0.4),
-                      fontWeight: FontWeight.w400,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Seta
-            Icon(
-              Icons.arrow_forward_ios_rounded,
-              size: 16,
-              color: isDarkMode
-                  ? Colors.white.withOpacity(0.2)
-                  : Colors.black.withOpacity(0.18),
-            ),
-          ],
-        ),
+                ? Colors.white.withOpacity(0.08)
+                : Colors.black.withOpacity(0.06)),
+          boxShadow: isDarkMode ? [] : [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10, offset: const Offset(0, 3)),
+          ]),
+        child: Row(crossAxisAlignment: CrossAxisAlignment.center, children: [
+          // Icon
+          Container(
+            width: 52, height: 52,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(colors: iconBgColors),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [BoxShadow(
+                color: iconShadowColor.withOpacity(0.35),
+                blurRadius: 10, offset: const Offset(0, 4))]),
+            child: Icon(icon, color: Colors.white, size: 26)),
+          const SizedBox(width: 16),
+          // Texts
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title,
+                  style: TextStyle(
+                    color: titleColor,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3)),
+                const SizedBox(height: 4),
+                Text(subtitle,
+                  style: TextStyle(
+                    color: subColor,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    height: 1.35)),
+              ])),
+          const SizedBox(width: 8),
+          Icon(Icons.arrow_forward_ios_rounded,
+            color: isDarkMode ? Colors.white24 : Colors.black26,
+            size: 14),
+        ]),
       ),
     );
   }

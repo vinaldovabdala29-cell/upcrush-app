@@ -2,7 +2,7 @@ name: upcrush_app
 description: "UpCrush AI— O teu copiloto de conversa."
 publish_to: 'none'
 
-version: 1.0.6
+version: 1.0.7
 
 environment:
   sdk: ^3.11.1
@@ -27,3 +27,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+    - assets/images/casal1.jpg
+    - assets/images/casal2.jpg
+    - assets/images/casal3.jpg

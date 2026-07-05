@@ -6,6 +6,7 @@ import 'screens/onboarding_screen.dart';
 import 'theme/app_localizations.dart';
 import 'services/credits_service.dart';
 import 'services/revenue_cat_service.dart';
+import 'widgets/paywall_screen.dart';
 
 final ValueNotifier<AppLocalizations> appLangNotifier =
     ValueNotifier(AppLocalizations.fromDevice());
@@ -39,7 +40,6 @@ void main() async {
     appLangNotifier.value = AppLocalizations(savedLang);
   }
   isDarkModeNotifier.value = prefs.getBool('is_dark_mode') ?? false;
-
 
   await Future.wait([
     CreditsService.init(),
@@ -76,7 +76,7 @@ class UpCrushApp extends StatelessWidget {
                 secondary: Color(0xFF007AFF),
               ),
               appBarTheme: const AppBarTheme(
-                  backgroundColor: Colors.transparent, elevation: 0),
+                backgroundColor: Colors.transparent, elevation: 0),
             ),
             darkTheme: ThemeData(
               useMaterial3: true,
@@ -87,7 +87,7 @@ class UpCrushApp extends StatelessWidget {
                 secondary: Color(0xFF0A84FF),
               ),
               appBarTheme: const AppBarTheme(
-                  backgroundColor: Colors.transparent, elevation: 0),
+                backgroundColor: Colors.transparent, elevation: 0),
             ),
             home: const _AppEntry(),
           );
@@ -100,22 +100,51 @@ class UpCrushApp extends StatelessWidget {
 class _AppEntry extends StatelessWidget {
   const _AppEntry();
 
-  static Future<bool> _check() async {
+  static Future<Map<String, bool>> _check() async {
     final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool('onboarding_done') ?? false;
+    final onboardingDone = prefs.getBool('onboarding_done') ?? false;
+    final isPremium = await RevenueCatService.isPremium();
+    return {'onboarding': onboardingDone, 'premium': isPremium};
   }
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<bool>(
+    return FutureBuilder<Map<String, bool>>(
       future: _check(),
       builder: (context, snap) {
-        if (!snap.hasData) return const Scaffold(
-          backgroundColor: Color(0xFF08080F),
-          body: Center(child: CircularProgressIndicator(color: Color(0xFFFF2D55))),
-        );
-        return snap.data! ? const HomeScreen() : const OnboardingScreen();
+        if (!snap.hasData) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF08080F),
+            body: Center(
+              child: CircularProgressIndicator(color: Color(0xFFFF2D55))));
+        }
+        final onboardingDone = snap.data!['onboarding']!;
+        final isPremium = snap.data!['premium']!;
+
+        // 1. Onboarding primeiro
+        if (!onboardingDone) return const OnboardingScreen();
+        // 2. Paywall rígido se não for premium
+        if (!isPremium) return const _PaywallGate();
+        // 3. Home
+        return const HomeScreen();
       },
+    );
+  }
+}
+
+// Paywall rígido — sem botão de fechar, bloqueia back
+class _PaywallGate extends StatelessWidget {
+  const _PaywallGate();
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async => false,
+      child: PaywallFlow(
+        onSuccess: () => Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomeScreen())),
+      ),
     );
   }
 }

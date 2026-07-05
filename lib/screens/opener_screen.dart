@@ -69,6 +69,15 @@ class _OpenerScreenState extends State<OpenerScreen>
 
   void _onThemeChange() { if (mounted) setState(() {}); }
 
+  String _erroMsgLocal(String lang) {
+    switch (lang) {
+      case 'de': return 'Verbindungsfehler.\nPrüfe deine Verbindung und versuche es erneut.';
+      case 'es': return 'Error de conexión.\nVerifica tu conexión e inténtalo de nuevo.';
+      case 'pt': return 'Algo deu errado.\nVerifica a conexão e tenta novamente.';
+      default:   return 'Something went wrong.\nCheck your connection and try again.';
+    }
+  }
+
   Future<void> _processarImagem() async {
     final picker = ImagePicker();
     try {
@@ -76,31 +85,38 @@ class _OpenerScreenState extends State<OpenerScreen>
       if (img == null) { if (mounted) Navigator.pop(context); return; }
       final bytes = await File(img.path).readAsBytes();
       final base64 = base64Encode(bytes);
+      // ✅ Limpa respostas antigas antes de gerar
       setState(() { _imagem = File(img.path); _base64Image = base64; _analisando = true; _erro = false; _respostas = []; });
       final respostas = await AIService.gerarOpenerDeImagem(base64, _estiloAtual, appLang.languageCode);
       if (!mounted) return;
       setState(() { _respostas = respostas; _analisando = false; });
     } catch (e) {
-      if (mounted) setState(() { _analisando = false; _erro = true; _erroMsg = appLang.errorGeneral; });
+      if (mounted) setState(() { _analisando = false; _erro = true; _erroMsg = _erroMsgLocal(appLang.languageCode); });
     }
   }
 
   Future<void> _gerarComEstilo(String estilo) async {
     if (_base64Image == null) return;
-    setState(() { _estiloAtual = estilo; _loadingEstilo = true; });
+    // ✅ Limpa respostas antigas imediatamente
+    setState(() { _estiloAtual = estilo; _loadingEstilo = true; _respostas = []; });
     try {
       final respostas = await AIService.gerarOpenerDeImagem(_base64Image!, estilo, appLang.languageCode);
       if (mounted) setState(() { _respostas = respostas; _loadingEstilo = false; });
-    } catch (e) { if (mounted) setState(() => _loadingEstilo = false); }
+    } catch (e) {
+      if (mounted) setState(() { _loadingEstilo = false; _erro = true; _erroMsg = _erroMsgLocal(appLang.languageCode); });
+    }
   }
 
   Future<void> _gerarDiferente() async {
     if (_base64Image == null) return;
-    setState(() => _loadingEstilo = true);
+    // ✅ Limpa respostas antigas imediatamente
+    setState(() { _loadingEstilo = true; _respostas = []; });
     try {
       final respostas = await AIService.gerarOpenerDeImagem(_base64Image!, _estiloAtual, appLang.languageCode);
       if (mounted) setState(() { _respostas = respostas; _loadingEstilo = false; });
-    } catch (e) { if (mounted) setState(() => _loadingEstilo = false); }
+    } catch (e) {
+      if (mounted) setState(() { _loadingEstilo = false; _erro = true; _erroMsg = _erroMsgLocal(appLang.languageCode); });
+    }
   }
 
   Future<void> _copiar(String texto, int index) async {
@@ -165,22 +181,20 @@ class _OpenerScreenState extends State<OpenerScreen>
       isDark: _dark,
       child: Column(children: [
         if (_imagem != null) _buildImagePreview(),
-        if (_imagem != null && !_analisando) _buildEstilosBar(estilos),
-        Expanded(child: _analisando ? _buildScanOverlay() : _buildRespostas()),
-        if (_respostas.isNotEmpty)
+        if (_imagem != null && !_analisando && !_loadingEstilo) _buildEstilosBar(estilos),
+        Expanded(child: (_analisando || _loadingEstilo) ? _buildScanOverlay() : _buildRespostas()),
+        if (_respostas.isNotEmpty && !_loadingEstilo)
           Padding(
             padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(context).padding.bottom + 16),
             child: SizedBox(width: double.infinity, height: 54,
               child: ElevatedButton(
-                onPressed: _loadingEstilo ? null : _gerarDiferente,
+                onPressed: _gerarDiferente,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _accent, foregroundColor: Colors.white,
-                  disabledBackgroundColor: _accent.withOpacity(0.5),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                   elevation: 0),
-                child: _loadingEstilo
-                  ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                  : Text(appLang.resultMoreButton, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+                child: Text(appLang.resultMoreButton,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
               )),
           ),
       ]),
@@ -194,14 +208,10 @@ class _OpenerScreenState extends State<OpenerScreen>
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 8, 16, 6),
           child: Text('UpCrush AI',
-            style: TextStyle(
-              color: Color(0xFFFF2D55),
-              fontSize: 26,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.5))),
+            style: TextStyle(color: Color(0xFFFF2D55), fontSize: 26,
+              fontWeight: FontWeight.w900, letterSpacing: -0.5))),
         Container(
-          height: 360,
-          width: double.infinity,
+          height: 360, width: double.infinity,
           margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(18),
@@ -210,7 +220,7 @@ class _OpenerScreenState extends State<OpenerScreen>
             borderRadius: BorderRadius.circular(18),
             child: Stack(fit: StackFit.expand, children: [
               Image.file(_imagem!, fit: BoxFit.cover),
-              if (_analisando) Container(color: Colors.black.withOpacity(0.25)),
+              if (_analisando || _loadingEstilo) Container(color: Colors.black.withOpacity(0.25)),
               Positioned(top: 8, left: 8, child: _corner(top: true, left: true)),
               Positioned(top: 8, right: 8, child: _corner(top: true, left: false)),
               Positioned(bottom: 8, left: 8, child: _corner(top: false, left: true)),
@@ -294,34 +304,6 @@ class _OpenerScreenState extends State<OpenerScreen>
 
   Widget _buildRespostas() {
     if (_respostas.isEmpty) return const SizedBox.shrink();
-    if (_loadingEstilo) {
-      final lang = appLang.languageCode;
-      return Center(child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        AnimatedBuilder(
-          animation: _pulseAnim,
-          builder: (_, __) => Transform.scale(
-            scale: 0.9 + (_pulseAnim.value * 0.1),
-            child: const Text('🌶️', style: TextStyle(fontSize: 52)))),
-        const SizedBox(height: 20),
-        AnimatedBuilder(
-          animation: _pulseAnim,
-          builder: (_, __) => Opacity(
-            opacity: _pulseAnim.value,
-            child: Text(_getFunLoadingMsg(lang),
-              style: const TextStyle(color: _accent, fontSize: 16, fontWeight: FontWeight.w700),
-              textAlign: TextAlign.center))),
-        const SizedBox(height: 12),
-        SizedBox(width: 160, child: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: AnimatedBuilder(
-            animation: _scanAnim,
-            builder: (_, __) => LinearProgressIndicator(
-              value: _scanAnim.value,
-              backgroundColor: _accent.withOpacity(0.12),
-              valueColor: const AlwaysStoppedAnimation(_accent),
-              minHeight: 3)))),
-      ]));
-    }
     return ListView.builder(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       itemCount: _respostas.length,
@@ -343,7 +325,7 @@ class _OpenerScreenState extends State<OpenerScreen>
                 BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]),
             child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Expanded(child: Text(_respostas[index],
-                style: TextStyle(color: _textPrimary, fontSize: 13, height: 1.4, fontWeight: FontWeight.w400))),
+                style: TextStyle(color: _textPrimary, fontSize: 13, height: 1.4))),
               const SizedBox(width: 10),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
@@ -376,7 +358,7 @@ class _OpenerScreenState extends State<OpenerScreen>
           style: TextStyle(color: textColor, fontSize: 15, height: 1.5)),
         const SizedBox(height: 32),
         ElevatedButton(
-          onPressed: () { setState(() { _erro = false; _imagem = null; _base64Image = null; _respostas = []; }); _processarImagem(); },
+          onPressed: () { setState(() { _erro = false; _respostas = []; }); _gerarDiferente(); },
           style: ElevatedButton.styleFrom(backgroundColor: _accent, foregroundColor: Colors.white,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
           child: Text(lang.errorRetry)),
