@@ -119,13 +119,10 @@ class _AppEntry extends StatelessWidget {
               child: CircularProgressIndicator(color: Color(0xFFFF2D55))));
         }
         final onboardingDone = snap.data!['onboarding']!;
-        final isPremium = snap.data!['premium']!;
 
         // 1. Onboarding primeiro
         if (!onboardingDone) return const OnboardingScreen();
-        // 2. Paywall rígido se não for premium
-        if (!isPremium) return const _PaywallGate();
-        // 3. Home
+        // 2. Home (paywall temporariamente desativado)
         return const HomeScreen();
       },
     );
