@@ -1,25 +1,63 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
+
+import '../../../main.dart';
 import '../widgets/feature_card.dart';
 import '../widgets/settings_sheet.dart';
-import '../../../main.dart';
-import '../theme/app_localizations.dart';
+
 import 'screenshot_screen.dart';
 import 'opener_screen.dart';
 import 'pick_lines_screen.dart';
 import 'chatbot_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
   @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _selectedIndex = 0;
+
+  void _selectTab(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<AppLocalizations>(
+    return ValueListenableBuilder(
       valueListenable: appLangNotifier,
       builder: (context, lang, _) {
-        return ValueListenableBuilder<bool>(
+        return ValueListenableBuilder(
           valueListenable: isDarkModeNotifier,
           builder: (context, isDark, _) {
-            return _HomeBody(isDark: isDark);
+            return Scaffold(
+              body: Stack(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 64),
+                    child: IndexedStack(
+                      index: _selectedIndex,
+                      children: [
+                        _HomeContent(key: ValueKey(lang.languageCode)),
+                        const ChatbotScreen(embedded: true),
+                      ],
+                    ),
+                  ),
+                  Positioned(
+                    left: 0, right: 0, bottom: 0,
+                    child: _BottomNavigation(
+                      selectedIndex: _selectedIndex,
+                      isDark: isDark,
+                      onSelected: _selectTab,
+                    ),
+                  ),
+                ],
+              ),
+            );
           },
         );
       },
@@ -27,33 +65,47 @@ class HomeScreen extends StatelessWidget {
   }
 }
 
-class _HomeBody extends StatelessWidget {
-  final bool isDark;
-  const _HomeBody({required this.isDark});
+// ===============================================================
+// HOME CONTENT
+// ===============================================================
 
-  Color get _bg => isDark ? const Color(0xFF212121) : const Color(0xFFF2F2F7);
-  Color get _textPrimary => isDark ? Colors.white : const Color(0xFF1C1C1E);
-  Color get _textSecondary => isDark ? Colors.white38 : Colors.black38;
+class _HomeContent extends StatelessWidget {
+  const _HomeContent({super.key});
 
-  void _openSettings(BuildContext context) {
+  bool get _dark => isDarkModeNotifier.value;
+
+  Color get _bg => _dark ? const Color(0xFF212121) : const Color(0xFFF2F2F7);
+  Color get _textPrimary => _dark ? Colors.white : const Color(0xFF1C1C1E);
+  Color get _textSecondary => _dark ? Colors.white38 : Colors.black38;
+
+  Future<void> _openSettings(BuildContext context) async {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => ValueListenableBuilder<bool>(
-        valueListenable: isDarkModeNotifier,
-        builder: (context, dark, _) => SettingsSheet(
-          isDarkMode: dark,
-          onThemeChanged: (val) => isDarkModeNotifier.value = val,
-          onLanguageChanged: (lang) {},
-        ),
-      ),
+      builder: (_) {
+        return ValueListenableBuilder(
+          valueListenable: isDarkModeNotifier,
+          builder: (context, dark, _) {
+            return SettingsSheet(
+              isDarkMode: dark,
+              onThemeChanged: (value) {
+                isDarkModeNotifier.value = value;
+              },
+              onLanguageChanged: (_) {},
+            );
+          },
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return ValueListenableBuilder(
+      valueListenable: appLangNotifier,
+      builder: (context, lang, _) {
+        return Scaffold(
       backgroundColor: _bg,
       body: Stack(
         children: [
@@ -63,7 +115,7 @@ class _HomeBody extends StatelessWidget {
               width: 280, height: 280,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFFFF2D55).withOpacity(isDark ? 0.07 : 0.08)),
+                color: const Color(0xFFFF2D55).withOpacity(_dark ? 0.07 : 0.08)),
             ),
           ),
           Positioned(
@@ -72,7 +124,7 @@ class _HomeBody extends StatelessWidget {
               width: 220, height: 220,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF007AFF).withOpacity(isDark ? 0.06 : 0.07)),
+                color: const Color(0xFF007AFF).withOpacity(_dark ? 0.06 : 0.07)),
             ),
           ),
           SafeArea(
@@ -90,9 +142,9 @@ class _HomeBody extends StatelessWidget {
                         child: Container(
                           width: 40, height: 40,
                           decoration: BoxDecoration(
-                            color: isDark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.7),
+                            color: _dark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.7),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06))),
+                            border: Border.all(color: _dark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06))),
                           child: Icon(Icons.menu_rounded, color: _textPrimary, size: 20)),
                       ),
                       const Text("🌶️", style: TextStyle(fontSize: 28)),
@@ -106,7 +158,7 @@ class _HomeBody extends StatelessWidget {
                       TextSpan(text: "Up",
                         style: TextStyle(
                           fontSize: 42, fontWeight: FontWeight.w900,
-                          color: isDark ? Colors.white : const Color(0xFF1C1C1E),
+                          color: _dark ? Colors.white : const Color(0xFF1C1C1E),
                           letterSpacing: -1.5, height: 1.0)),
                       const TextSpan(text: "Crush",
                         style: TextStyle(
@@ -153,6 +205,8 @@ class _HomeBody extends StatelessWidget {
 
                   Expanded(
                     child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.only(bottom: 100),
                       child: Column(
                         children: [
                           // ── 1. Screenshot ──────────────────────────────
@@ -174,8 +228,8 @@ class _HomeBody extends StatelessWidget {
                             icon: Icons.camera_alt_rounded,
                             iconBgColors: const [Color(0xFFFF2D55), Color(0xFFFF6B81)],
                             iconShadowColor: const Color(0xFFFF2D55),
-                            isDarkMode: isDark,
-                            subtitleColor: isDark ? Colors.white70 : const Color(0xFF444444),
+                            isDarkMode: _dark,
+                            subtitleColor: _dark ? Colors.white70 : const Color(0xFF444444),
                             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScreenshotScreen())),
                           ),
                           const SizedBox(height: 14),
@@ -199,8 +253,8 @@ class _HomeBody extends StatelessWidget {
                             icon: Icons.rocket_launch_rounded,
                             iconBgColors: const [Color(0xFFFF9500), Color(0xFFFFCC02)],
                             iconShadowColor: const Color(0xFFFF9500),
-                            isDarkMode: isDark,
-                            subtitleColor: isDark ? Colors.white70 : const Color(0xFF444444),
+                            isDarkMode: _dark,
+                            subtitleColor: _dark ? Colors.white70 : const Color(0xFF444444),
                             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PickLinesScreen())),
                           ),
                           const SizedBox(height: 14),
@@ -224,43 +278,11 @@ class _HomeBody extends StatelessWidget {
                             icon: Icons.chat_bubble_rounded,
                             iconBgColors: const [Color(0xFF007AFF), Color(0xFF5AC8FA)],
                             iconShadowColor: const Color(0xFF007AFF),
-                            isDarkMode: isDark,
-                            subtitleColor: isDark ? Colors.white70 : const Color(0xFF444444),
+                            isDarkMode: _dark,
+                            subtitleColor: _dark ? Colors.white70 : const Color(0xFF444444),
                             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OpenerScreen())),
                           ),
-                          const SizedBox(height: 10),
-
-                          // ── 4. UpCrush AI Coach ────────────────────────
-                          Center(
-                            child: GestureDetector(
-                              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ChatbotScreen())),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 22),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [Color(0xFFFF2D55), Color(0xFFFF6B81)],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight),
-                                  borderRadius: BorderRadius.circular(22),
-                                  boxShadow: [BoxShadow(
-                                    color: const Color(0xFFFF2D55).withOpacity(0.35),
-                                    blurRadius: 10, offset: const Offset(0, 4))]),
-                                child: const Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text('🧠', style: TextStyle(fontSize: 16)),
-                                    SizedBox(width: 8),
-                                    Text('UpCrush AI Coach',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w800,
-                                        letterSpacing: 0.2)),
-                                  ]),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: 20),
                         ],
                       ),
                     ),
@@ -270,6 +292,113 @@ class _HomeBody extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+      },
+    );
+  }
+}
+
+// ===============================================================
+// BOTTOM NAVIGATION
+// ===============================================================
+
+class _BottomNavigation extends StatelessWidget {
+  final int selectedIndex;
+  final bool isDark;
+  final ValueChanged<int> onSelected;
+
+  const _BottomNavigation({
+    required this.selectedIndex,
+    required this.isDark,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bg = isDark ? const Color(0xFF0A0A0F) : Colors.white;
+
+    return ClipRect(
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+        child: Container(
+          decoration: BoxDecoration(
+            color: bg.withOpacity(isDark ? 0.55 : 0.65),
+            border: Border(
+              top: BorderSide(
+                color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06),
+                width: 0.5,
+              ),
+            ),
+          ),
+          child: SafeArea(
+            top: false,
+            child: SizedBox(
+              height: 64,
+              child: Row(
+                children: [
+                  _item(index: 0, label: _homeLabel()),
+                  _item(index: 1, label: 'Coach'),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _homeLabel() {
+    switch (appLang.languageCode) {
+      case 'de': return 'Home';
+      case 'es': return 'Inicio';
+      case 'pt': return 'Casa';
+      default:   return 'Home';
+    }
+  }
+
+  Widget _item({
+    required int index,
+    required String label,
+  }) {
+    final selected = selectedIndex == index;
+    const accent = Color(0xFFFF2D55);
+
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => onSelected(index),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 200),
+              style: TextStyle(
+                fontSize: selected ? 16 : 15,
+                fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                letterSpacing: 0.2,
+                color: selected
+                  ? accent
+                  : (isDark ? Colors.white54 : Colors.black45),
+              ),
+              child: Text(label),
+            ),
+            const SizedBox(height: 6),
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOut,
+              height: 3,
+              width: selected ? 22 : 0,
+              decoration: BoxDecoration(
+                color: accent,
+                borderRadius: BorderRadius.circular(2),
+                boxShadow: selected ? [
+                  BoxShadow(color: accent.withOpacity(0.4), blurRadius: 6, offset: const Offset(0, 1)),
+                ] : [],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
