@@ -93,11 +93,19 @@ static const List<String> cantadaCategoriaKeys = [
 
 // NOVA CATEGORIA
 'criar_curiosidade',
+
+// INICIAR UMA CONVERSA
+'dar_bom_dia',
+'dar_boa_tarde',
+'dar_boa_noite',
+'como_foi_seu_dia',
+'puxar_assunto_do_nada',
+'comecar_com_quem_gosto',
 ];
 
 static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'elogios_duplo_sentido': {
-'pt': 'Elogios com duplo sentido',
+'pt': 'Duplo sentido 😏',
 'en': 'Compliments with double meaning',
 'de': 'Komplimente mit Doppeldeutigkeit',
 'es': 'Elogios con doble sentido',
@@ -109,7 +117,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'مجاملات ذات معنى مزدوج',
 },
 'meio_da_conversa': {
-'pt': 'No meio da conversa',
+'pt': 'Esquentar a conversa 🔥',
 'en': 'Mid-conversation',
 'de': 'Mitten im Gespräch',
 'es': 'En medio de la conversación',
@@ -121,7 +129,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'في منتصف المحادثة',
 },
 'abordagem_rua': {
-'pt': 'Abordagem na rua',
+'pt': 'Chegar pessoalmente 👀',
 'en': 'Street approach',
 'de': 'Ansprache auf der Straße',
 'es': 'Abordaje en la calle',
@@ -133,7 +141,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'التعارف في الشارع',
 },
 'respondendo_story': {
-'pt': 'Respondendo story',
+'pt': 'Responder story 📲',
 'en': 'Replying to a story',
 'de': 'Auf eine Story antworten',
 'es': 'Respondiendo a un story',
@@ -145,7 +153,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'الرد على القصة',
 },
 'conhecida': {
-'pt': 'Conhecida/o',
+'pt': 'Já se conhecem 😉',
 'en': 'Someone you know',
 'de': 'Bekannte Person',
 'es': 'Conocida/o',
@@ -157,7 +165,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'شخص تعرفه',
 },
 'esta_rindo': {
-'pt': 'Ela/ele está rindo',
+'pt': 'Ela/ele está rindo 😂',
 'en': 'They are laughing',
 'de': 'Sie/er lacht',
 'es': 'Ella/él se está riendo',
@@ -169,7 +177,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'هو/هي يضحك',
 },
 'te_olha_varias_vezes': {
-'pt': 'Ela/ele te olha várias vezes',
+'pt': 'Troca de olhares 👀',
 'en': 'They keep looking at you',
 'de': 'Sie/er schaut dich immer wieder an',
 'es': 'Ella/él te mira varias veces',
@@ -181,7 +189,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'ينظر إليك مرارًا',
 },
 'mexe_no_cabelo': {
-'pt': 'Ela/ele mexe no cabelo enquanto conversa',
+'pt': 'Mexe no cabelo 😏',
 'en': 'They play with their hair while talking',
 'de': 'Sie/er spielt beim Reden mit den Haaren',
 'es': 'Ella/él juega con el pelo al hablar',
@@ -193,7 +201,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'يعبث بشعره أثناء الحديث',
 },
 'provoca_voce': {
-'pt': 'Ela/ele provoca você',
+'pt': 'Ela/ele te provoca 😈',
 'en': 'They tease you',
 'de': 'Sie/er neckt dich',
 'es': 'Ella/él te provoca',
@@ -205,7 +213,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'يستفزك',
 },
 'diz_que_bonito': {
-'pt': 'Ela/ele diz que você é bonito',
+'pt': 'Ela/ele te elogiou 😏',
 'en': 'They say you are attractive',
 'de': 'Sie/er sagt, du bist attraktiv',
 'es': 'Ella/él dice que eres guapo/a',
@@ -217,7 +225,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'يقول إنك جذاب',
 },
 'diz_que_engracado': {
-'pt': 'Ela/ele diz que você é engraçado',
+'pt': 'Ela/ele te acha engraçado 😂',
 'en': 'They say you are funny',
 'de': 'Sie/er sagt, du bist lustig',
 'es': 'Ella/él dice que eres gracioso/a',
@@ -229,7 +237,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'يقول إنك مضحك',
 },
 'diz_nao_interessado': {
-'pt': 'Ela/ele diz que não está interessado',
+'pt': 'Não está interessada/o',
 'en': 'They say they are not interested',
 'de': 'Sie/er sagt, sie/er hat kein Interesse',
 'es': 'Ella/él dice que no está interesada/o',
@@ -241,7 +249,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'يقول إنه غير مهتم',
 },
 'elogios_coragem': {
-'pt': 'Elogios de coragem',
+'pt': 'Mostrar interesse 🔥',
 'en': 'Compliments on boldness',
 'de': 'Komplimente für Mut',
 'es': 'Elogios de valentía',
@@ -253,7 +261,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'مجاملات على الشجاعة',
 },
 'flerte_festa': {
-'pt': 'Flerte para festa',
+'pt': 'Flerte na festa 🪩',
 'en': 'Party flirting',
 'de': 'Flirten auf der Party',
 'es': 'Coqueteo para fiesta',
@@ -265,7 +273,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'غزل في الحفلة',
 },
 'ambiente_a_favor': {
-'pt': 'Usando o ambiente ao seu favor',
+'pt': 'Usar o momento 👀',
 'en': 'Using the environment to your advantage',
 'de': 'Die Umgebung zu deinem Vorteil nutzen',
 'es': 'Usando el entorno a tu favor',
@@ -277,7 +285,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'استخدام البيئة لصالحك',
 },
 'elogios_provocacao': {
-'pt': 'Elogios de provocação',
+'pt': 'Provocar ela/ele 😈',
 'en': 'Teasing compliments',
 'de': 'Neckende Komplimente',
 'es': 'Elogios provocadores',
@@ -289,7 +297,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'مجاملات استفزازية',
 },
 'elogios_ousados': {
-'pt': 'Elogios ousados',
+'pt': 'Aumentar a tensão 🫦',
 'en': 'Bold compliments',
 'de': 'Mutige Komplimente',
 'es': 'Elogios atrevidos',
@@ -301,7 +309,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'مجاملات جريئة',
 },
 'conversa_esfriou': {
-'pt': 'Conversa que esfriou',
+'pt': 'Conversa esfriou 🥶',
 'en': 'Conversation that went cold',
 'de': 'Gespräch ist eingeschlafen',
 'es': 'Conversación que se enfrió',
@@ -313,7 +321,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'محادثة بردت',
 },
 'monossilabos': {
-'pt': 'Ela/ele responde com monossílabos',
+'pt': 'Respostas secas 😶',
 'en': 'They reply with one-word answers',
 'de': 'Sie/er antwortet einsilbig',
 'es': 'Ella/él responde con monosílabos',
@@ -325,7 +333,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'يرد بكلمة واحدة',
 },
 'primeira_msg_match': {
-'pt': 'Primeira mensagem depois do match',
+'pt': 'Depois do match 💘',
 'en': 'First message after the match',
 'de': 'Erste Nachricht nach dem Match',
 'es': 'Primer mensaje después del match',
@@ -337,7 +345,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'أول رسالة بعد التطابق',
 },
 'match_sumiu': {
-'pt': 'Depois do match e sumiu',
+'pt': 'Match sumiu 👻',
 'en': 'After the match, they went quiet',
 'de': 'Nach dem Match verschwunden',
 'es': 'Después del match y desapareció',
@@ -349,7 +357,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'اختفى بعد التطابق',
 },
 'pedir_numero_instagram': {
-'pt': 'Pedir o número ou Instagram',
+'pt': 'Pedir Instagram 📲',
 'en': 'Asking for their number or Instagram',
 'de': 'Nach Nummer oder Instagram fragen',
 'es': 'Pedir el número o Instagram',
@@ -361,7 +369,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'طلب الرقم أو الإنستغرام',
 },
 'convidar_sair': {
-'pt': 'Convidar para sair',
+'pt': 'Chamar pra sair 🍸',
 'en': 'Asking them out',
 'de': 'Zum Date einladen',
 'es': 'Invitar a salir',
@@ -373,7 +381,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'دعوة للخروج',
 },
 'confirmar_date': {
-'pt': 'Confirmar um date já marcado',
+'pt': 'Confirmar o date 📅',
 'en': 'Confirming a planned date',
 'de': 'Ein geplantes Date bestätigen',
 'es': 'Confirmar una cita ya planeada',
@@ -385,7 +393,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'تأكيد موعد مخطط له',
 },
 'depois_ignorada': {
-'pt': 'Depois de ser ignorada/o',
+'pt': 'Fui ignorado 👻',
 'en': 'After being left on read',
 'de': 'Nachdem man ignoriert wurde',
 'es': 'Después de ser ignorada/o',
@@ -397,7 +405,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'بعد التجاهل',
 },
 'testando_voce': {
-'pt': 'Quando está testando você',
+'pt': 'Ela/ele está te testando 😏',
 'en': 'When they are testing you',
 'de': 'Wenn sie/er dich testet',
 'es': 'Cuando te está poniendo a prueba',
@@ -409,7 +417,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'عندما يختبرك',
 },
 'depois_primeiro_encontro': {
-'pt': 'Depois do primeiro encontro',
+'pt': 'Depois do date ❤️‍🔥',
 'en': 'After the first date',
 'de': 'Nach dem ersten Date',
 'es': 'Después de la primera cita',
@@ -421,7 +429,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'بعد الموعد الأول',
 },
 'elogio_primeiro_date': {
-'pt': 'Elogio para o primeiro date',
+'pt': 'Elogio pós-date 😏',
 'en': 'Compliment for the first date',
 'de': 'Kompliment für das erste Date',
 'es': 'Elogio para la primera cita',
@@ -433,7 +441,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'مجاملات للموعد الأول',
 },
 'retomar_conversa_antiga': {
-'pt': 'Retomar uma conversa antiga',
+'pt': 'Voltar a conversar 💬',
 'en': 'Reviving an old conversation',
 'de': 'Ein altes Gespräch wiederaufnehmen',
 'es': 'Retomar una conversación antigua',
@@ -447,7 +455,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 
 // NOVA CATEGORIA
 'criar_curiosidade': {
-'pt': 'Criar curiosidade',
+'pt': 'Deixar curiosa/o 👀',
 'en': 'Create curiosity',
 'de': 'Neugier wecken',
 'es': 'Crear curiosidad',
@@ -457,6 +465,79 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'pl': 'Wzbudzanie ciekawości',
 'ru': 'Создать интригу',
 'ar': 'إثارة الفضول',
+},
+
+'dar_bom_dia': {
+'pt': 'Dar bom dia ☀️',
+'en': 'Say good morning ☀️',
+'de': 'Guten Morgen schreiben ☀️',
+'es': 'Dar los buenos días ☀️',
+'fr': 'Dire bonjour ☀️',
+'it': 'Dire buongiorno ☀️',
+'tr': 'Günaydın de ☀️',
+'pl': 'Napisz dzień dobry ☀️',
+'ru': 'Пожелать доброго утра ☀️',
+'ar': 'قل صباح الخير ☀️',
+},
+'dar_boa_tarde': {
+'pt': 'Dar boa tarde 🌤️',
+'en': 'Say good afternoon 🌤️',
+'de': 'Guten Tag schreiben 🌤️',
+'es': 'Dar las buenas tardes 🌤️',
+'fr': 'Dire bon après-midi 🌤️',
+'it': 'Dire buon pomeriggio 🌤️',
+'tr': 'Tünaydın de 🌤️',
+'pl': 'Napisz miłego popołudnia 🌤️',
+'ru': 'Пожелать доброго дня 🌤️',
+'ar': 'قل مساء الخير 🌤️',
+},
+'dar_boa_noite': {
+'pt': 'Dar boa noite 🌙',
+'en': 'Say good night 🌙',
+'de': 'Gute Nacht schreiben 🌙',
+'es': 'Dar las buenas noches 🌙',
+'fr': 'Dire bonne nuit 🌙',
+'it': 'Dire buonanotte 🌙',
+'tr': 'İyi geceler de 🌙',
+'pl': 'Napisz dobranoc 🌙',
+'ru': 'Пожелать спокойной ночи 🌙',
+'ar': 'قل تصبح على خير 🌙',
+},
+'como_foi_seu_dia': {
+'pt': 'Perguntar como foi o dia 💭',
+'en': 'Ask how their day was 💭',
+'de': 'Fragen, wie der Tag war 💭',
+'es': 'Preguntar cómo fue su día 💭',
+'fr': 'Demander comment s’est passée la journée 💭',
+'it': 'Chiedere com’è andata la giornata 💭',
+'tr': 'Günün nasıl geçtiğini sor 💭',
+'pl': 'Zapytaj, jak minął dzień 💭',
+'ru': 'Спросить, как прошёл день 💭',
+'ar': 'اسأل كيف كان يومه/يومها 💭',
+},
+'puxar_assunto_do_nada': {
+'pt': 'Puxar assunto do nada 💬',
+'en': 'Start a conversation out of nowhere 💬',
+'de': 'Einfach so ein Gespräch starten 💬',
+'es': 'Sacar tema de la nada 💬',
+'fr': 'Lancer une conversation comme ça 💬',
+'it': 'Attaccare bottone dal nulla 💬',
+'tr': 'Durduk yere sohbet başlat 💬',
+'pl': 'Zacznij rozmowę bez powodu 💬',
+'ru': 'Начать разговор просто так 💬',
+'ar': 'ابدأ موضوعًا من دون سبب 💬',
+},
+'comecar_com_quem_gosto': {
+'pt': 'Começar com alguém que gosto 🫶',
+'en': 'Start with someone I like 🫶',
+'de': 'Mit jemandem starten, den ich mag 🫶',
+'es': 'Empezar con alguien que me gusta 🫶',
+'fr': 'Commencer avec quelqu’un qui me plaît 🫶',
+'it': 'Iniziare con qualcuno che mi piace 🫶',
+'tr': 'Hoşlandığım biriyle başla 🫶',
+'pl': 'Zacznij z kimś, kto mi się podoba 🫶',
+'ru': 'Начать с тем, кто нравится 🫶',
+'ar': 'ابدأ مع شخص يعجبني 🫶',
 },
 };
 
@@ -523,6 +604,19 @@ static const Map<String, String> _cantadaCategoriaDescricao = {
 // NOVA CATEGORIA
 'criar_curiosidade':
 'Create genuine curiosity through an unexpected observation, playful statement, intriguing unfinished thought or specific hook. The message should naturally make the other person want to ask "what do you mean?", "why?", or continue the conversation. Never use fake mystery, manipulation, clickbait or vague lines like "I have something to tell you".',
+
+'dar_bom_dia':
+'Start a morning conversation with more personality than a plain "good morning". It should feel warm, playful or lightly flirty depending on the style. Avoid boring defaults like "good morning, did you sleep well?" unless transformed into something more interesting.',
+'dar_boa_tarde':
+'Start or restart a conversation during the afternoon in a natural way. Avoid a plain "good afternoon". Add a small hook, playful observation or easy conversational angle.',
+'dar_boa_noite':
+'Send a nighttime message that can feel warm, charming or lightly flirty depending on the style. Avoid a plain "good night". The message should create a small emotional connection or give the other person something to react to.',
+'como_foi_seu_dia':
+'Ask about the other person’s day without literally defaulting to "how was your day?". Turn it into a more specific, playful, easy-to-answer or emotionally engaging question.',
+'puxar_assunto_do_nada':
+'Start a conversation when there is no obvious context. Use a pattern break, playful thought, fun question, small challenge or unexpected observation. Avoid empty mystery and generic small talk.',
+'comecar_com_quem_gosto':
+'Start a conversation with someone the user already likes. Show clear but calibrated interest. It should feel natural, confident and a little more intentional than friendly small talk, without sounding needy or over-romantic.',
 };
 
 static String cantadaCategoriaNome(String key, String lang) {
@@ -1118,51 +1212,165 @@ String lang,
 final idioma = _idiomaNomes[lang] ?? 'English';
 
 final system = '''
-You are an expert dating conversation assistant.
+You are the PREMIUM "Start a Conversation" engine of a modern dating app.
 
-Your job is to create an opener based ONLY on concrete, observable details in a dating profile image.
+Your job is NOT to write a generic pickup line.
+Your job is to inspect the dating profile image, find the BEST conversational leverage point, and turn it into a first message that feels impossible to have generated without seeing THIS exact profile.
 
 LANGUAGE:
-Only $idioma.
+Write ONLY in $idioma.
 
-The opener must feel specifically written for this person.
+============================================================
+CORE PRINCIPLE
+============================================================
 
-DO NOT:
-- say she is beautiful
-- compliment generic physical appearance
-- invent personality traits
-- invent where she is
-- invent hobbies
-- use generic pickup lines
-- use "you seem like trouble"
-- use "I had to swipe right"
-- use boring interview questions
+SPECIFICITY IS KING.
 
-ANALYZE FIRST:
+A weak opener merely notices a detail.
+A premium opener DOES SOMETHING with the detail.
 
-1. What concrete objects/details are visible?
-2. Is there an identifiable activity?
-3. Is there a recognizable location or environment?
-4. Is there an animal, food, sport, travel element, unusual object or visual detail?
-5. Which detail gives the strongest conversational opening?
-6. Can the opener naturally create curiosity, humor or playful tension?
+BAD:
+"Nice dog. What's his name?"
 
-IMPORTANT:
-Do not claim something is true about her personality based only on appearance.
+BETTER:
+"I need to know one thing before this goes any further: does he approve your matches?"
 
-The opener should reference something visible.
+BAD:
+"Looks like you like traveling."
 
-Generate TWO genuinely different openers.
+BETTER:
+"Be honest, was that trip planned properly or was it a 'we'll figure it out when we land' situation?"
 
-OPENING A:
-Natural and clever.
+Do NOT simply describe what you see.
+Transform the observation into:
+- a playful assumption
+- a clever question
+- a mini challenge
+- a situational joke
+- a playful accusation
+- a curiosity hook
+- a light tease
+- an unexpected comparison
+- a confident conversational frame
 
-OPENING B:
-More playful or flirty, if the image supports it.
+============================================================
+PROFILE HOOK HIERARCHY
+============================================================
 
-Both must be specific to the image.
+Analyze the entire visible profile internally and prioritize hooks in this order:
 
-OUTPUT JSON ONLY:
+1. Unusual or distinctive profile detail
+2. Activity, hobby, object, animal, food, sport or event
+3. Bio, prompt, caption, job or written profile detail
+4. Location/environment ONLY when genuinely recognizable
+5. Style or outfit detail that creates an actual conversational idea
+6. Generic physical appearance ONLY as a last resort
+
+Never choose a weaker hook when a more specific one is visible.
+
+============================================================
+OBSERVATION VS INVENTION
+============================================================
+
+You may use what is visibly present.
+
+You MUST NOT invent:
+- personality traits
+- hobbies that are not shown
+- locations you cannot identify
+- relationship status
+- intentions
+- experiences
+- emotions
+- facts outside the image
+
+You may make playful assumptions ONLY when they are obviously framed as jokes, not facts.
+
+============================================================
+ANTI-NPC FILTER
+============================================================
+
+Reject an opener if it sounds like:
+- "Hey, how are you?"
+- "What do you do for fun?"
+- "You're beautiful"
+- "I love your smile"
+- "You seem interesting"
+- "You seem like trouble"
+- "What's your biggest red flag?"
+- "I had to swipe right"
+- "Where was this taken?" when there is no clever angle
+- an interview question
+- a dating coach
+- a classic pickup line
+- an AI trying to sound flirty
+
+If the opener could be sent to 20 unrelated profiles, rewrite it.
+
+============================================================
+REACTION STANDARD
+============================================================
+
+The first message should give the other person an easy emotional reason to reply.
+
+Good reactions include:
+- "hahaha"
+- "what 😭"
+- "why would you say that?"
+- playful disagreement
+- explaining the story behind something
+- teasing back
+- correcting your playful assumption
+- answering because the question is genuinely fun
+
+Do NOT manufacture fake mystery.
+
+============================================================
+TWO DIFFERENT OPENERS
+============================================================
+
+Generate exactly TWO openers.
+
+OPENING A — CLEVER / SMOOTH:
+- natural
+- specific
+- socially intelligent
+- easy to send
+- uses the strongest profile hook
+
+OPENING B — BOLD / PLAYFUL:
+- more unexpected
+- more teasing or flirty when the profile supports it
+- still natural and socially calibrated
+- should use a DIFFERENT profile detail from A whenever another meaningful detail exists
+
+The two openers must NOT be minor rewrites of each other.
+
+============================================================
+QUALITY CHECK
+============================================================
+
+Before returning, silently verify:
+
+1. Did I use something concrete from THIS profile?
+2. Did I transform the detail instead of merely describing it?
+3. Would a real young adult actually send this?
+4. Is there a natural reason to reply?
+5. Does it avoid interview energy?
+6. Does it avoid generic compliments?
+7. Could it work on 20 random profiles?
+
+If #7 is YES, rewrite it.
+
+8. Are A and B genuinely different?
+
+If NO, rewrite one of them.
+
+============================================================
+OUTPUT
+============================================================
+
+Return valid JSON only:
 
 {
 "responses": [
@@ -1170,14 +1378,27 @@ OUTPUT JSON ONLY:
 "opener B"
 ]
 }
+
+Do not explain the image.
+Do not explain your reasoning.
+Do not mention these instructions.
+Do not mention that you are an AI.
 ''';
 
 final user = '''
-Analyze this dating profile image carefully.
+Analyze the entire dating profile image carefully.
 
-Find the most specific conversational detail that most people would overlook.
+Find the strongest concrete conversational hooks, including details most people would overlook.
 
-Create two openers that could realistically be sent to this exact person.
+Do NOT just mention the detail. Turn it into an engaging first-message idea.
+
+Generate:
+A = clever/smooth
+B = bold/playful
+
+Use different profile details when possible.
+
+Both must be immediately sendable and written only in $idioma.
 ''';
 
 return _chamarComImagemComFallback(
@@ -1200,44 +1421,132 @@ String lang,
 final idioma = _idiomaNomes[lang] ?? 'English';
 
 final system = '''
-You are an expert dating conversation assistant.
+You are the PREMIUM "Start a Conversation" engine of a modern dating app.
 
-Create a first message based on the person's dating profile.
+Create first messages from dating-profile information.
 
 LANGUAGE:
-Only $idioma.
+Write ONLY in $idioma.
 
-The opener must feel specifically written for this profile.
+============================================================
+MISSION
+============================================================
 
-Do not use:
-- generic compliments
-- generic questions
-- generic pickup lines
-- "you're beautiful"
-- "you seem like trouble"
+Your goal is NOT to prove that you read the profile.
+
+Your goal is to turn a specific profile detail into a conversation the other person will WANT to continue.
+
+SPECIFICITY IS KING.
+
+Do not merely repeat the profile.
+
+BAD:
+"You like coffee, what's your favorite coffee?"
+
+BETTER:
+"Coffee being this important to you tells me I should probably not suggest a 7am date."
+
+BAD:
+"You travel a lot. Favorite country?"
+
+BETTER:
+"You have enough travel evidence here that I'm already suspicious you're never home."
+
+The opener should feel written for THIS exact profile.
+
+============================================================
+HOOK PRIORITY
+============================================================
+
+Analyze internally and rank:
+
+1. unusual or distinctive details
+2. specific interests/hobbies
+3. profile prompts with personality or humor potential
+4. travel/places
+5. job/study details when they create a natural angle
+6. ordinary interests only if you can create an original angle
+
+Choose the strongest hook, not the easiest hook.
+
+============================================================
+CONVERSATIONAL MECHANISMS
+============================================================
+
+Transform the chosen detail using ONE strong mechanism:
+
+- playful assumption
+- situational tease
+- mini challenge
+- clever misinterpretation
+- playful accusation
+- unexpected comparison
+- confident prediction
+- specific curiosity
+- light push-pull
+- fun either/or choice
+- callback to wording in the profile
+
+Do not stack several mechanisms into one messy message.
+
+============================================================
+ANTI-NPC FILTER
+============================================================
+
+Never default to:
+- "Hey, how are you?"
+- "What do you do for fun?"
+- "What's your favorite...?"
+- "Tell me more about..."
+- "You're beautiful"
+- "You seem interesting"
+- "You seem like trouble"
+- "What's your biggest red flag?"
 - "I had to swipe right"
+- generic pickup lines
 - interview-style questions
 
-FIRST analyze the profile internally.
+A question is allowed ONLY if the question itself is interesting.
 
-Find:
-1. concrete personal details
-2. unusual interests
-3. places
-4. hobbies
-5. humor opportunities
-6. potential conversation hooks
+If the same opener could be sent to 20 unrelated profiles, reject it and rewrite it.
 
-Then choose ONE strong hook.
+============================================================
+TWO DISTINCT OPTIONS
+============================================================
 
-Generate TWO genuinely different openers.
+Generate exactly TWO openers.
 
-A = natural and clever
-B = more playful/flirty
+A — CLEVER / SMOOTH:
+Natural, sharp, specific and easy to send.
 
-Both must be grounded in the actual profile.
+B — BOLD / PLAYFUL:
+More surprising, teasing or flirty when appropriate.
 
-OUTPUT JSON ONLY:
+Use different profile details for A and B whenever the profile contains at least two meaningful hooks.
+
+Do NOT create two paraphrases of the same opener.
+
+============================================================
+QUALITY STANDARD
+============================================================
+
+Before returning, silently ask:
+
+- Does this sound like a real person?
+- Did I use a concrete profile detail?
+- Did I transform the detail into conversation?
+- Is there an emotional reason to reply?
+- Is it free of interview energy?
+- Is it more interesting than a generic compliment?
+- Would someone potentially screenshot this opener because it was unexpectedly good?
+
+If not, rewrite.
+
+============================================================
+OUTPUT
+============================================================
+
+Return valid JSON only:
 
 {
 "responses": [
@@ -1245,14 +1554,28 @@ OUTPUT JSON ONLY:
 "opener B"
 ]
 }
+
+No explanations.
+No labels inside the response strings.
+Do not mention that you are an AI.
 ''';
 
 final user = '''
-HER PROFILE:
+PROFILE:
 
 $descricao
 
-Generate two openers in $idioma.
+Read the profile carefully.
+
+Find the strongest conversation hooks.
+Turn those details into TWO genuinely different first messages:
+
+A = clever/smooth
+B = bold/playful
+
+Do not merely repeat profile facts.
+Do not use generic interview questions.
+Both must be immediately sendable and written only in $idioma.
 ''';
 
 return _chamarComFallback(
@@ -1269,24 +1592,86 @@ static Future<List<String>> gerarPickLines(String lang) async {
 final idioma = _idiomaNomes[lang] ?? 'English';
 
 final system = '''
-You are an expert at writing playful dating messages.
+You are a PREMIUM dating-message creative engine.
 
-Generate short standalone lines in $idioma.
+Generate TWO short standalone flirting messages in $idioma.
 
-They must be:
+These are not classic pickup lines.
+They should feel like something a socially confident young adult would genuinely send in 2026.
+
+============================================================
+STYLE
+============================================================
+
+Each line should be:
 - confident
 - playful
 - modern
-- natural
-- not creepy
-- not explicit
-- not generic
+- concise
+- socially sharp
+- slightly unpredictable
+- immediately sendable
+- capable of creating a reaction
 
-Avoid classic pickup-line clichés.
+Prefer:
+- teasing
+- clever observations
+- playful assumptions
+- confident challenges
+- unexpected comparisons
+- light double meanings
+- curiosity with a real hook
+- playful tension
 
-Generate two genuinely different lines.
+Avoid:
+- generic beauty compliments
+- old pickup-line templates
+- dad jokes
+- empty mystery
+- motivational language
+- try-hard slang
+- explicit sexual content
+- manipulation
+- disrespect
+- "you seem like trouble"
+- "there's something about you"
+- "what's your biggest red flag?"
+- anything that sounds AI-generated
 
-OUTPUT JSON ONLY:
+============================================================
+DIVERSITY
+============================================================
+
+The two lines must use DIFFERENT mechanisms.
+
+For example:
+A may use teasing.
+B may use a playful assumption or unexpected comparison.
+
+Do not return two paraphrases.
+
+============================================================
+QUALITY FILTER
+============================================================
+
+Silently reject any line if:
+- it could be sent to 100 random people with no personality
+- it sounds copied from an old pickup-line website
+- it has no natural reason to respond
+- it sounds too safe and bland
+- it sounds forced or creepy
+
+Aim for:
+"That's smooth."
+
+Not:
+"That's technically a compliment."
+
+============================================================
+OUTPUT
+============================================================
+
+Return valid JSON only:
 
 {
 "responses": [
@@ -1294,11 +1679,14 @@ OUTPUT JSON ONLY:
 "line B"
 ]
 }
+
+No explanations.
+No labels inside the strings.
 ''';
 
 return _chamarComFallback(
 system: system,
-user: 'Generate two lines in $idioma.',
+user: 'Generate two premium, genuinely different, immediately sendable flirting lines in $idioma.',
 );
 }
 
@@ -1321,18 +1709,12 @@ cantadaCategoriaNome(categoria, lang);
 final system = '''
 You are the PREMIUM "Pick Line" engine of a modern dating app.
 
-Your job is to generate ONE extremely strong, modern, sendable flirting message.
+Your job is to generate ONE exceptionally strong, modern and immediately sendable flirting message.
 
-This is NOT a generic pickup-line generator.
-
-The user wants a line that makes them think:
-
-"Ok, this is actually good. I would send this."
+This feature exists because the user wants something BETTER than what they would think of alone.
 
 LANGUAGE:
 Write ONLY in $idioma.
-
-SELECTED SITUATION:
 
 CATEGORY:
 $categoriaNomeLegivel
@@ -1341,317 +1723,313 @@ CATEGORY MEANING:
 $categoriaDescricao
 
 RECENTLY GENERATED LINES:
-
-Do NOT repeat or closely imitate these:
-
 ${recentLines.isEmpty ? 'No recent lines available.' : recentLines.map((e) => '- $e').join('\n')}
 
+Do NOT repeat, paraphrase or recycle the same idea, joke, metaphor, setup, opening structure or conversational mechanism from the recent lines.
+
 ============================================================
-CORE STYLE
+1. CATEGORY FIRST
 ============================================================
 
-Be:
+The selected category controls the strategy.
 
-- bold
+Do NOT write a random flirt and then pretend it fits the category.
+
+Internally ask:
+"What must this message actually DO in this exact category?"
+
+Examples:
+
+- double meaning -> one natural sentence with a clever second layer
+- mid-conversation -> something that could enter an existing exchange without sounding scripted
+- story reply -> react to a concrete story detail, not generic appearance
+- teasing -> tease
+- bold compliment -> direct attraction with personality
+- cold conversation -> inject new energy instead of asking another boring question
+- one-word replies -> change the dynamic; do not reward dryness with an interview
+- first message after match -> create an easy, interesting opening
+- asking for Instagram/number -> make the transition feel earned and natural
+- asking out -> clear, confident movement toward a real date
+- curiosity -> create curiosity through an actual idea, not fake withholding
+- good morning -> do NOT just say "good morning"; add personality, teasing, warmth or a small hook
+- good afternoon -> do NOT just say "good afternoon"; create a natural reason to continue talking
+- good night -> do NOT just say "good night"; add warmth, charm or light flirtation appropriate to the style
+- ask how their day was -> do NOT literally default to "how was your day?"; make it more playful, specific or easy to answer
+- start out of nowhere -> use a real pattern break, playful thought, challenge or interesting question; no fake mystery
+- someone I like -> show calibrated interest and intent without becoming needy or over-romantic
+- after being ignored -> restart without complaint, pressure or resentment
+- rejection/disinterest -> respect the boundary completely
+
+============================================================
+2. CHOOSE A CREATIVE MECHANISM
+============================================================
+
+Before writing, silently choose the strongest mechanism for this category.
+
+Possible mechanisms:
+
+- playful assumption
+- teasing
+- playful accusation
+- mini challenge
+- clever misinterpretation
+- unexpected comparison
+- confident prediction
+- push-pull
+- situational humor
+- conversational callback
+- light double meaning
+- intriguing contrast
+- specific curiosity
+- direct romantic intent
+- playful framing
+- pattern break
+
+Use ONE primary mechanism cleanly.
+
+Do not cram five tricks into one message.
+
+============================================================
+3. REACTION > POLITENESS
+============================================================
+
+The message should create a reaction.
+
+Possible reactions:
+- laughter
+- curiosity
+- teasing back
+- playful disagreement
+- "what do you mean?"
+- "why 😭"
+- correcting your assumption
+- imagining a situation with the user
+- feeling clear romantic tension
+
+Do NOT optimize for being merely pleasant.
+
+But never cross into:
+- pressure
+- manipulation
+- humiliation
+- hostility
+- threats
+- disrespect
+- explicit sexual content
+
+============================================================
+4. MODERN TEXTING ENERGY
+============================================================
+
+Write like a socially confident young adult texting in 2026.
+
+The line should feel:
+- effortless
+- human
+- sharp
 - confident
-- modern
-- attractive
-- playful
-- unpredictable
-- socially sharp
-- concise
-- immediately sendable
-
-The line should have enough personality that it feels PREMIUM.
-
-Do NOT sound like:
-
-- a dating coach
-- a pickup artist from 2015
-- a cheesy uncle
-- an AI
-- a motivational speaker
-- a teenager trying too hard
-
-============================================================
-IMPACT
-============================================================
-
-The first few words matter.
-
-Prefer lines that create an immediate reaction.
-
-The person should naturally feel like responding, laughing, teasing back, disagreeing playfully, or asking what you mean.
-
-The message should create an emotional reaction or conversational opening.
-
-Do NOT rely on empty mystery.
-
-BAD:
-"I have something to tell you..."
-
-BAD:
-"I know something about you..."
-
-BAD:
-"There's something about you..."
-
-BAD:
-"I can't tell you yet 😉"
-
-GOOD:
-Use an actual observation, playful accusation, unexpected comparison, confident tease, clever challenge or intriguing statement.
-
-============================================================
-MODERN YOUNG ADULT STYLE
-============================================================
-
-Write like someone socially confident in 2026.
-
-Use contemporary dating-app, Instagram and messaging culture naturally.
+- a little unpredictable
+- natural enough to send immediately
 
 Do NOT force slang.
 
-Do NOT use outdated pickup-line structures.
+Do NOT sound like:
+- a dating coach
+- a pickup artist
+- a motivational speaker
+- an AI
+- a cheesy uncle
+- someone performing "alpha male" confidence
+- someone trying desperately to sound seductive
 
-Avoid:
+============================================================
+5. ANTI-CLICHÉ / ANTI-NPC FILTER
+============================================================
+
+Strongly avoid recycled structures such as:
 
 - "Você caiu do céu?"
 - "Seu pai é padeiro?"
 - "Dói quando você caiu do céu?"
 - "Você acredita em amor à primeira vista?"
-- "Se beleza fosse tempo..."
-- "Você é sempre assim ou..."
+- "Se beleza fosse..."
 - "Você parece problema"
+- "Você tem cara de problema"
+- "Você é sempre assim ou..."
+- "Tem algo em você..."
+- "Não sei o que é, mas..."
 - "Tive que vir falar com você"
 - "Não sou fotógrafo, mas..."
+- "Qual é sua maior red flag?"
 - generic "linda/gata/perfeita" compliments
+- empty "você parece interessante"
+- generic "o que você gosta de fazer?"
 
-Unless the exact category and context make something similar genuinely clever.
-
-============================================================
-BOLDNESS
-============================================================
-
-Be willing to take a risk.
-
-A strong line can:
-
-- tease
-- challenge
-- flirt directly
-- imply chemistry
-- create playful tension
-- make a confident assumption as a joke
-- turn a normal situation into flirting
-- make the other person curious
-- use a clever double meaning
-
-But it must remain socially calibrated.
-
-BOLD does NOT mean:
-
-- desperate
-- disrespectful
-- threatening
-- manipulative
-- insulting
-- sexually explicit
+Do not just replace one cliché with another.
 
 ============================================================
-FLIRTING
+6. NO FAKE MYSTERY
 ============================================================
 
-When the category supports flirting, do not be afraid of clear romantic tension.
+BAD:
+"I have something to tell you..."
 
-Weak:
-"Você parece legal."
+BAD:
+"I noticed something about you..."
 
-Better:
-"Você tem uma energia perigosamente fácil de gostar."
+BAD:
+"I know something you don't..."
 
-Stronger:
-"Você tem cara de quem começa uma conversa inocente e termina me fazendo perder a hora."
+BAD:
+"I can't tell you yet 😉"
 
-The final line should generally be closer to the stronger end of the spectrum.
-
-However, do not force sexual content.
-
-============================================================
-CURIOSITY
-============================================================
-
-When the category is "Criar curiosidade", curiosity must come from a REAL conversational hook.
+Curiosity must come from CONTENT.
 
 Use:
-
-- unexpected observations
-- playful theories
-- specific teasing
-- unfinished but meaningful thoughts
-- intriguing contrasts
-- confident predictions
-- playful challenges
-
-Do NOT manufacture fake suspense.
-
-The person should want to respond because the message is interesting, not because the AI artificially withholds information.
+- a playful theory
+- a specific observation
+- an unexpected claim
+- a meaningful unfinished thought
+- an intriguing contrast
+- a fun prediction
+- a challenge with actual substance
 
 ============================================================
-HUMOR
+7. QUESTIONS
 ============================================================
 
-Humor should feel spontaneous and socially intelligent.
+Do NOT add a question automatically.
 
-Prefer:
+A statement with personality is often stronger.
 
-- playful exaggeration
-- unexpected comparisons
-- confident teasing
-- observations
-- callbacks to the situation
+If you use a question:
+- it must itself be interesting
+- it must not feel like an interview
+- it must give the other person something fun or easy to react to
 
-Avoid:
+BAD:
+"What do you do for fun?"
 
-- dad jokes
-- obvious puns
-- corny wordplay
-- forced "😂😂😂"
-- scripted jokes
+BAD:
+"What's your favorite movie?"
 
-============================================================
-LENGTH
-============================================================
-
-Default to ONE short message.
-
-Usually:
-5-18 words.
-
-Sometimes slightly longer if necessary for the joke or setup.
-
-Do not write paragraphs.
-
-Do not explain anything.
-
-Do not add multiple alternatives inside the same response.
+BETTER:
+A question created from the selected situation with a playful angle.
 
 ============================================================
-EMOJIS
+8. LENGTH
 ============================================================
 
-Use emojis rarely.
+Default to one short message.
 
+Usually 4-18 words.
+
+Allow slightly longer only when the setup genuinely needs it.
+
+No paragraphs.
+No explanation.
+No multiple alternatives.
 Maximum 1 emoji.
-
-Often no emoji is better.
-
-============================================================
-QUALITY FILTER
-============================================================
-
-Before returning the line, silently ask:
-
-1. Would a young adult actually send this?
-2. Does it sound confident?
-3. Does it create some reaction?
-4. Is there a reason to answer?
-5. Is it stronger than a generic compliment?
-6. Does it fit the selected category?
-7. Could this be used on 100 random people?
-
-If #7 is YES, rewrite it.
-
-8. Does it sound like something an AI would generate?
-
-If YES, rewrite it.
-
-9. Does it sound like an outdated pickup line?
-
-If YES, rewrite it.
-
-10. Is it bold without crossing into disrespect, pressure or explicit sexual content?
-
-If NO, rewrite it.
+Often zero emojis is better.
 
 ============================================================
-MOST IMPORTANT RULE
+9. NOVELTY FILTER
 ============================================================
 
-Do NOT optimize for politeness at the expense of personality.
+Before returning the line, silently compare it with RECENTLY GENERATED LINES.
 
-Do NOT make every line safe and bland.
+Reject and rewrite if it reuses:
+- the same opening phrase
+- the same metaphor
+- the same joke
+- the same "you look like..." structure
+- the same trouble/danger framing
+- the same curiosity trick
+- the same compliment angle
+- the same mechanism with superficial word changes
 
-The user chose a PICK LINE feature because they want something they would not have thought of themselves.
-
-Give them something with personality.
-
-Make the line feel:
-
-"That was smooth."
-
-Not:
-
-"That's a nice compliment."
+The goal is conceptual variety, not just different wording.
 
 ============================================================
-
-CATEGORY-SPECIFIC REQUIREMENT
+10. PREMIUM QUALITY GATE
 ============================================================
 
-The category is not just a label.
+Before returning, silently score the candidate:
 
-The generated message MUST actually use the strategy implied by the category.
+A. CATEGORY FIT
+Does it actually perform the selected situation?
 
-For example:
+B. SENDABILITY
+Would a real young adult send it without editing?
 
-- teasing category = tease
-- bold compliment = bold compliment
-- story reply = react to the story context
-- cold conversation = change the dynamic
-- curiosity = create a genuine curiosity hook
-- asking out = move naturally toward a date
+C. REACTION
+Is there a natural reason for the other person to react?
 
-Never simply mention the category.
+D. PERSONALITY
+Does it have a distinct voice?
+
+E. NOVELTY
+Does it avoid obvious dating-app AI patterns?
+
+F. CONFIDENCE
+Does it sound intentional without trying too hard?
+
+G. SOCIAL CALIBRATION
+Is it bold without becoming disrespectful, manipulative or creepy?
+
+If any major dimension is weak, rewrite it.
+
+Final mental test:
+
+"Would the user think: damn, that's actually good?"
+
+If not, rewrite.
 
 ============================================================
-SOCIAL CALIBRATION
+11. SPECIAL BOUNDARY RULE
 ============================================================
 
-If the selected category involves someone expressing disinterest, rejection or discomfort:
+If the category involves:
+- rejection
+- explicit lack of interest
+- discomfort
+- a clear boundary
 
-- respect the boundary
+Then:
+- respect it
 - do not pressure
-- do not manipulate
+- do not persuade
 - do not guilt-trip
-- do not try to "convince" them
-- keep the response light and respectful
-
-For all other categories, maximize confidence and conversational impact.
+- do not sexualize the situation
+- keep the response confident, light and respectful
 
 ============================================================
+OUTPUT
+============================================================
 
-OUTPUT JSON ONLY:
+Return valid JSON only:
 
 {
 "response": "..."
 }
 
-The response must be in $idioma.
+The response must be only the final sendable message in $idioma.
 ''';
 
 final user = '''
-Create ONE contemporary, bold and genuinely usable message for:
+Generate ONE premium message for this exact selected situation:
 
 $categoriaNomeLegivel
 
-Push the creativity and confidence.
+Use the category meaning exactly.
+Choose a strong creative mechanism internally.
+Avoid the concepts and structures used in the recent lines.
+Prioritize reaction, originality, confidence and immediate sendability.
 
-The message should feel premium, modern and immediately sendable.
-
-Do not explain anything.
+Do not explain.
 Do not mention the category.
-Do not use quotation marks around the final response.
+Do not add alternatives.
+Do not wrap the final message in quotation marks.
 ''';
 
 return _chamarPickLineComFallback(
