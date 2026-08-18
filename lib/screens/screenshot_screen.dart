@@ -33,7 +33,6 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
 
   bool _loadingEstilo = false;
 
-
   late AnimationController _scanController;
   late Animation<double> _scanAnim;
 
@@ -274,15 +273,24 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
         _respostas = respostas;
         _analisando = false;
       });
-    } catch (e) {
+    } catch (e, stackTrace) {
+      // ============================================================
+      // DEBUG TEMPORÁRIO — mostra o erro REAL em vez da mensagem
+      // genérica, para diagnosticar o problema no iOS.
+      // Remove isto depois de encontrarmos a causa.
+      // ============================================================
+      // ignore: avoid_print
+      print('❌ ERRO REAL em _processarImagem: $e');
+      // ignore: avoid_print
+      print('❌ STACK TRACE: $stackTrace');
+
       if (!mounted) return;
 
       setState(() {
         _analisando = false;
         _erro = true;
-        _erroMsg = _erroMsg2(
-          appLang.languageCode,
-        );
+        // Mostra o erro real na tela temporariamente, para debug.
+        _erroMsg = 'DEBUG: $e';
       });
     }
   }
@@ -347,14 +355,15 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
         _loadingEstilo = false;
       });
     } catch (e) {
+      // ignore: avoid_print
+      print('❌ ERRO REAL em _gerarComEstilo: $e');
+
       if (!mounted) return;
 
       setState(() {
         _loadingEstilo = false;
         _erro = true;
-        _erroMsg = _erroMsg2(
-          appLang.languageCode,
-        );
+        _erroMsg = 'DEBUG: $e';
       });
     }
   }
@@ -386,14 +395,15 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
         _loadingEstilo = false;
       });
     } catch (e) {
+      // ignore: avoid_print
+      print('❌ ERRO REAL em _gerarDiferente: $e');
+
       if (!mounted) return;
 
       setState(() {
         _loadingEstilo = false;
         _erro = true;
-        _erroMsg = _erroMsg2(
-          appLang.languageCode,
-        );
+        _erroMsg = 'DEBUG: $e';
       });
     }
   }
@@ -615,13 +625,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   }
 
   // ============================================================
-  // IMAGE PREVIEW — mostra sempre as ÚLTIMAS mensagens da
-  // conversa (parte de baixo da screenshot), como Plug AI e Rizz.
-  //
-  // O corte é feito por PERCENTAGEM da altura da imagem original,
-  // e é puramente visual/estético (privacidade + foco na conversa).
-  // A imagem completa (_base64Image) continua a ser enviada
-  // integralmente para a IA — isto não afeta a análise.
+  // IMAGE PREVIEW
   // ============================================================
 
   Widget _buildImagePreview() {
@@ -692,16 +696,8 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
     );
   }
 
-  // Corte por percentagem: esconde uma fatia do TOPO (ex: nome/avatar
-  // do usuário) e uma fatia da BASE (ex: campo de texto/teclado) do
-  // screenshot original, e amplia o que sobra para preencher a moldura.
-  //
-  // Ajusta só estas duas constantes para mudar o enquadramento —
-  // não mexas em mais nada.
   Widget _buildBottomAnchoredImage() {
-    // Fração do TOPO da imagem a esconder (0.0 a 1.0).
     const double topCutPercent = 0.18;
-    // Fração da BASE da imagem a esconder (0.0 a 1.0).
     const double bottomCutPercent = 0.40;
 
     final double visibleFraction =
@@ -1177,16 +1173,20 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
 
             const SizedBox(height: 20),
 
-            Text(
-              _erroMsg,
-
-              textAlign:
-                  TextAlign.center,
-
-              style: TextStyle(
-                color: textColor,
-                fontSize: 15,
-                height: 1.5,
+            // DEBUG: mostra a mensagem de erro real, com scroll
+            // caso seja longa, para conseguires copiar/ler tudo.
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 200),
+              child: SingleChildScrollView(
+                child: SelectableText(
+                  _erroMsg,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: textColor,
+                    fontSize: 13,
+                    height: 1.5,
+                  ),
+                ),
               ),
             ),
 

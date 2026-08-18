@@ -16,7 +16,7 @@ static const String _anthropicModel = 'claude-opus-4-8';
 
 // Modelo específico para CANTADAS / PICK LINES.
 // Mantido separado para não alterar as outras funcionalidades.
-static const String _openAiModelPickLine = 'gpt-4.1';
+static const String _openAiModelPickLine = 'gpt-5.6-luna';
 static const String _anthropicModelPickLine =
 'claude-haiku-4-5-20251001';
 
