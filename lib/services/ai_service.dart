@@ -11,12 +11,12 @@ static const String _anthropicKey = Config.anthropicKey;
 // ============================================================
 
 // Modelo principal das outras funcionalidades.
-static const String _openAiModel = 'gpt-4o-mini';
-static const String _anthropicModel = 'claude-haiku-4-5-20251001';
+static const String _openAiModel = 'gpt-5.6-sol';
+static const String _anthropicModel = 'claude-opus-4-8';
 
 // Modelo específico para CANTADAS / PICK LINES.
 // Mantido separado para não alterar as outras funcionalidades.
-static const String _openAiModelPickLine = 'gpt-4o-mini';
+static const String _openAiModelPickLine = 'gpt-5.6-luna';
 static const String _anthropicModelPickLine =
 'claude-haiku-4-5-20251001';
 
@@ -1684,7 +1684,11 @@ return parsed;
 }
 
 throw Exception('OpenAI pick line failed');
-} catch (_) {
+} catch (e) {
+// ignore: avoid_print
+print('OPENAI PICK LINE ERROR: $e');
+
+try {
 final result = await _chamarAnthropicPickLine(
 system: system,
 user: user,
@@ -1696,7 +1700,14 @@ if (parsed.isNotEmpty) {
 return parsed;
 }
 
-throw Exception('Both providers failed pick line');
+throw Exception('Invalid Anthropic pick line response');
+} catch (anthropicError) {
+// ignore: avoid_print
+print('ANTHROPIC PICK LINE ERROR: $anthropicError');
+throw Exception(
+'Both providers failed pick line. OpenAI: $e | Anthropic: $anthropicError',
+);
+}
 }
 }
 
@@ -1725,33 +1736,29 @@ required String user,
 }) async {
 final response = await http
 .post(
-Uri.parse('https://api.openai.com/v1/chat/completions'),
+Uri.parse('https://api.openai.com/v1/responses'),
 headers: {
 'Content-Type': 'application/json',
 'Authorization': 'Bearer $_openAiKey',
 },
 body: jsonEncode({
 'model': _openAiModelPickLine,
-'messages': [
-{
-'role': 'system',
-'content': system,
-},
+'instructions': system,
+'input': [
 {
 'role': 'user',
-'content': user,
+'content': [
+{
+'type': 'input_text',
+'text': user,
 },
 ],
-
-// Um pouco mais de criatividade para as cantadas.
-'temperature': 1.0,
-
-// Uma única cantada não precisa de 1200 tokens.
-'max_tokens': 250,
-
-'response_format': {
+},
+],
+'max_output_tokens': 250,
+'text': {
+'format': {
 'type': 'json_schema',
-'json_schema': {
 'name': 'pick_line',
 'strict': true,
 'schema': {
@@ -1770,7 +1777,7 @@ body: jsonEncode({
 },
 }),
 )
-.timeout(const Duration(seconds: 25));
+.timeout(const Duration(seconds: 30));
 
 if (response.statusCode != 200) {
 // ignore: avoid_print
@@ -1786,18 +1793,17 @@ throw Exception(
 
 final data = jsonDecode(response.body);
 
-final choice = data['choices'][0];
-final finishReason = choice['finish_reason'];
-
-if (finishReason == 'length') {
-// ignore: avoid_print
-print(
-'OpenAI pick line: cortado por max_tokens '
-'(finish_reason=length). Corpo: ${response.body}',
-);
+if (data is! Map<String, dynamic>) {
+throw Exception('OpenAI pick line returned invalid JSON object');
 }
 
-return choice['message']['content'].toString();
+final status = data['status']?.toString();
+if (status == 'incomplete' || status == 'failed') {
+// ignore: avoid_print
+print('OpenAI pick line status=$status. Corpo: ${response.body}');
+}
+
+return _extractOpenAIResponseText(data);
 }
 
 // ============================================================
@@ -1910,7 +1916,11 @@ return parsed;
 }
 
 throw Exception('Invalid OpenAI response');
-} catch (_) {
+} catch (e) {
+// ignore: avoid_print
+print('OPENAI TEXT ERROR: $e');
+
+try {
 final result = await _chamarAnthropic(
 system: system,
 user: user,
@@ -1922,7 +1932,14 @@ if (parsed.isNotEmpty) {
 return parsed;
 }
 
-throw Exception('Both AI providers failed');
+throw Exception('Invalid Anthropic response');
+} catch (anthropicError) {
+// ignore: avoid_print
+print('ANTHROPIC TEXT ERROR: $anthropicError');
+throw Exception(
+'Both AI providers failed. OpenAI: $e | Anthropic: $anthropicError',
+);
+}
 }
 }
 
@@ -1950,7 +1967,11 @@ return parsed;
 }
 
 throw Exception('Invalid OpenAI image response');
-} catch (_) {
+} catch (e) {
+// ignore: avoid_print
+print('OPENAI IMAGE ERROR: $e');
+
+try {
 final result = await _chamarAnthropicImage(
 base64Image: base64Image,
 system: system,
@@ -1963,7 +1984,14 @@ if (parsed.isNotEmpty) {
 return parsed;
 }
 
-throw Exception('Both AI providers failed');
+throw Exception('Invalid Anthropic image response');
+} catch (anthropicError) {
+// ignore: avoid_print
+print('ANTHROPIC IMAGE ERROR: $anthropicError');
+throw Exception(
+'Both AI providers failed. OpenAI: $e | Anthropic: $anthropicError',
+);
+}
 }
 }
 
@@ -1977,28 +2005,29 @@ required String user,
 }) async {
 final response = await http
 .post(
-Uri.parse('https://api.openai.com/v1/chat/completions'),
+Uri.parse('https://api.openai.com/v1/responses'),
 headers: {
 'Content-Type': 'application/json',
 'Authorization': 'Bearer $_openAiKey',
 },
 body: jsonEncode({
 'model': _openAiModel,
-'messages': [
-{
-'role': 'system',
-'content': system,
-},
+'instructions': system,
+'input': [
 {
 'role': 'user',
-'content': user,
+'content': [
+{
+'type': 'input_text',
+'text': user,
 },
 ],
-'temperature': 0.8,
-'max_tokens': 1500,
-'response_format': {
+},
+],
+'max_output_tokens': 1500,
+'text': {
+'format': {
 'type': 'json_schema',
-'json_schema': {
 'name': 'dating_responses',
 'strict': true,
 'schema': {
@@ -2022,7 +2051,7 @@ body: jsonEncode({
 },
 }),
 )
-.timeout(const Duration(seconds: 25));
+.timeout(const Duration(seconds: 35));
 
 if (response.statusCode != 200) {
 // ignore: avoid_print
@@ -2038,17 +2067,17 @@ throw Exception(
 
 final data = jsonDecode(response.body);
 
-final choice = data['choices'][0];
-
-if (choice['finish_reason'] == 'length') {
-// ignore: avoid_print
-print(
-'OpenAI texto: cortado por max_tokens '
-'(finish_reason=length). Corpo: ${response.body}',
-);
+if (data is! Map<String, dynamic>) {
+throw Exception('OpenAI text returned invalid JSON object');
 }
 
-return choice['message']['content'].toString();
+final status = data['status']?.toString();
+if (status == 'incomplete' || status == 'failed') {
+// ignore: avoid_print
+print('OpenAI texto status=$status. Corpo: ${response.body}');
+}
+
+return _extractOpenAIResponseText(data);
 }
 
 // ============================================================
@@ -2062,41 +2091,34 @@ required String user,
 }) async {
 final response = await http
 .post(
-Uri.parse('https://api.openai.com/v1/chat/completions'),
+Uri.parse('https://api.openai.com/v1/responses'),
 headers: {
 'Content-Type': 'application/json',
 'Authorization': 'Bearer $_openAiKey',
 },
 body: jsonEncode({
 'model': _openAiModel,
-'messages': [
-{
-'role': 'system',
-'content': system,
-},
+'instructions': system,
+'input': [
 {
 'role': 'user',
 'content': [
 {
-'type': 'image_url',
-'image_url': {
-'url':
-'data:image/jpeg;base64,$base64Image',
+'type': 'input_image',
+'image_url': 'data:image/jpeg;base64,$base64Image',
 'detail': 'high',
 },
-},
 {
-'type': 'text',
+'type': 'input_text',
 'text': user,
 },
 ],
 },
 ],
-'temperature': 0.8,
-'max_tokens': 1500,
-'response_format': {
+'max_output_tokens': 1500,
+'text': {
+'format': {
 'type': 'json_schema',
-'json_schema': {
 'name': 'dating_responses',
 'strict': true,
 'schema': {
@@ -2120,7 +2142,7 @@ body: jsonEncode({
 },
 }),
 )
-.timeout(const Duration(seconds: 30));
+.timeout(const Duration(seconds: 45));
 
 if (response.statusCode != 200) {
 // ignore: avoid_print
@@ -2136,17 +2158,53 @@ throw Exception(
 
 final data = jsonDecode(response.body);
 
-final choice = data['choices'][0];
-
-if (choice['finish_reason'] == 'length') {
-// ignore: avoid_print
-print(
-'OpenAI imagem: cortado por max_tokens '
-'(finish_reason=length). Corpo: ${response.body}',
-);
+if (data is! Map<String, dynamic>) {
+throw Exception('OpenAI image returned invalid JSON object');
 }
 
-return choice['message']['content'].toString();
+final status = data['status']?.toString();
+if (status == 'incomplete' || status == 'failed') {
+// ignore: avoid_print
+print('OpenAI imagem status=$status. Corpo: ${response.body}');
+}
+
+return _extractOpenAIResponseText(data);
+}
+
+// ============================================================
+// OPENAI RESPONSES API - TEXT EXTRACTOR
+// ============================================================
+
+static String _extractOpenAIResponseText(Map<String, dynamic> data) {
+final directOutputText = data['output_text'];
+if (directOutputText is String && directOutputText.trim().isNotEmpty) {
+return directOutputText.trim();
+}
+
+final output = data['output'];
+if (output is List) {
+for (final item in output) {
+if (item is! Map) continue;
+
+final content = item['content'];
+if (content is! List) continue;
+
+for (final part in content) {
+if (part is! Map) continue;
+
+final type = part['type']?.toString();
+final text = part['text'];
+
+if (type == 'output_text' && text is String && text.trim().isNotEmpty) {
+return text.trim();
+}
+}
+}
+}
+
+throw Exception(
+'OpenAI Responses API returned no output_text. Body: ${jsonEncode(data)}',
+);
 }
 
 // ============================================================
