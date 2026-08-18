@@ -11,12 +11,12 @@ static const String _anthropicKey = Config.anthropicKey;
 // ============================================================
 
 // Modelo principal das outras funcionalidades.
-static const String _openAiModel = 'gpt-5.6-sol';
-static const String _anthropicModel = 'claude-opus-4-8';
+static const String _openAiModel = 'gpt-4o-mini';
+static const String _anthropicModel = 'claude-haiku-4-5-20251001';
 
 // Modelo específico para CANTADAS / PICK LINES.
 // Mantido separado para não alterar as outras funcionalidades.
-static const String _openAiModelPickLine = 'gpt-5.6-luna';
+static const String _openAiModelPickLine = 'gpt-4o-mini';
 static const String _anthropicModelPickLine =
 'claude-haiku-4-5-20251001';
 
