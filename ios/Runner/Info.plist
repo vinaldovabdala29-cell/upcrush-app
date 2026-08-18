@@ -34,16 +34,41 @@
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
 
-		<!-- ADICIONADO: sem isto o iOS pode falhar silenciosamente
-		     ao aceder à galeria de fotos, o que cai no mesmo erro
-		     genérico usado para falhas de rede ("Algo deu errado"). -->
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>UpCrush precisa de aceder às tuas fotos para analisares screenshots de conversas e gerar respostas.</string>
 
-		<!-- ADICIONADO: necessário para a opção de tirar foto
-		     diretamente pela câmara (usada no Coach). -->
 		<key>NSCameraUsageDescription</key>
 		<string>UpCrush precisa de aceder à câmara para tirares fotos e gerar respostas.</string>
+
+		<!-- ADICIONADO: exceções explícitas de App Transport Security
+		     para os domínios da OpenAI e Anthropic. O iOS por vezes
+		     bloqueia conexões HTTPS que o Android aceita sem problema,
+		     mesmo sendo HTTPS válido — isto força o iOS a confiar
+		     explicitamente nestes domínios específicos. -->
+		<key>NSAppTransportSecurity</key>
+		<dict>
+			<key>NSExceptionDomains</key>
+			<dict>
+				<key>api.openai.com</key>
+				<dict>
+					<key>NSExceptionAllowsInsecureHTTPLoads</key>
+					<false/>
+					<key>NSExceptionMinimumTLSVersion</key>
+					<string>TLSv1.2</string>
+					<key>NSIncludesSubdomains</key>
+					<true/>
+				</dict>
+				<key>api.anthropic.com</key>
+				<dict>
+					<key>NSExceptionAllowsInsecureHTTPLoads</key>
+					<false/>
+					<key>NSExceptionMinimumTLSVersion</key>
+					<string>TLSv1.2</string>
+					<key>NSIncludesSubdomains</key>
+					<true/>
+				</dict>
+			</dict>
+		</dict>
 
 		<key>UIApplicationSceneManifest</key>
 		<dict>
