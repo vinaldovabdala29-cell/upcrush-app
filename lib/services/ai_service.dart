@@ -1,3 +1,4 @@
+
 import '../config.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -445,7 +446,6 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'استئناف محادثة قديمة',
 },
 
-// NOVA CATEGORIA
 'criar_curiosidade': {
 'pt': 'Criar curiosidade',
 'en': 'Create curiosity',
@@ -519,8 +519,6 @@ static const Map<String, String> _cantadaCategoriaDescricao = {
 'Give a specific, personal compliment related to the first date rather than a generic physical compliment.',
 'retomar_conversa_antiga':
 'Reconnect after days or weeks naturally, without artificial excuses or neediness.',
-
-// NOVA CATEGORIA
 'criar_curiosidade':
 'Create genuine curiosity through an unexpected observation, playful statement, intriguing unfinished thought or specific hook. The message should naturally make the other person want to ask "what do you mean?", "why?", or continue the conversation. Never use fake mystery, manipulation, clickbait or vague lines like "I have something to tell you".',
 };
@@ -1725,7 +1723,9 @@ required String user,
 }) async {
 final response = await http
 .post(
-Uri.parse('https://api.openai.com/v1/chat/completions'),
+Uri.parse(
+'https://api.openai.com/v1/chat/completions',
+),
 headers: {
 'Content-Type': 'application/json',
 'Authorization': 'Bearer $_openAiKey',
@@ -1742,13 +1742,8 @@ body: jsonEncode({
 'content': user,
 },
 ],
-
-// Um pouco mais de criatividade para as cantadas.
 'temperature': 1.0,
-
-// Uma única cantada não precisa de 1200 tokens.
 'max_tokens': 250,
-
 'response_format': {
 'type': 'json_schema',
 'json_schema': {
@@ -1773,7 +1768,6 @@ body: jsonEncode({
 .timeout(const Duration(seconds: 25));
 
 if (response.statusCode != 200) {
-// ignore: avoid_print
 print(
 'OpenAI pick line FALHOU '
 '(${response.statusCode}): ${response.body}',
@@ -1790,7 +1784,6 @@ final choice = data['choices'][0];
 final finishReason = choice['finish_reason'];
 
 if (finishReason == 'length') {
-// ignore: avoid_print
 print(
 'OpenAI pick line: cortado por max_tokens '
 '(finish_reason=length). Corpo: ${response.body}',
@@ -1927,7 +1920,7 @@ throw Exception('Both AI providers failed');
 }
 
 // ============================================================
-// OPENAI - IMAGE
+// OPENAI - IMAGE FALLBACK
 // ============================================================
 
 static Future<List<String>> _chamarComImagemComFallback({
@@ -1950,7 +1943,10 @@ return parsed;
 }
 
 throw Exception('Invalid OpenAI image response');
-} catch (_) {
+} catch (e) {
+print('OpenAI imagem falhou. Tentando Anthropic: $e');
+
+try {
 final result = await _chamarAnthropicImage(
 base64Image: base64Image,
 system: system,
@@ -1963,7 +1959,16 @@ if (parsed.isNotEmpty) {
 return parsed;
 }
 
-throw Exception('Both AI providers failed');
+throw Exception('Invalid Anthropic image response');
+} catch (anthropicError) {
+print(
+'Anthropic imagem também falhou: $anthropicError',
+);
+
+throw Exception(
+'Both AI providers failed image processing',
+);
+}
 }
 }
 
@@ -1977,7 +1982,9 @@ required String user,
 }) async {
 final response = await http
 .post(
-Uri.parse('https://api.openai.com/v1/chat/completions'),
+Uri.parse(
+'https://api.openai.com/v1/chat/completions',
+),
 headers: {
 'Content-Type': 'application/json',
 'Authorization': 'Bearer $_openAiKey',
@@ -2025,7 +2032,6 @@ body: jsonEncode({
 .timeout(const Duration(seconds: 25));
 
 if (response.statusCode != 200) {
-// ignore: avoid_print
 print(
 'OpenAI texto FALHOU '
 '(${response.statusCode}): ${response.body}',
@@ -2041,7 +2047,6 @@ final data = jsonDecode(response.body);
 final choice = data['choices'][0];
 
 if (choice['finish_reason'] == 'length') {
-// ignore: avoid_print
 print(
 'OpenAI texto: cortado por max_tokens '
 '(finish_reason=length). Corpo: ${response.body}',
@@ -2053,6 +2058,9 @@ return choice['message']['content'].toString();
 
 // ============================================================
 // OPENAI IMAGE REQUEST
+//
+// CORRIGIDO:
+// A análise de imagem agora usa /v1/responses.
 // ============================================================
 
 static Future<String> _chamarOpenAIImage({
@@ -2062,41 +2070,46 @@ required String user,
 }) async {
 final response = await http
 .post(
-Uri.parse('https://api.openai.com/v1/chat/completions'),
+Uri.parse(
+'https://api.openai.com/v1/responses',
+),
 headers: {
 'Content-Type': 'application/json',
 'Authorization': 'Bearer $_openAiKey',
 },
 body: jsonEncode({
 'model': _openAiModel,
-'messages': [
+'input': [
 {
 'role': 'system',
-'content': system,
+'content': [
+{
+'type': 'input_text',
+'text': system,
+},
+],
 },
 {
 'role': 'user',
 'content': [
 {
-'type': 'image_url',
-'image_url': {
-'url':
+'type': 'input_image',
+'image_url':
 'data:image/jpeg;base64,$base64Image',
 'detail': 'high',
 },
-},
 {
-'type': 'text',
+'type': 'input_text',
 'text': user,
 },
 ],
 },
 ],
 'temperature': 0.8,
-'max_tokens': 1500,
-'response_format': {
+'max_output_tokens': 1500,
+'text': {
+'format': {
 'type': 'json_schema',
-'json_schema': {
 'name': 'dating_responses',
 'strict': true,
 'schema': {
@@ -2123,7 +2136,6 @@ body: jsonEncode({
 .timeout(const Duration(seconds: 30));
 
 if (response.statusCode != 200) {
-// ignore: avoid_print
 print(
 'OpenAI imagem FALHOU '
 '(${response.statusCode}): ${response.body}',
@@ -2136,17 +2148,50 @@ throw Exception(
 
 final data = jsonDecode(response.body);
 
-final choice = data['choices'][0];
+// ==========================================================
+// Responses API retorna o texto em output[].content[].text
+// ==========================================================
 
-if (choice['finish_reason'] == 'length') {
-// ignore: avoid_print
+String? outputText;
+
+final output = data['output'];
+
+if (output is List) {
+for (final item in output) {
+if (item is! Map) continue;
+
+final content = item['content'];
+
+if (content is! List) continue;
+
+for (final part in content) {
+if (part is! Map) continue;
+
+final text = part['text'];
+
+if (text is String && text.trim().isNotEmpty) {
+outputText = text;
+break;
+}
+}
+
+if (outputText != null) {
+break;
+}
+}
+}
+
+if (outputText == null || outputText!.trim().isEmpty) {
 print(
-'OpenAI imagem: cortado por max_tokens '
-'(finish_reason=length). Corpo: ${response.body}',
+'OpenAI imagem: resposta sem texto. Corpo: ${response.body}',
+);
+
+throw Exception(
+'OpenAI image returned no text',
 );
 }
 
-return choice['message']['content'].toString();
+return outputText!;
 }
 
 // ============================================================
@@ -2259,6 +2304,11 @@ Return JSON only.
 .timeout(const Duration(seconds: 30));
 
 if (response.statusCode != 200) {
+print(
+'Anthropic imagem FALHOU '
+'(${response.statusCode}): ${response.body}',
+);
+
 throw Exception(
 'Anthropic image ${response.statusCode}: ${response.body}',
 );
@@ -2402,7 +2452,8 @@ final data = jsonDecode(body);
 String text = '';
 
 if (data is Map && data['choices'] != null) {
-text = data['choices'][0]['message']['content'].toString();
+text =
+data['choices'][0]['message']['content'].toString();
 } else if (data is Map && data['content'] != null) {
 text = data['content'][0]['text'].toString();
 } else {
@@ -2427,3 +2478,4 @@ return [];
 }
 }
 }
+
