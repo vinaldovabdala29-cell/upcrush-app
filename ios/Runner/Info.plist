@@ -33,6 +33,18 @@
 		</array>
 		<key>LSRequiresIPhoneOS</key>
 		<true/>
+
+		<!-- ADICIONADO: sem isto o iOS pode falhar silenciosamente
+		     ao aceder à galeria de fotos, o que cai no mesmo erro
+		     genérico usado para falhas de rede ("Algo deu errado"). -->
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>UpCrush precisa de aceder às tuas fotos para analisares screenshots de conversas e gerar respostas.</string>
+
+		<!-- ADICIONADO: necessário para a opção de tirar foto
+		     diretamente pela câmara (usada no Coach). -->
+		<key>NSCameraUsageDescription</key>
+		<string>UpCrush precisa de aceder à câmara para tirares fotos e gerar respostas.</string>
+
 		<key>UIApplicationSceneManifest</key>
 		<dict>
 			<key>UIApplicationSupportsMultipleScenes</key>
