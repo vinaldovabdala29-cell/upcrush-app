@@ -316,32 +316,81 @@ class _BottomNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bg = isDark ? const Color(0xFF0A0A0F) : Colors.white;
-
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
         child: Container(
           decoration: BoxDecoration(
-            color: bg.withOpacity(isDark ? 0.55 : 0.65),
+            // Mantém exatamente o mesmo tamanho/layout.
+            // Apenas troca o fundo por um vidro translúcido com tom de água.
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: isDark
+                  ? [
+                      const Color(0xFFBFE8FF).withOpacity(0.10),
+                      const Color(0xFF73C7F5).withOpacity(0.055),
+                      const Color(0xFF07131C).withOpacity(0.38),
+                    ]
+                  : [
+                      Colors.white.withOpacity(0.58),
+                      const Color(0xFFDDF5FF).withOpacity(0.42),
+                      const Color(0xFFBFEAFF).withOpacity(0.26),
+                    ],
+            ),
             border: Border(
               top: BorderSide(
-                color: isDark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06),
+                color: isDark
+                    ? const Color(0xFFDDF5FF).withOpacity(0.18)
+                    : Colors.white.withOpacity(0.82),
                 width: 0.5,
               ),
             ),
-          ),
-          child: SafeArea(
-            top: false,
-            child: SizedBox(
-              height: 64,
-              child: Row(
-                children: [
-                  _item(index: 0, label: _homeLabel()),
-                  _item(index: 1, label: 'Coach'),
-                ],
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF7DD3FC)
+                    .withOpacity(isDark ? 0.035 : 0.055),
+                blurRadius: 18,
+                offset: const Offset(0, -3),
               ),
-            ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Reflexo muito discreto para dar profundidade de vidro/água.
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: IgnorePointer(
+                  child: Container(
+                    height: 18,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.white.withOpacity(isDark ? 0.055 : 0.22),
+                          Colors.transparent,
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              SafeArea(
+                top: false,
+                child: SizedBox(
+                  height: 64,
+                  child: Row(
+                    children: [
+                      _item(index: 0, label: _homeLabel()),
+                      _item(index: 1, label: 'Coach'),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
