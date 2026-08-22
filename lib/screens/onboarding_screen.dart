@@ -20,12 +20,29 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   Timer? _typingTimer;
   final PageController _pageController = PageController();
   int _currentPage = 0;
-  String _audience = 'women'; // women | men | both
+  String _userName = '';
+  String? _audience; // women | men | both — começa sem seleção
+  String? _age;
+  List<String> _platforms = [];
+  String? _pain;
+  List<String> _desires = [];
+  String? _reaction;
+  String? _stuckMoment;
+  int? _confidence;
 
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark, // Android
+        statusBarBrightness: Brightness.light,    // iOS
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
+        systemNavigationBarDividerColor: Colors.transparent,
+      ),
+    );
     Future.delayed(const Duration(milliseconds: 1800), () {
       if (mounted) _startTypingSequence();
     });
@@ -132,18 +149,41 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       builder: (context, _, __) {
         final lang = appLang.languageCode;
 
-        return Scaffold(
-          backgroundColor: _currentPage < 19 ? Colors.white : const Color(0xFF1C1C1E),
-          body: SafeArea(
-            child: PageView(
-              controller: _pageController,
-              physics: const NeverScrollableScrollPhysics(),
-              onPageChanged: (i) => setState(() => _currentPage = i),
+        return AnnotatedRegion<SystemUiOverlayStyle>(
+          value: const SystemUiOverlayStyle(
+            statusBarColor: Colors.transparent,
+            statusBarIconBrightness: Brightness.dark, // Android
+            statusBarBrightness: Brightness.light,    // iOS
+            systemNavigationBarColor: Colors.white,
+            systemNavigationBarIconBrightness: Brightness.dark,
+            systemNavigationBarDividerColor: Colors.transparent,
+          ),
+          child: Scaffold(
+            backgroundColor: Colors.white,
+            body: SafeArea(
+            child: Stack(
               children: [
+                Padding(
+                  padding: EdgeInsets.only(top: _currentPage == 0 ? 0 : 68),
+                  child: PageView(
+                    controller: _pageController,
+                    physics: const NeverScrollableScrollPhysics(),
+                    onPageChanged: (i) => setState(() => _currentPage = i),
+                    children: [
                 // 1
                 _FeatureShowcasePage(lang: lang, onContinue: _goNext),
 
-                // 2 — Com quem conversa
+                // 2 — Nome
+                _NamePage(
+                  lang: lang,
+                  initialName: _userName,
+                  onNameChanged: (value) {
+                    setState(() => _userName = value.trim());
+                  },
+                  onContinue: _goNext,
+                ),
+
+                // 3 — Com quem conversa
                 _AudienceChoicePage(
                   lang: lang,
                   initialAudience: _audience,
@@ -156,7 +196,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 // 3
                 _DesireScreenshotsPage(
                   lang: lang,
-                  audience: _audience,
+                  audience: _audience ?? 'both',
                   onContinue: _goNext,
                 ),
 
@@ -166,26 +206,26 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 // 5
                 _CompetitionAwarenessPage(
                   lang: lang,
-                  audience: _audience,
+                  audience: _audience ?? 'both',
                   onContinue: _goNext,
                 ),
 
                 // 6
                 _DesireShiftPage(
                   lang: lang,
-                  audience: _audience,
+                  audience: _audience ?? 'both',
                   onContinue: _goNext,
                 ),
 
                 // 7
                 _MorningMessageDesirePage(
                   lang: lang,
-                  audience: _audience,
+                  audience: _audience ?? 'both',
                   onContinue: _goNext,
                 ),
 
                 // 8 — Introdução às perguntas
-                _QuestionIntroPage(lang: lang, onContinue: _goNext),
+                _QuestionIntroPage(lang: lang, userName: _userName, onContinue: _goNext),
 
                 // 9 — Idade
                 _SingleChoicePage(
@@ -194,6 +234,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   titleDe: 'Wie alt bist du?',
                   optionsPt: const ['18–20', '21–24', '25–29', '30–34', '35–44', '45+'],
                   optionsDe: const ['18–20', '21–24', '25–29', '30–34', '35–44', '45+'],
+                  centerOptions: true,
+                  onSelected: (value) => setState(() => _age = value),
                   onContinue: _goNext,
                 ),
 
@@ -212,6 +254,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     'Outro',
                   ],
                   maxSelections: 3,
+                  onSelected: (values) => setState(() => _platforms = values),
                   onContinue: _goNext,
                 ),
 
@@ -236,6 +279,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     'Nicht wissen, wie ich flirten soll',
                     'Aus Chats werden keine Dates',
                   ],
+                  onSelected: (value) => setState(() => _pain = value),
                   onContinue: _goNext,
                 ),
 
@@ -261,6 +305,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     '📅 Aus Gesprächen echte Dates machen',
                   ],
                   maxSelections: 3,
+                  onSelected: (values) => setState(() => _desires = values),
                   onContinue: _goNext,
                 ),
 
@@ -285,6 +330,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     'Ich tue so, als wäre es mir egal',
                     'Kommt auf die Person an',
                   ],
+                  onSelected: (value) => setState(() => _reaction = value),
                   onContinue: _goNext,
                 ),
 
@@ -309,17 +355,38 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     '❤️ Wenn ich die Person wirklich mag',
                     '📅 Wenn ich aus dem Chat ein Date machen möchte',
                   ],
+                  onSelected: (value) => setState(() => _stuckMoment = value),
                   onContinue: _goNext,
                 ),
 
                 // 15 — Confiança
-                _ConfidencePage(lang: lang, onContinue: _goNext),
+                _ConfidencePage(
+                  lang: lang,
+                  onSelected: (value) => setState(() => _confidence = value),
+                  onContinue: _goNext,
+                ),
 
                 // 16 — Preparando experiência (0% → 100%)
-                _PersonalizationBridgePage(lang: lang, onContinue: _goNext),
+                _PersonalizationBridgePage(
+                  lang: lang,
+                  userName: _userName,
+                  audience: _audience,
+                  age: _age,
+                  platforms: _platforms,
+                  pain: _pain,
+                  desires: _desires,
+                  reaction: _reaction,
+                  stuckMoment: _stuckMoment,
+                  confidence: _confidence,
+                  onContinue: _goNext,
+                ),
 
                 // 17 — Já estamos começando a entender você
-                _UnderstandingYouPage(lang: lang, onContinue: _goNext),
+                _UnderstandingYouPage(
+                  lang: lang,
+                  userName: _userName,
+                  onContinue: _goNext,
+                ),
 
                 // 18 — Objetivo para os próximos 30 dias
                 _SingleChoicePage(
@@ -351,9 +418,60 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   lang: lang,
                   onContinue: () => _finish(context),
                 ),
+                    ],
+                  ),
+                ),
+                if (_currentPage > 0 && _currentPage < 20)
+                  Positioned(
+                    left: 22,
+                    right: 22,
+                    top: 10,
+                    child: Row(
+                      children: [
+                        Material(
+                          color: const Color(0xFFF7F7FA),
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              _pageController.previousPage(
+                                duration: const Duration(milliseconds: 350),
+                                curve: Curves.easeOutCubic,
+                              );
+                            },
+                            child: const SizedBox(
+                              width: 46,
+                              height: 46,
+                              child: Icon(
+                                Icons.arrow_back_rounded,
+                                color: Color(0xFF19151F),
+                                size: 25,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 22),
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(99),
+                            child: LinearProgressIndicator(
+                              value: (_currentPage + 1) / 21,
+                              minHeight: 5,
+                              backgroundColor: const Color(0xFFE8E8EA),
+                              valueColor: const AlwaysStoppedAnimation<Color>(
+                                Color(0xFF1D1822),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
+        ),
         );
       },
     );
@@ -363,6 +481,290 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 // ═══════════════════════════════════════════════════════════════════════
 // PÁGINA 1 — Vídeo do UpCrush
 // ═══════════════════════════════════════════════════════════════════════
+
+
+
+class _NamePage extends StatefulWidget {
+  final String lang;
+  final String initialName;
+  final ValueChanged<String> onNameChanged;
+  final VoidCallback onContinue;
+
+  const _NamePage({
+    required this.lang,
+    required this.initialName,
+    required this.onNameChanged,
+    required this.onContinue,
+  });
+
+  @override
+  State<_NamePage> createState() => _NamePageState();
+}
+
+class _NamePageState extends State<_NamePage> {
+  late final TextEditingController _controller;
+  late final FocusNode _focusNode;
+
+  bool get _canContinue => _controller.text.trim().isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName);
+    _focusNode = FocusNode();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  String _eyebrow() {
+    switch (widget.lang) {
+      case 'de': return 'Zuerst das Wichtigste.';
+      case 'pt': return 'Primeiro, o mais importante.';
+      case 'es': return 'Primero lo primero';
+      case 'fr': return 'Commençons par le début';
+      case 'it': return 'Prima le cose importanti';
+      default: return 'First, what matters most.';
+    }
+  }
+
+  String _title() {
+    switch (widget.lang) {
+      case 'de': return 'Wie dürfen wir dich nennen?';
+      case 'pt': return 'Como podemos te chamar?';
+      case 'es': return '¿Cómo podemos llamarte?';
+      case 'fr': return 'Comment pouvons-nous t’appeler ?';
+      case 'it': return 'Come possiamo chiamarti?';
+      default: return 'What can we call you?';
+    }
+  }
+
+  String _hint() {
+    switch (widget.lang) {
+      case 'de': return 'Dein Name';
+      case 'pt': return 'Seu nome';
+      case 'es': return 'Tu nombre';
+      case 'fr': return 'Ton prénom';
+      case 'it': return 'Il tuo nome';
+      default: return 'Your name';
+    }
+  }
+
+  String _button() {
+    switch (widget.lang) {
+      case 'de': return 'Weiter';
+      case 'pt': return 'Continuar';
+      case 'es': return 'Continuar';
+      case 'fr': return 'Continuer';
+      case 'it': return 'Continua';
+      default: return 'Continue';
+    }
+  }
+
+  Future<void> _submit() async {
+    if (!_canContinue) return;
+
+    widget.onNameChanged(_controller.text.trim());
+
+    // Fecha o teclado antes de iniciar a transição para a próxima tela.
+    // No iOS, navegar enquanto o teclado ainda está a reduzir o viewInset
+    // pode causar um RenderFlex overflow minúsculo durante alguns frames.
+    _focusNode.unfocus();
+    FocusManager.instance.primaryFocus?.unfocus();
+
+    HapticFeedback.mediumImpact();
+
+    await Future.delayed(const Duration(milliseconds: 300));
+    if (!mounted) return;
+
+    widget.onContinue();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(28, 18, 28, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 14),
+          Text(
+            _eyebrow(),
+            style: const TextStyle(
+              color: Color(0xFFB0B0B5),
+              fontSize: 17,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            _title(),
+            style: const TextStyle(
+              color: Color(0xFF080808),
+              fontSize: 30,
+              height: 1.08,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.8,
+            ),
+          ),
+          const Spacer(flex: 2),
+          Container(
+            height: 78,
+            decoration: BoxDecoration(
+              color: const Color(0xFFF6F6F7),
+              borderRadius: BorderRadius.circular(22),
+            ),
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 22),
+            child: TextField(
+              controller: _controller,
+              focusNode: _focusNode,
+              textAlign: TextAlign.center,
+              textCapitalization: TextCapitalization.words,
+              textInputAction: TextInputAction.done,
+              autocorrect: false,
+              enableSuggestions: false,
+              onSubmitted: (_) => _submit(),
+              onChanged: (value) {
+                widget.onNameChanged(value.trim());
+                setState(() {});
+              },
+              style: const TextStyle(
+                color: Color(0xFF080808),
+                fontSize: 28,
+                fontWeight: FontWeight.w700,
+              ),
+              decoration: InputDecoration(
+                border: InputBorder.none,
+                hintText: _hint(),
+                hintStyle: const TextStyle(
+                  color: Color(0xFFC8C8CC),
+                  fontSize: 28,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+          const Spacer(flex: 3),
+          SizedBox(
+            width: double.infinity,
+            height: 64,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              decoration: BoxDecoration(
+                color: _canContinue
+                    ? const Color(0xFF080808)
+                    : const Color(0xFFE1E1E3),
+                borderRadius: BorderRadius.circular(32),
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(32),
+                  onTap: _canContinue ? _submit : null,
+                  child: Center(
+                    child: Text(
+                      _button(),
+                      style: TextStyle(
+                        color: _canContinue
+                            ? Colors.white
+                            : const Color(0xFF9B9B9F),
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+        ],
+      ),
+    );
+  }
+}
+
+String _audienceSubjectPt(String? audience) {
+  switch (audience) {
+    case 'men':
+      return 'ele';
+    case 'both':
+      return 'a outra pessoa';
+    case 'women':
+    default:
+      return 'ela';
+  }
+}
+
+String _audienceObjectPt(String? audience) {
+  switch (audience) {
+    case 'men':
+      return 'ele';
+    case 'both':
+      return 'a outra pessoa';
+    case 'women':
+    default:
+      return 'ela';
+  }
+}
+
+String _audiencePossessivePt(String? audience) {
+  switch (audience) {
+    case 'men':
+      return 'dele';
+    case 'both':
+      return 'da outra pessoa';
+    case 'women':
+    default:
+      return 'dela';
+  }
+}
+
+String _audienceSubjectDe(String? audience) {
+  switch (audience) {
+    case 'men':
+      return 'er';
+    case 'both':
+      return 'die andere Person';
+    case 'women':
+    default:
+      return 'sie';
+  }
+}
+
+String _audiencePossessiveDe(String? audience) {
+  switch (audience) {
+    case 'men':
+      return 'seine';
+    case 'both':
+      return 'die Aufmerksamkeit der anderen Person';
+    case 'women':
+    default:
+      return 'ihre';
+  }
+}
+
+String _audienceTargetDe(String? audience) {
+  switch (audience) {
+    case 'men':
+      return 'ihm';
+    case 'both':
+      return 'der anderen Person';
+    case 'women':
+    default:
+      return 'ihr';
+  }
+}
 
 class _FeatureShowcasePage extends StatefulWidget {
   final String lang;
@@ -479,14 +881,84 @@ class _FeatureShowcasePageState extends State<_FeatureShowcasePage> {
       padding: const EdgeInsets.fromLTRB(0, 24, 0, 26),
       child: Column(
         children: [
-          // Vídeo direto, sem mockup, com a mesma área visual da Tela 2.
+          // Vídeo menor dentro apenas da estrutura física do iPhone.
+          // O vídeo já contém a interface do telefone, por isso não
+          // desenhamos notch, Dynamic Island ou status bar sobre ele.
           Expanded(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 7),
-              child: Center(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(22),
-                  child: _buildVideo(fit: BoxFit.contain),
+            child: Center(
+              child: SizedBox(
+                width: 272,
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: [
+                    // Botões de volume.
+                    Positioned(
+                      left: -4,
+                      top: 140,
+                      child: Container(
+                        width: 5,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF232326),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      left: -4,
+                      top: 200,
+                      child: Container(
+                        width: 5,
+                        height: 52,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF232326),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                    ),
+
+                    // Botão lateral direito.
+                    Positioned(
+                      right: -4,
+                      top: 156,
+                      child: Container(
+                        width: 5,
+                        height: 76,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF232326),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                      ),
+                    ),
+
+                    // Corpo físico do iPhone.
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF171719),
+                        borderRadius: BorderRadius.circular(42),
+                        border: Border.all(
+                          color: const Color(0xFF4A4A4E),
+                          width: 1.2,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.16),
+                            blurRadius: 26,
+                            offset: const Offset(0, 12),
+                          ),
+                        ],
+                      ),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(36),
+                        child: AspectRatio(
+                          aspectRatio: 9 / 19.5,
+                          child: _buildVideo(fit: BoxFit.cover),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
@@ -633,53 +1105,32 @@ class _DesireScreenshotsPageState extends State<_DesireScreenshotsPage> {
   }
 
   String _headline(String lang) {
-    final a = widget.audience;
-
     switch (lang) {
       case 'de':
-        if (a == 'men') {
+        if (widget.audience == 'men') {
           return 'Sorg dafür, dass er aufs Handy schaut und hofft, dass du es bist.';
         }
-        if (a == 'both') {
-          return 'Sorg dafür, dass die Person aufs Handy schaut und hofft, dass du es bist.';
+        if (widget.audience == 'both') {
+          return 'Sorg dafür, dass die andere Person aufs Handy schaut und hofft, dass du es bist.';
         }
         return 'Sorg dafür, dass sie aufs Handy schaut und hofft, dass du es bist.';
 
       case 'pt':
-        if (a == 'men') {
-          return 'Faça ele olhar para o celular esperando que seja você.';
+        if (widget.audience == 'men') {
+          return 'Faça com que ele olhe para o celular esperando que seja você.';
         }
-        if (a == 'both') {
-          return 'Faça a pessoa olhar para o celular esperando que seja você.';
+        if (widget.audience == 'both') {
+          return 'Faça com que a outra pessoa olhe para o celular esperando que seja você.';
         }
-        return 'Faça ela olhar para o celular esperando que seja você.';
-
-      case 'es':
-        if (a == 'men') return 'Haz que mire el teléfono esperando que seas tú.';
-        if (a == 'both') return 'Haz que esa persona mire el teléfono esperando que seas tú.';
-        return 'Haz que mire el teléfono esperando que seas tú.';
-
-      case 'fr':
-        if (a == 'men') {
-          return 'Fais en sorte qu’il regarde son téléphone en espérant que ce soit toi.';
-        }
-        if (a == 'both') {
-          return 'Fais en sorte que cette personne regarde son téléphone en espérant que ce soit toi.';
-        }
-        return 'Fais en sorte qu’elle regarde son téléphone en espérant que ce soit toi.';
-
-      case 'it':
-        if (a == 'men') {
-          return 'Fai in modo che guardi il telefono sperando che sia tu.';
-        }
-        if (a == 'both') {
-          return 'Fai in modo che quella persona guardi il telefono sperando che sia tu.';
-        }
-        return 'Fai in modo che guardi il telefono sperando che sia tu.';
+        return 'Faça com que ela olhe para o celular esperando que seja você.';
 
       default:
-        if (a == 'men') return 'Make him check his phone hoping it’s you.';
-        if (a == 'both') return 'Make them check their phone hoping it’s you.';
+        if (widget.audience == 'men') {
+          return 'Make him check his phone hoping it’s you.';
+        }
+        if (widget.audience == 'both') {
+          return 'Make the other person check their phone hoping it’s you.';
+        }
         return 'Make her check her phone hoping it’s you.';
     }
   }
@@ -854,17 +1305,78 @@ class _RecognitionPage extends StatelessWidget {
     required this.onContinue,
   });
 
-  static const List<String> _messages = [
-    'Hey',
-    'Wie geht’s?',
-    'Was machst du?',
-    'Wie war dein Tag?',
-    'Du bist hübsch',
-    'Was machst du so?',
-    'Warum antwortest du mir nicht?',
-    'Guten Morgen',
-    'Was suchst du hier?',
-  ];
+  // Mensagens de exemplo "clichê" — traduzidas para cada idioma.
+  static const Map<String, List<String>> _messagesByLang = {
+    'de': [
+      'Hey',
+      'Wie geht’s?',
+      'Was machst du?',
+      'Wie war dein Tag?',
+      'Du bist hübsch',
+      'Was machst du so?',
+      'Warum antwortest du mir nicht?',
+      'Guten Morgen',
+      'Was suchst du hier?',
+    ],
+    'pt': [
+      'Oi',
+      'Tudo bem?',
+      'O que você está fazendo?',
+      'Como foi seu dia?',
+      'Você é muito bonita',
+      'O que você anda fazendo?',
+      'Por que você não me responde?',
+      'Bom dia',
+      'O que você procura por aqui?',
+    ],
+    'es': [
+      'Hola',
+      '¿Qué tal?',
+      '¿Qué haces?',
+      '¿Cómo estuvo tu día?',
+      'Eres muy guapa',
+      '¿Qué andas haciendo?',
+      '¿Por qué no me respondes?',
+      'Buenos días',
+      '¿Qué buscas por aquí?',
+    ],
+    'fr': [
+      'Salut',
+      'Ça va ?',
+      'Tu fais quoi ?',
+      'C’était comment ta journée ?',
+      'Tu es très jolie',
+      'Tu fais quoi de beau ?',
+      'Pourquoi tu ne me réponds pas ?',
+      'Bonjour',
+      'Tu cherches quoi ici ?',
+    ],
+    'it': [
+      'Ciao',
+      'Come va?',
+      'Cosa fai?',
+      'Com’è andata la giornata?',
+      'Sei molto carina',
+      'Cosa combini?',
+      'Perché non mi rispondi?',
+      'Buongiorno',
+      'Cosa cerchi qui?',
+    ],
+    'en': [
+      'Hey',
+      'How are you?',
+      'What are you up to?',
+      'How was your day?',
+      'You’re pretty',
+      'What have you been up to?',
+      'Why aren’t you answering me?',
+      'Good morning',
+      'What are you looking for here?',
+    ],
+  };
+
+  List<String> get _messages =>
+      _messagesByLang[lang] ?? _messagesByLang['en']!;
 
   String _title(String lang) {
     switch (lang) {
@@ -880,6 +1392,41 @@ class _RecognitionPage extends StatelessWidget {
         return 'Una di queste ti sembra familiare?';
       default:
         return 'Does any of this look familiar?';
+    }
+  }
+
+  // Rótulo curto de "Nota" em cada idioma.
+  String _noteLabel(String lang) {
+    switch (lang) {
+      case 'de':
+        return 'Hinw.:';
+      case 'pt':
+        return 'Obs.:';
+      case 'es':
+        return 'N.:';
+      case 'fr':
+        return 'Rem.:';
+      case 'it':
+        return 'N.:';
+      default:
+        return 'N.B.:';
+    }
+  }
+
+  String _warning(String lang) {
+    switch (lang) {
+      case 'de':
+        return 'Verlier keine guten Gespräche, nur weil du nicht weißt, was du schreiben sollst.';
+      case 'pt':
+        return 'Pare de perder conversas boas por não saber o que dizer.';
+      case 'es':
+        return 'Deja de perder buenas conversaciones por no saber qué decir.';
+      case 'fr':
+        return 'Arrête de perdre de bonnes conversations parce que tu ne sais pas quoi dire.';
+      case 'it':
+        return 'Smetti di perdere belle conversazioni perché non sai cosa dire.';
+      default:
+        return 'Stop losing good conversations because you don’t know what to say.';
     }
   }
 
@@ -904,71 +1451,95 @@ class _RecognitionPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(24, 24, 24, 26),
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 22),
       child: Column(
         children: [
+          // Título fixo.
           Text(
             _title(lang),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xFF080808),
               fontSize: 30,
-              height: 1.10,
+              height: 1.08,
               fontWeight: FontWeight.w900,
               letterSpacing: -0.9,
             ),
           ),
 
-          const SizedBox(height: 22),
+          const SizedBox(height: 16),
 
+          // SOMENTE as mensagens fazem scroll vertical.
           Expanded(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 430),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: List.generate(
-                    _messages.length,
-                    (index) => Padding(
-                      padding: EdgeInsets.only(
-                        bottom: index == _messages.length - 1 ? 0 : 8,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 430),
+              child: Scrollbar(
+                thumbVisibility: false,
+                child: ListView.separated(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(vertical: 2),
+                  itemCount: _messages.length,
+                  separatorBuilder: (_, __) => const SizedBox(height: 8),
+                  itemBuilder: (_, index) {
+                    return Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 18,
+                        vertical: 11,
                       ),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 18,
-                          vertical: 11,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFF5F5F7),
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        child: Text(
-                          _messages[index],
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            color: Color(0xFF111111),
-                            fontSize: 17,
-                            height: 1.15,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: -0.25,
-                          ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF5F5F7),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        _messages[index],
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Color(0xFF111111),
+                          fontSize: 17,
+                          height: 1.15,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.25,
                         ),
                       ),
-                    ),
-                  ),
+                    );
+                  },
                 ),
               ),
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 12),
 
+          // Nota fixa, fora do scroll, em vermelho.
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: '${_noteLabel(lang)} ',
+                  style: const TextStyle(fontWeight: FontWeight.w900),
+                ),
+                TextSpan(text: _warning(lang)),
+              ],
+            ),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFFFF3B30),
+              fontSize: 15.5,
+              height: 1.24,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.15,
+            ),
+          ),
+
+          const SizedBox(height: 14),
+
+          // Botão fixo.
           SizedBox(
             width: double.infinity,
-            height: 60,
+            height: 58,
             child: ElevatedButton(
               onPressed: () {
                 HapticFeedback.mediumImpact();
@@ -1030,7 +1601,7 @@ class _CompetitionAwarenessPage extends StatelessWidget {
           return 'Você não é o único que manda mensagem para ele.';
         }
         if (audience == 'both') {
-          return 'Você não é a única pessoa tentando chamar atenção.';
+          return 'Você não é a única pessoa tentando chamar a atenção.';
         }
         return 'Você não é o único que manda mensagem para ela.';
       default:
@@ -1059,13 +1630,13 @@ class _CompetitionAwarenessPage extends StatelessWidget {
         if (audience == 'both') {
           return 'Enquanto você tenta chamar a atenção da outra pessoa, outras pessoas estão fazendo exatamente a mesma coisa.';
         }
-        return 'Enquanto você tenta chamar a atenção dela, outros estão fazendo exatamente a mesma coisa.';
+        return 'Enquanto você tenta chamar a atenção dela, outras pessoas estão fazendo exatamente a mesma coisa.';
       default:
         if (audience == 'men') {
           return 'While you’re trying to get his attention, others are doing exactly the same thing.';
         }
         if (audience == 'both') {
-          return 'While you’re trying to get their attention, others are doing exactly the same thing.';
+          return 'While you’re trying to get the other person’s attention, others are doing exactly the same thing.';
         }
         return 'While you’re trying to get her attention, others are doing exactly the same thing.';
     }
@@ -1079,6 +1650,31 @@ class _CompetitionAwarenessPage extends StatelessWidget {
         return 'E se as mensagens de vocês parecem iguais, por que justamente a tua deveria se destacar?';
       default:
         return 'And if all the messages sound the same, why should yours be the one that stands out?';
+    }
+  }
+
+  String _luckLine() {
+    switch (lang) {
+      case 'de':
+        return 'Hinw.: Verlass dich nicht auf Glück, um das Interesse aufrechtzuerhalten.';
+      case 'pt':
+        return 'Obs.: Não dependa de sorte para manter o interesse.';
+      case 'es':
+        return 'Nota: No dependas de la suerte para mantener el interés.';
+      case 'fr':
+        return 'N.B. : Ne compte pas sur la chance pour maintenir son intérêt.';
+      case 'it':
+        return 'N.B.: Non affidarti alla fortuna per mantenere vivo l’interesse.';
+      case 'tr':
+        return 'Not: İlgiyi sürdürmek için şansa güvenme.';
+      case 'pl':
+        return 'Uwaga: Nie licz na szczęście, żeby utrzymać zainteresowanie.';
+      case 'ru':
+        return 'Прим.: Не полагайся на удачу, чтобы удерживать интерес.';
+      case 'ar':
+        return 'ملاحظة: لا تعتمد على الحظ للحفاظ على الاهتمام.';
+      default:
+        return 'Note: Don’t rely on luck to keep their interest.';
     }
   }
 
@@ -1140,6 +1736,18 @@ class _CompetitionAwarenessPage extends StatelessWidget {
                 height: 1.30,
                 fontWeight: FontWeight.w800,
               ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            _luckLine(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF111111),
+              fontSize: 19,
+              height: 1.25,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.35,
             ),
           ),
           const Spacer(flex: 2),
@@ -1208,24 +1816,17 @@ class _DesireShiftPage extends StatelessWidget {
         }
         return 'Imagine se a tua mensagem fosse aquela que ela está esperando.';
       default:
-        if (audience == 'men') {
-          return 'Imagine if your message was the one he was waiting for.';
-        }
-        if (audience == 'both') {
-          return 'Imagine if your message was the one they were waiting for.';
-        }
+        if (audience == 'men') return 'Imagine if your message was the one he was waiting for.';
+        if (audience == 'both') return 'Imagine if your message was the one the other person was waiting for.';
         return 'Imagine if your message was the one she was waiting for.';
     }
   }
 
   String _mine() {
     switch (lang) {
-      case 'de':
-        return 'Nicht irgendeine Nachricht.\nDeine.';
-      case 'pt':
-        return 'Não qualquer mensagem.\nA tua.';
-      default:
-        return 'Not just any message.\nYours.';
+      case 'de': return 'Nicht irgendeine Nachricht.\nDeine.';
+      case 'pt': return 'Não qualquer mensagem.\nA tua.';
+      default: return 'Not just any message.\nYours.';
     }
   }
 
@@ -1248,12 +1849,8 @@ class _DesireShiftPage extends StatelessWidget {
         }
         return 'É sobre aquela sensação de perceber que ela realmente quer falar com você.';
       default:
-        if (audience == 'men') {
-          return 'It’s that feeling when you realize he actually wants to talk to you.';
-        }
-        if (audience == 'both') {
-          return 'It’s that feeling when you realize they actually want to talk to you.';
-        }
+        if (audience == 'men') return 'It’s that feeling when you realize he actually wants to talk to you.';
+        if (audience == 'both') return 'It’s that feeling when you realize the other person actually wants to talk to you.';
         return 'It’s that feeling when you realize she actually wants to talk to you.';
     }
   }
@@ -1390,7 +1987,6 @@ class _MorningMessageDesirePage extends StatelessWidget {
           return 'Sorg dafür, dass du die erste Person bist, der die andere Person schreiben will, wenn sie aufwacht.';
         }
         return 'Sorg dafür, dass du die erste Person bist, der sie schreiben will, wenn sie aufwacht.';
-
       case 'pt':
         if (audience == 'men') {
           return 'Faça com que você seja a primeira pessoa para quem ele queira mandar mensagem quando acordar.';
@@ -1399,15 +1995,27 @@ class _MorningMessageDesirePage extends StatelessWidget {
           return 'Faça com que você seja a primeira pessoa para quem a outra pessoa queira mandar mensagem quando acordar.';
         }
         return 'Faça com que você seja a primeira pessoa para quem ela queira mandar mensagem quando acordar.';
-
       default:
-        if (audience == 'men') {
-          return 'Make yourself the first person he wants to text when he wakes up.';
-        }
-        if (audience == 'both') {
-          return 'Make yourself the first person they want to text when they wake up.';
-        }
+        if (audience == 'men') return 'Make yourself the first person he wants to text when he wakes up.';
+        if (audience == 'both') return 'Make yourself the first person the other person wants to text when they wake up.';
         return 'Make yourself the first person she wants to text when she wakes up.';
+    }
+  }
+
+  String _painLine(String lang) {
+    switch (lang) {
+      case 'de':
+        return 'Hör auf, dieselbe Nachricht immer wieder zu löschen und neu zu schreiben.';
+      case 'pt':
+        return 'Pare de apagar e reescrever a mesma mensagem.';
+      case 'es':
+        return 'Deja de borrar y reescribir el mismo mensaje una y otra vez.';
+      case 'fr':
+        return 'Arrête d’effacer et de réécrire le même message encore et encore.';
+      case 'it':
+        return 'Smetti di cancellare e riscrivere lo stesso messaggio.';
+      default:
+        return 'Stop deleting and rewriting the same message.';
     }
   }
 
@@ -1444,6 +2052,20 @@ class _MorningMessageDesirePage extends StatelessWidget {
       child: Column(
         children: [
           const Spacer(),
+
+          Text(
+            _painLine(lang),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF111111),
+              fontSize: 19,
+              height: 1.35,
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.25,
+            ),
+          ),
+
+          const SizedBox(height: 28),
 
           Text(
             _headline(lang),
@@ -1499,7 +2121,7 @@ class _MorningMessageDesirePage extends StatelessWidget {
 
 class _AudienceChoicePage extends StatefulWidget {
   final String lang;
-  final String initialAudience;
+  final String? initialAudience;
   final ValueChanged<String> onSelected;
   final VoidCallback onContinue;
 
@@ -1515,7 +2137,7 @@ class _AudienceChoicePage extends StatefulWidget {
 }
 
 class _AudienceChoicePageState extends State<_AudienceChoicePage> {
-  late String selected;
+  String? selected;
 
   @override
   void initState() {
@@ -1552,30 +2174,32 @@ class _AudienceChoicePageState extends State<_AudienceChoicePage> {
     return _QuestionScaffold(
       title: title,
       buttonLabel: isDe ? 'Weiter' : isPt ? 'Continuar' : 'Continue',
-      buttonEnabled: true,
+      buttonEnabled: selected != null,
       onContinue: () {
-        widget.onSelected(selected);
+        if (selected == null) return;
+        widget.onSelected(selected!);
         widget.onContinue();
       },
-      child: ListView.separated(
-        padding: EdgeInsets.zero,
-        itemCount: options.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (_, index) {
-          final option = options[index];
-          final active = selected == option.value;
-
-          return _ChoiceTile(
-            text: option.label,
-            active: active,
-            trailing: active ? Icons.check_rounded : null,
-            onTap: () {
-              HapticFeedback.selectionClick();
-              setState(() => selected = option.value);
-              widget.onSelected(option.value);
-            },
-          );
-        },
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: options.map((option) {
+            final active = selected == option.value;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _ChoiceTile(
+                text: option.label,
+                active: active,
+                trailing: active ? Icons.check_rounded : null,
+                onTap: () {
+                  HapticFeedback.selectionClick();
+                  setState(() => selected = option.value);
+                  widget.onSelected(option.value);
+                },
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }
@@ -1591,6 +2215,8 @@ class _SingleChoicePage extends StatefulWidget {
   final String titleDe;
   final List<String> optionsPt;
   final List<String> optionsDe;
+  final bool centerOptions;
+  final ValueChanged<String>? onSelected;
   final VoidCallback onContinue;
 
   const _SingleChoicePage({
@@ -1599,6 +2225,8 @@ class _SingleChoicePage extends StatefulWidget {
     required this.titleDe,
     required this.optionsPt,
     required this.optionsDe,
+    this.centerOptions = false,
+    this.onSelected,
     required this.onContinue,
   });
 
@@ -1620,22 +2248,46 @@ class _SingleChoicePageState extends State<_SingleChoicePage> {
       buttonLabel: isDe ? 'Weiter' : 'Continuar',
       buttonEnabled: selected != null,
       onContinue: widget.onContinue,
-      child: ListView.separated(
-        padding: EdgeInsets.zero,
-        itemCount: options.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (_, index) {
-          final active = selected == index;
-          return _ChoiceTile(
-            text: options[index],
-            active: active,
-            onTap: () {
-              HapticFeedback.selectionClick();
-              setState(() => selected = index);
-            },
-          );
-        },
-      ),
+      child: widget.centerOptions
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: List.generate(options.length, (index) {
+                  final active = selected == index;
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index == options.length - 1 ? 0 : 10,
+                    ),
+                    child: _ChoiceTile(
+                      text: options[index],
+                      active: active,
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => selected = index);
+                        widget.onSelected?.call(options[index]);
+                      },
+                    ),
+                  );
+                }),
+              ),
+            )
+          : ListView.separated(
+              padding: EdgeInsets.zero,
+              itemCount: options.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 10),
+              itemBuilder: (_, index) {
+                final active = selected == index;
+                return _ChoiceTile(
+                  text: options[index],
+                  active: active,
+                  onTap: () {
+                    HapticFeedback.selectionClick();
+                    setState(() => selected = index);
+                        widget.onSelected?.call(options[index]);
+                  },
+                );
+              },
+            ),
     );
   }
 }
@@ -1648,6 +2300,7 @@ class _MultiChoicePage extends StatefulWidget {
   final List<String>? optionsPt;
   final List<String>? optionsDe;
   final int maxSelections;
+  final ValueChanged<List<String>>? onSelected;
   final VoidCallback onContinue;
 
   const _MultiChoicePage({
@@ -1658,6 +2311,7 @@ class _MultiChoicePage extends StatefulWidget {
     this.optionsPt,
     this.optionsDe,
     required this.maxSelections,
+    this.onSelected,
     required this.onContinue,
   });
 
@@ -1701,6 +2355,7 @@ class _MultiChoicePageState extends State<_MultiChoicePage> {
                   selected.add(index);
                 }
               });
+              widget.onSelected?.call(selected.map((i) => options[i]).toList());
             },
           );
         },
@@ -1848,59 +2503,130 @@ class _ChoiceTile extends StatelessWidget {
 
 class _QuestionIntroPage extends StatelessWidget {
   final String lang;
+  final String userName;
   final VoidCallback onContinue;
 
   const _QuestionIntroPage({
     required this.lang,
+    required this.userName,
     required this.onContinue,
   });
 
+  String _title() {
+    final name = userName.trim();
+
+    switch (lang) {
+      case 'de':
+        return name.isEmpty
+            ? 'Bevor wir weitermachen, habe ich ein paar wichtige Fragen an dich.'
+            : '$name, bevor wir weitermachen, habe ich ein paar wichtige Fragen an dich.';
+      case 'pt':
+        return name.isEmpty
+            ? 'Antes de continuarmos, tenho algumas perguntas importantes para você.'
+            : '$name, antes de continuarmos, tenho algumas perguntas importantes para você.';
+      case 'es':
+        return name.isEmpty
+            ? 'Antes de continuar, tengo algunas preguntas importantes para ti.'
+            : '$name, antes de continuar, tengo algunas preguntas importantes para ti.';
+      case 'fr':
+        return name.isEmpty
+            ? 'Avant de continuer, j’ai quelques questions importantes pour toi.'
+            : '$name, avant de continuer, j’ai quelques questions importantes pour toi.';
+      case 'it':
+        return name.isEmpty
+            ? 'Prima di continuare, ho alcune domande importanti per te.'
+            : '$name, prima di continuare, ho alcune domande importanti per te.';
+      default:
+        return name.isEmpty
+            ? 'Before we continue, I have a few important questions for you.'
+            : '$name, before we continue, I have a few important questions for you.';
+    }
+  }
+
+  String _honesty() {
+    switch (lang) {
+      case 'de':
+        return 'Je ehrlicher du antwortest, desto persönlicher kann sich deine Erfahrung anfühlen.';
+      case 'pt':
+        return 'Quanto mais honesto você for, mais pessoal sua experiência pode parecer.';
+      case 'es':
+        return 'Cuanto más sincero seas, más personal podrá sentirse tu experiencia.';
+      case 'fr':
+        return 'Plus tu seras honnête, plus ton expérience pourra être personnalisée.';
+      case 'it':
+        return 'Più sarai sincero, più la tua esperienza potrà sembrare personale.';
+      default:
+        return 'The more honest you are, the more personal your experience can feel.';
+    }
+  }
+
+  String _privacy() {
+    switch (lang) {
+      case 'de':
+        return 'Alles, was du teilst, wird vertraulich behandelt.';
+      case 'pt':
+        return 'Tudo o que você compartilha é tratado de forma confidencial.';
+      case 'es':
+        return 'Todo lo que compartas será tratado de forma confidencial.';
+      case 'fr':
+        return 'Tout ce que tu partages reste confidentiel.';
+      case 'it':
+        return 'Tutto ciò che condividi viene trattato in modo confidenziale.';
+      default:
+        return 'Everything you share is treated confidentially.';
+    }
+  }
+
+  String _button() {
+    switch (lang) {
+      case 'de': return 'Weiter';
+      case 'pt': return 'Continuar';
+      case 'es': return 'Continuar';
+      case 'fr': return 'Continuer';
+      case 'it': return 'Continua';
+      default: return 'Continue';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDe = lang == 'de';
-
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(28, 30, 28, 26),
+      padding: const EdgeInsets.fromLTRB(28, 28, 28, 26),
       child: Column(
         children: [
           const Spacer(flex: 2),
           Text(
-            isDe
-                ? 'Bevor wir weitermachen, habe ich ein paar wichtige Fragen an dich.'
-                : 'Antes de continuarmos, tenho algumas perguntas importantes para você.',
+            _title(),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xFF080808),
-              fontSize: 32,
-              height: 1.10,
+              fontSize: 30,
+              height: 1.12,
               fontWeight: FontWeight.w900,
-              letterSpacing: -0.95,
+              letterSpacing: -0.8,
             ),
           ),
-          const SizedBox(height: 30),
+          const SizedBox(height: 28),
           Text(
-            isDe
-                ? 'Je ehrlicher du antwortest, desto persönlicher und relevanter kann deine Erfahrung werden.'
-                : 'Quanto mais honestas forem as suas respostas, mais pessoal e relevante a experiência pode se tornar.',
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFF66666D),
-              fontSize: 18,
-              height: 1.48,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          const SizedBox(height: 24),
-          Text(
-            isDe
-                ? 'Deine Antworten werden vertraulich behandelt.'
-                : 'Suas respostas são tratadas com privacidade.',
+            _honesty(),
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xFF111111),
-              fontSize: 16,
+              fontSize: 18,
+              height: 1.45,
               fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 22),
+          Text(
+            _privacy(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF2C2C2E),
+              fontSize: 15.5,
+              height: 1.45,
+              fontWeight: FontWeight.w600,
             ),
           ),
           const Spacer(flex: 3),
@@ -1921,8 +2647,11 @@ class _QuestionIntroPage extends StatelessWidget {
                 ),
               ),
               child: Text(
-                isDe ? 'Weiter' : 'Continuar',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+                _button(),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
           ),
@@ -1932,16 +2661,14 @@ class _QuestionIntroPage extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// TELA 15 — CONFIANÇA
-// ═══════════════════════════════════════════════════════════════════════
-
 class _ConfidencePage extends StatefulWidget {
   final String lang;
+  final ValueChanged<int>? onSelected;
   final VoidCallback onContinue;
 
   const _ConfidencePage({
     required this.lang,
+    this.onSelected,
     required this.onContinue,
   });
 
@@ -1978,6 +2705,7 @@ class _ConfidencePageState extends State<_ConfidencePage> {
                     onTap: () {
                       HapticFeedback.selectionClick();
                       setState(() => selected = number);
+                      widget.onSelected?.call(number);
                     },
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 160),
@@ -2039,10 +2767,28 @@ class _ConfidencePageState extends State<_ConfidencePage> {
 
 class _PersonalizationBridgePage extends StatefulWidget {
   final String lang;
+  final String userName;
+  final String? audience;
+  final String? age;
+  final List<String> platforms;
+  final String? pain;
+  final List<String> desires;
+  final String? reaction;
+  final String? stuckMoment;
+  final int? confidence;
   final VoidCallback onContinue;
 
   const _PersonalizationBridgePage({
     required this.lang,
+    required this.userName,
+    required this.audience,
+    required this.age,
+    required this.platforms,
+    required this.pain,
+    required this.desires,
+    required this.reaction,
+    required this.stuckMoment,
+    required this.confidence,
     required this.onContinue,
   });
 
@@ -2056,7 +2802,6 @@ class _PersonalizationBridgePageState
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulseController;
   Timer? _progressTimer;
-
   int _progress = 0;
   bool _done = false;
 
@@ -2067,8 +2812,8 @@ class _PersonalizationBridgePageState
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 900),
-      lowerBound: 0.94,
-      upperBound: 1.06,
+      lowerBound: 0.95,
+      upperBound: 1.05,
     )..repeat(reverse: true);
 
     _progressTimer = Timer.periodic(
@@ -2078,22 +2823,22 @@ class _PersonalizationBridgePageState
           timer.cancel();
           return;
         }
-
         if (_progress >= 100) {
           timer.cancel();
-
           setState(() {
             _progress = 100;
             _done = true;
           });
-
-          HapticFeedback.mediumImpact();
+          HapticFeedback.heavyImpact();
           return;
         }
+        setState(() => _progress++);
 
-        setState(() {
-          _progress++;
-        });
+        // Feedback háptico durante a contagem.
+        // Funciona em iOS e Android quando o dispositivo permite haptics.
+        if (_progress % 4 == 0) {
+          HapticFeedback.selectionClick();
+        }
       },
     );
   }
@@ -2107,111 +2852,120 @@ class _PersonalizationBridgePageState
 
   String _title() {
     switch (widget.lang) {
-      case 'de':
-        return 'Wir bereiten deine Erfahrung vor.';
-      case 'pt':
-        return 'Estamos preparando sua experiência.';
-      case 'es':
-        return 'Estamos preparando tu experiencia.';
-      case 'fr':
-        return 'Nous préparons ton expérience.';
-      case 'it':
-        return 'Stiamo preparando la tua esperienza.';
-      default:
-        return 'We’re preparing your experience.';
+      case 'de': return 'Wir bereiten deine Erfahrung vor.';
+      case 'pt': return 'Estamos preparando sua experiência.';
+      default: return 'We’re preparing your experience.';
+    }
+  }
+
+  String _summaryTitle() {
+    switch (widget.lang) {
+      case 'de': return 'Deine Antworten';
+      case 'pt': return 'Suas escolhas';
+      default: return 'Your choices';
+    }
+  }
+
+  String _audienceText() {
+    switch (widget.audience) {
+      case 'women': return widget.lang == 'de' ? 'Frauen' : widget.lang == 'pt' ? 'Mulheres' : 'Women';
+      case 'men': return widget.lang == 'de' ? 'Männer' : widget.lang == 'pt' ? 'Homens' : 'Men';
+      case 'both': return widget.lang == 'de' ? 'Beide' : widget.lang == 'pt' ? 'Ambos' : 'Both';
+      default: return '—';
     }
   }
 
   String _status() {
     if (_done) {
-      switch (widget.lang) {
-        case 'de':
-          return 'Alles bereit.';
-        case 'pt':
-          return 'Tudo pronto.';
-        case 'es':
-          return 'Todo listo.';
-        case 'fr':
-          return 'Tout est prêt.';
-        case 'it':
-          return 'Tutto pronto.';
-        default:
-          return 'All set.';
-      }
+      return widget.lang == 'de'
+          ? 'Alles bereit.'
+          : widget.lang == 'pt'
+              ? 'Tudo pronto.'
+              : 'All set.';
     }
 
     if (_progress < 30) {
-      switch (widget.lang) {
-        case 'de':
-          return 'Deine Antworten werden ausgewertet...';
-        case 'pt':
-          return 'Analisando suas respostas...';
-        case 'es':
-          return 'Analizando tus respuestas...';
-        case 'fr':
-          return 'Analyse de tes réponses...';
-        case 'it':
-          return 'Analisi delle tue risposte...';
-        default:
-          return 'Reviewing your answers...';
-      }
+      return widget.lang == 'de'
+          ? 'Deine Antworten werden ausgewertet...'
+          : widget.lang == 'pt'
+              ? 'Analisando suas respostas...'
+              : 'Reviewing your answers...';
     }
 
     if (_progress < 65) {
-      switch (widget.lang) {
-        case 'de':
-          return 'Wir verstehen deinen Gesprächsstil...';
-        case 'pt':
-          return 'Entendendo seu estilo de conversa...';
-        case 'es':
-          return 'Entendiendo tu estilo de conversación...';
-        case 'fr':
-          return 'Compréhension de ton style de conversation...';
-        case 'it':
-          return 'Stiamo capendo il tuo stile di conversazione...';
-        default:
-          return 'Understanding your conversation style...';
-      }
+      return widget.lang == 'de'
+          ? 'Wir verstehen deinen Gesprächsstil...'
+          : widget.lang == 'pt'
+              ? 'Entendendo seu estilo de conversa...'
+              : 'Understanding your conversation style...';
     }
 
-    switch (widget.lang) {
-      case 'de':
-        return 'Deine Erfahrung wird angepasst...';
-      case 'pt':
-        return 'Ajustando sua experiência...';
-      case 'es':
-        return 'Ajustando tu experiencia...';
-      case 'fr':
-        return 'Ajustement de ton expérience...';
-      case 'it':
-        return 'Personalizzazione della tua esperienza...';
-      default:
-        return 'Tailoring your experience...';
-    }
+    return widget.lang == 'de'
+        ? 'Deine Erfahrung wird angepasst...'
+        : widget.lang == 'pt'
+            ? 'Ajustando sua experiência...'
+            : 'Tailoring your experience...';
   }
 
   String _button() {
     switch (widget.lang) {
-      case 'de':
-        return 'Weiter';
-      case 'pt':
-        return 'Continuar';
-      case 'es':
-        return 'Continuar';
-      case 'fr':
-        return 'Continuer';
-      case 'it':
-        return 'Continua';
-      default:
-        return 'Continue';
+      case 'de': return 'Weiter';
+      case 'pt': return 'Continuar';
+      default: return 'Continue';
     }
+  }
+
+  List<Map<String, String>> _rows() {
+    final de = widget.lang == 'de';
+    final pt = widget.lang == 'pt';
+
+    return [
+      {
+        'label': de ? 'Name' : pt ? 'Nome' : 'Name',
+        'value': widget.userName.isEmpty ? '—' : widget.userName,
+      },
+      {
+        'label': de ? 'Gespräche mit' : pt ? 'Conversas com' : 'Conversations with',
+        'value': _audienceText(),
+      },
+      {
+        'label': de ? 'Alter' : pt ? 'Idade' : 'Age',
+        'value': widget.age ?? '—',
+      },
+      {
+        'label': de ? 'Plattformen' : pt ? 'Plataformas' : 'Platforms',
+        'value': widget.platforms.isEmpty ? '—' : widget.platforms.join(', '),
+      },
+      {
+        'label': de ? 'Größte Herausforderung' : pt ? 'Maior dificuldade' : 'Biggest challenge',
+        'value': widget.pain ?? '—',
+      },
+      {
+        'label': de ? 'Ziele' : pt ? 'Objetivos' : 'Goals',
+        'value': widget.desires.isEmpty ? '—' : widget.desires.join(' · '),
+      },
+      {
+        'label': de ? 'Wenn eine Antwort dauert' : pt ? 'Quando demora a responder' : 'When replies take time',
+        'value': widget.reaction ?? '—',
+      },
+      {
+        'label': de ? 'Schwierigster Moment' : pt ? 'Onde mais trava' : 'Hardest moment',
+        'value': widget.stuckMoment ?? '—',
+      },
+      {
+        'label': de ? 'Selbstsicherheit' : pt ? 'Confiança' : 'Confidence',
+        'value': widget.confidence == null ? '—' : '${widget.confidence}/5',
+      },
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
+    final rows = _rows();
+
     return Container(
       color: Colors.white,
-      padding: const EdgeInsets.fromLTRB(28, 30, 28, 26),
+      padding: const EdgeInsets.fromLTRB(24, 18, 24, 22),
       child: Column(
         children: [
           Text(
@@ -2219,15 +2973,13 @@ class _PersonalizationBridgePageState
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Color(0xFF080808),
-              fontSize: 32,
+              fontSize: 28,
               height: 1.10,
               fontWeight: FontWeight.w900,
-              letterSpacing: -0.95,
+              letterSpacing: -0.8,
             ),
           ),
-
-          const Spacer(),
-
+          const SizedBox(height: 16),
           AnimatedBuilder(
             animation: _pulseController,
             builder: (_, child) {
@@ -2237,8 +2989,8 @@ class _PersonalizationBridgePageState
               );
             },
             child: Container(
-              width: 178,
-              height: 178,
+              width: 132,
+              height: 132,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: const Color(0xFFF5F5F7),
@@ -2248,65 +3000,123 @@ class _PersonalizationBridgePageState
                       : const Color(0xFF111111),
                   width: 3,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
-                    blurRadius: 24,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
               ),
               child: Center(
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 220),
-                  child: _done
-                      ? const Icon(
-                          Icons.check_rounded,
-                          key: ValueKey('done'),
-                          color: Color(0xFF34C759),
-                          size: 68,
-                        )
-                      : Text(
-                          '$_progress%',
-                          key: ValueKey(_progress),
-                          style: const TextStyle(
-                            color: Color(0xFF111111),
-                            fontSize: 40,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -1.1,
-                          ),
+                child: _done
+                    ? const Icon(
+                        Icons.check_rounded,
+                        color: Color(0xFF34C759),
+                        size: 56,
+                      )
+                    : Text(
+                        '$_progress%',
+                        style: const TextStyle(
+                          color: Color(0xFF111111),
+                          fontSize: 34,
+                          fontWeight: FontWeight.w900,
                         ),
-                ),
+                      ),
               ),
             ),
           ),
-
-          const SizedBox(height: 30),
-
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 250),
+          const SizedBox(height: 12),
+          Text(
+            _status(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF66666D),
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 14),
+          Align(
+            alignment: Alignment.centerLeft,
             child: Text(
-              _status(),
-              key: ValueKey('${_done}_$_progress'),
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: _done
-                    ? const Color(0xFF111111)
-                    : const Color(0xFF66666D),
-                fontSize: 17,
-                height: 1.45,
-                fontWeight: _done
-                    ? FontWeight.w800
-                    : FontWeight.w500,
+              _summaryTitle(),
+              style: const TextStyle(
+                color: Color(0xFF111111),
+                fontSize: 16,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
+          const SizedBox(height: 8),
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFFF7F7F9),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Builder(
+                builder: (context) {
+                  // 8 respostas -> uma nova aparece a cada ~12,5% do progresso.
+                  final visibleCount = _done
+                      ? rows.length
+                      : ((_progress / 100) * rows.length).ceil().clamp(1, rows.length);
 
-          const Spacer(),
+                  return ListView.separated(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    itemCount: visibleCount,
+                    separatorBuilder: (_, __) => const Divider(
+                      height: 18,
+                      color: Color(0xFFE4E4E8),
+                    ),
+                    itemBuilder: (_, index) {
+                      final row = rows[index];
 
+                      return TweenAnimationBuilder<double>(
+                        key: ValueKey('answer_$index'),
+                        tween: Tween(begin: 0.0, end: 1.0),
+                        duration: const Duration(milliseconds: 360),
+                        curve: Curves.easeOutCubic,
+                        builder: (_, value, child) {
+                          return Opacity(
+                            opacity: value,
+                            child: Transform.translate(
+                              offset: Offset(0, 10 * (1 - value)),
+                              child: child,
+                            ),
+                          );
+                        },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              row['label']!,
+                              style: const TextStyle(
+                                color: Color(0xFF8E8E93),
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              row['value']!,
+                              style: const TextStyle(
+                                color: Color(0xFF111111),
+                                fontSize: 14.5,
+                                height: 1.28,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
-            height: 60,
+            height: 58,
             child: ElevatedButton(
               onPressed: _done
                   ? () {
@@ -2321,7 +3131,7 @@ class _PersonalizationBridgePageState
                 disabledForegroundColor: const Color(0xFF9A9A9F),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
+                  borderRadius: BorderRadius.circular(29),
                 ),
               ),
               child: Text(
@@ -2339,34 +3149,44 @@ class _PersonalizationBridgePageState
   }
 }
 
-
-// ═══════════════════════════════════════════════════════════════════════
-// TELA 17 — ENTENDENDO O JEITO DE CONVERSAR
-// ═══════════════════════════════════════════════════════════════════════
-
 class _UnderstandingYouPage extends StatelessWidget {
   final String lang;
+  final String userName;
   final VoidCallback onContinue;
 
   const _UnderstandingYouPage({
     required this.lang,
+    required this.userName,
     required this.onContinue,
   });
 
   String _headline() {
+    final name = userName.trim();
     switch (lang) {
       case 'de':
-        return 'Wir beginnen zu verstehen, wie du kommunizierst.';
+        return name.isEmpty
+            ? 'Wir beginnen zu verstehen, wie du kommunizierst.'
+            : '$name, wir beginnen zu verstehen, wie du kommunizierst.';
       case 'pt':
-        return 'Já estamos começando a entender o seu jeito de conversar.';
+        return name.isEmpty
+            ? 'Já estamos começando a entender o seu jeito de conversar.'
+            : '$name, já estamos começando a entender o seu jeito de conversar.';
       case 'es':
-        return 'Ya estamos empezando a entender tu forma de conversar.';
+        return name.isEmpty
+            ? 'Ya estamos empezando a entender tu forma de conversar.'
+            : '$name, ya estamos empezando a entender tu forma de conversar.';
       case 'fr':
-        return 'Nous commençons à comprendre ta façon de communiquer.';
+        return name.isEmpty
+            ? 'Nous commençons à comprendre ta façon de communiquer.'
+            : '$name, nous commençons à comprendre ta façon de communiquer.';
       case 'it':
-        return 'Stiamo iniziando a capire il tuo modo di comunicare.';
+        return name.isEmpty
+            ? 'Stiamo iniziando a capire il tuo modo di comunicare.'
+            : '$name, stiamo iniziando a capire il tuo modo di comunicare.';
       default:
-        return 'We’re starting to understand how you communicate.';
+        return name.isEmpty
+            ? 'We’re starting to understand how you communicate.'
+            : '$name, we’re starting to understand how you communicate.';
     }
   }
 
@@ -2519,52 +3339,33 @@ class _SocialProofPage extends StatelessWidget {
     required this.onContinue,
   });
 
-  static const List<String> _heroPhotos = [
-    'assets/images/social_1.jpg',
-    'assets/images/social_2.jpg',
-    'assets/images/social_3.jpg',
-    'assets/images/social_4.jpg',
-    'assets/images/social_5.jpg',
-    'assets/images/social_6.jpg',
-  ];
-
-  static const List<String> _reviewPhotos = [
-    'assets/images/review_1.jpg',
-    'assets/images/review_2.jpg',
-    'assets/images/review_3.jpg',
-  ];
-
   String _headline() {
     switch (lang) {
       case 'de':
-        return 'Du bist nicht der Einzige, der besser schreiben will.';
+        return 'Schließ dich über 10.000 Menschen wie dir an.';
       case 'pt':
-        return 'Você não é o único que quer conversar melhor.';
-      case 'es':
-        return 'No eres el único que quiere conversar mejor.';
-      case 'fr':
-        return 'Tu n’es pas le seul à vouloir mieux communiquer.';
-      case 'it':
-        return 'Non sei l’unico che vuole comunicare meglio.';
+        return 'Junte-se a mais de 10 mil pessoas como você.';
       default:
-        return 'You’re not the only one who wants to communicate better.';
+        return 'Join more than 10,000 people like you.';
+    }
+  }
+
+  String _usersLabel() {
+    switch (lang) {
+      case 'de':
+        return 'Über 10.000 UpCrush Nutzer:innen';
+      case 'pt':
+        return 'Mais de 10 mil usuários do UpCrush';
+      default:
+        return 'More than 10,000 UpCrush users';
     }
   }
 
   String _button() {
     switch (lang) {
-      case 'de':
-        return 'Weiter';
-      case 'pt':
-        return 'Continuar';
-      case 'es':
-        return 'Continuar';
-      case 'fr':
-        return 'Continuer';
-      case 'it':
-        return 'Continua';
-      default:
-        return 'Continue';
+      case 'de': return 'Weiter';
+      case 'pt': return 'Continuar';
+      default: return 'Continue';
     }
   }
 
@@ -2574,55 +3375,109 @@ class _SocialProofPage extends StatelessWidget {
         return const [
           {
             'name': 'Lucas',
-            'age': '18',
-            'text': 'Ich denke viel weniger darüber nach, was ich als Nächstes schreiben soll.',
+            'date': 'März 2025',
+            'text': 'Ich denke viel weniger darüber nach, was ich als Nächstes schreiben soll. Meine Gespräche fühlen sich dadurch viel natürlicher an.',
           },
           {
             'name': 'Matteo',
-            'age': '19',
-            'text': 'Meine Gespräche fühlen sich inzwischen viel natürlicher an.',
+            'date': 'Mai 2025',
+            'text': 'Früher habe ich jede Nachricht viel zu lange überdacht. Jetzt schreibe ich selbstsicherer und Gespräche laufen leichter.',
           },
           {
             'name': 'Sofia',
-            'age': '24',
-            'text': 'Ich bin beim Schreiben deutlich selbstsicherer geworden.',
+            'date': 'Juli 2025',
+            'text': 'Mir gefällt besonders, dass die Vorschläge zur Situation passen und nicht wie generische Nachrichten wirken.',
+          },
+          {
+            'name': 'Noah',
+            'date': 'September 2025',
+            'text': 'Der Chat Dolla hat mir besonders gefallen. Er hilft mir, eine Unterhaltung weiterzuführen, ohne dass sich meine Antworten gezwungen anfühlen.',
+          },
+          {
+            'name': 'Amelia',
+            'date': 'November 2025',
+            'text': 'Ich bin beim Schreiben viel entspannter geworden und weiß schneller, wie ich antworten möchte.',
+          },
+          {
+            'name': 'Elias',
+            'date': 'Januar 2026',
+            'text': 'Die Antworten fühlen sich persönlicher an und ich verbringe nicht mehr ewig damit, eine einzige Nachricht zu formulieren.',
+          },
+          {
+            'name': 'Mia',
+            'date': 'März 2026',
+            'text': 'Ich nutze es vor allem dann, wenn eine Unterhaltung ins Stocken gerät. Es gibt mir schnell eine neue Richtung.',
+          },
+          {
+            'name': 'Leo',
+            'date': 'Mai 2026',
+            'text': 'Ich bin deutlich selbstbewusster beim Schreiben geworden und denke nicht mehr über jede einzelne Nachricht nach.',
+          },
+          {
+            'name': 'Nora',
+            'date': 'Juli 2026',
+            'text': 'Die Vorschläge helfen mir, meinen eigenen Ton beizubehalten und trotzdem interessanter zu antworten.',
           },
         ];
       case 'pt':
         return const [
           {
             'name': 'Lucas',
-            'age': '18',
-            'text': 'Penso muito menos no que devo mandar a seguir.',
+            'date': 'Março de 2025',
+            'text': 'Penso muito menos no que devo mandar a seguir. As minhas conversas ficaram muito mais naturais.',
           },
           {
             'name': 'Matteo',
-            'age': '19',
-            'text': 'Minhas conversas começaram a parecer muito mais naturais.',
+            'date': 'Maio de 2025',
+            'text': 'Antes eu pensava demais em cada mensagem. Agora converso com muito mais confiança e tudo flui melhor.',
           },
           {
             'name': 'Sofia',
-            'age': '24',
-            'text': 'Passei a me sentir muito mais confiante ao conversar.',
+            'date': 'Julho de 2025',
+            'text': 'O que mais gosto é que as sugestões combinam com a situação e não parecem mensagens genéricas.',
+          },
+          {
+            'name': 'Noah',
+            'date': 'Setembro de 2025',
+            'text': 'Gostei especialmente do Chat Dolla. Ele me ajuda a continuar a conversa sem fazer as respostas parecerem forçadas.',
+          },
+          {
+            'name': 'Amelia',
+            'date': 'Novembro de 2025',
+            'text': 'Passei a ficar muito mais tranquila ao conversar e sei mais rápido como quero responder.',
+          },
+          {
+            'name': 'Elias',
+            'date': 'Janeiro de 2026',
+            'text': 'As respostas parecem mais pessoais e já não passo uma eternidade pensando em uma única mensagem.',
+          },
+          {
+            'name': 'Mia',
+            'date': 'Março de 2026',
+            'text': 'Uso principalmente quando a conversa começa a travar. Rapidamente encontro uma nova direção para continuar.',
+          },
+          {
+            'name': 'Leo',
+            'date': 'Maio de 2026',
+            'text': 'Fiquei muito mais confiante ao conversar e já não penso demais em cada mensagem.',
+          },
+          {
+            'name': 'Nora',
+            'date': 'Julho de 2026',
+            'text': 'As sugestões me ajudam a manter o meu próprio jeito e ainda responder de forma mais interessante.',
           },
         ];
       default:
         return const [
-          {
-            'name': 'Lucas',
-            'age': '18',
-            'text': 'I overthink what to send next much less now.',
-          },
-          {
-            'name': 'Matteo',
-            'age': '19',
-            'text': 'My conversations feel much more natural now.',
-          },
-          {
-            'name': 'Sofia',
-            'age': '24',
-            'text': 'I feel much more confident when I text.',
-          },
+          {'name':'Lucas','date':'March 2025','text':'I overthink what to send next much less now. My conversations feel much more natural.'},
+          {'name':'Matteo','date':'May 2025','text':'I used to overthink every message. Now I text with much more confidence and conversations flow better.'},
+          {'name':'Sofia','date':'July 2025','text':'What I like most is that the suggestions fit the situation and do not feel generic.'},
+          {'name':'Noah','date':'September 2025','text':'I especially like Chat Dolla. It helps me keep a conversation going without making my replies feel forced.'},
+          {'name':'Amelia','date':'November 2025','text':'I feel much more relaxed when texting and know much faster how I want to reply.'},
+          {'name':'Elias','date':'January 2026','text':'The replies feel more personal and I no longer spend forever thinking about a single message.'},
+          {'name':'Mia','date':'March 2026','text':'I mainly use it when a conversation starts to stall. It quickly gives me a new direction.'},
+          {'name':'Leo','date':'May 2026','text':'I feel much more confident texting and no longer overthink every single message.'},
+          {'name':'Nora','date':'July 2026','text':'The suggestions help me keep my own tone while still replying in a more interesting way.'},
         ];
     }
   }
@@ -2636,127 +3491,114 @@ class _SocialProofPage extends StatelessWidget {
       child: SafeArea(
         child: Column(
           children: [
-            const SizedBox(height: 20),
-
+            // Cabeçalho fixo: não faz scroll.
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 28),
-              child: Text(
-                _headline(),
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: Color(0xFF080808),
-                  fontSize: 31,
-                  height: 1.08,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.95,
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 18),
-
-            Expanded(
-              child: Stack(
-                clipBehavior: Clip.none,
+              padding: const EdgeInsets.fromLTRB(26, 28, 26, 0),
+              child: Column(
                 children: [
-                  // ───────────────────────────────────────────────────
-                  // 6 FOTOS — 3 x 2, exatamente como referência
-                  // ───────────────────────────────────────────────────
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: 0,
-                    height: 330,
-                    child: GridView.builder(
-                      padding: EdgeInsets.zero,
-                      physics: const NeverScrollableScrollPhysics(),
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 0,
-                        mainAxisSpacing: 0,
-                        childAspectRatio: 0.82,
-                      ),
-                      itemCount: _heroPhotos.length,
-                      itemBuilder: (_, index) {
-                        return Image.asset(
-                          _heroPhotos[index],
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: const Color(0xFFEDEDEF),
-                            alignment: Alignment.center,
-                            child: const Icon(
-                              Icons.person_rounded,
-                              color: Color(0xFFB3B3B8),
-                              size: 38,
-                            ),
-                          ),
-                        );
-                      },
+                  Text(
+                    _headline(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.black,
+                      fontSize: 34,
+                      height: 1.12,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1.1,
                     ),
                   ),
+                  const SizedBox(height: 24),
 
-                  // ───────────────────────────────────────────────────
-                  // FADE — desaparecimento da base das fotos
-                  // ───────────────────────────────────────────────────
-                  Positioned(
-                    left: 0,
-                    right: 0,
-                    top: 215,
-                    height: 165,
-                    child: IgnorePointer(
-                      child: Container(
-                        decoration: const BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.topCenter,
-                            end: Alignment.bottomCenter,
-                            colors: [
-                              Color(0x00FFFFFF),
-                              Color(0x66FFFFFF),
-                              Color(0xD9FFFFFF),
-                              Color(0xFFFFFFFF),
-                            ],
-                            stops: [0.0, 0.34, 0.70, 1.0],
-                          ),
+                  // Fotos manuais + texto sobreposto, no estilo da referência.
+                  SizedBox(
+                    height: 92,
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: SizedBox(
+                        width: 245,
+                        child: Stack(
+                          clipBehavior: Clip.none,
+                          alignment: Alignment.centerRight,
+                          children: [
+                            const Positioned(
+                              right: 104,
+                              top: 2,
+                              child: _MiniAvatar(asset: 'assets/images/review_1.jpg'),
+                            ),
+                            const Positioned(
+                              right: 70,
+                              top: 2,
+                              child: _MiniAvatar(asset: 'assets/images/review_2.jpg'),
+                            ),
+                            const Positioned(
+                              right: 36,
+                              top: 2,
+                              child: _MiniAvatar(asset: 'assets/images/review_3.jpg'),
+                            ),
+                            Positioned(
+                              right: 0,
+                              top: 43,
+                              child: Container(
+                                constraints: const BoxConstraints(maxWidth: 190),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.96),
+                                  borderRadius: BorderRadius.circular(18),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withOpacity(0.06),
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 6),
+                                    ),
+                                  ],
+                                ),
+                                child: Text(
+                                  _usersLabel(),
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: Color(0xFF5E5E63),
+                                    fontSize: 14,
+                                    height: 1.18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
                   ),
-
-                  // ───────────────────────────────────────────────────
-                  // REVIEWS — sobrepostos, como na referência
-                  // ───────────────────────────────────────────────────
-                  Positioned(
-                    left: 22,
-                    right: 22,
-                    top: 285,
-                    bottom: 6,
-                    child: PageView.builder(
-                      scrollDirection: Axis.vertical,
-                      physics: const BouncingScrollPhysics(),
-                      controller: PageController(viewportFraction: 0.48),
-                      itemCount: reviews.length,
-                      itemBuilder: (_, index) {
-                        return Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 5),
-                          child: _ReviewCard(
-                            photo: _reviewPhotos[index],
-                            name: reviews[index]['name']!,
-                            age: reviews[index]['age']!,
-                            text: reviews[index]['text']!,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-
-                  // Setas decorativas/laterais como na referência.
+                  const SizedBox(height: 18),
                 ],
               ),
             ),
 
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 12, 24, 18),
+            // Somente os comentários fazem scroll vertical.
+            Expanded(
+              child: ListView.separated(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(26, 0, 26, 18),
+                itemCount: reviews.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 14),
+                itemBuilder: (_, index) {
+                  final review = reviews[index];
+                  return _LongReviewCard(
+                    name: review['name']!,
+                    date: review['date']!,
+                    text: review['text']!,
+                  );
+                },
+              ),
+            ),
+
+            // Botão sempre fixo.
+            Container(
+              color: Colors.white,
+              padding: const EdgeInsets.fromLTRB(22, 12, 22, 18),
               child: SizedBox(
                 width: double.infinity,
                 height: 60,
@@ -2766,7 +3608,7 @@ class _SocialProofPage extends StatelessWidget {
                     onContinue();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF08101F),
+                    backgroundColor: const Color(0xFF1D1822),
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
@@ -2790,16 +3632,46 @@ class _SocialProofPage extends StatelessWidget {
   }
 }
 
-class _ReviewCard extends StatelessWidget {
-  final String photo;
+class _MiniAvatar extends StatelessWidget {
+  final String asset;
+  const _MiniAvatar({required this.asset});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: Colors.white, width: 2),
+      ),
+      child: ClipOval(
+        child: Image.asset(
+          asset,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => Container(
+            color: const Color(0xFFEDEDEF),
+            alignment: Alignment.center,
+            child: const Icon(
+              Icons.person_rounded,
+              color: Color(0xFFAAAAAF),
+              size: 25,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LongReviewCard extends StatelessWidget {
   final String name;
-  final String age;
+  final String date;
   final String text;
 
-  const _ReviewCard({
-    required this.photo,
+  const _LongReviewCard({
     required this.name,
-    required this.age,
+    required this.date,
     required this.text,
   });
 
@@ -2807,106 +3679,51 @@ class _ReviewCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      constraints: const BoxConstraints(minHeight: 132),
-      padding: const EdgeInsets.fromLTRB(14, 14, 16, 14),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.96),
+        color: const Color(0xFFF8F8FB),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: const Color(0xFFE8E8EB),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.055),
-            blurRadius: 18,
-            offset: const Offset(0, 8),
-          ),
-        ],
+        border: Border.all(color: const Color(0xFFE8E8EE)),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipOval(
-            child: Image.asset(
-              photo,
-              width: 74,
-              height: 74,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => Container(
-                width: 74,
-                height: 74,
-                color: const Color(0xFFEDEDEF),
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.person_rounded,
-                  color: Color(0xFFAAAAAF),
-                  size: 34,
-                ),
-              ),
-            ),
-          ),
-
-          const SizedBox(width: 14),
-
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Row(
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Expanded(
+                child: Row(
                   children: [
-                    Icon(Icons.star_rounded,
-                        color: Color(0xFFFFB41F), size: 18),
-                    Icon(Icons.star_rounded,
-                        color: Color(0xFFFFB41F), size: 18),
-                    Icon(Icons.star_rounded,
-                        color: Color(0xFFFFB41F), size: 18),
-                    Icon(Icons.star_rounded,
-                        color: Color(0xFFFFB41F), size: 18),
-                    Icon(Icons.star_rounded,
-                        color: Color(0xFFFFB41F), size: 18),
+                    Icon(Icons.star_rounded, color: Color(0xFFE9B657), size: 22),
+                    Icon(Icons.star_rounded, color: Color(0xFFE9B657), size: 22),
+                    Icon(Icons.star_rounded, color: Color(0xFFE9B657), size: 22),
+                    Icon(Icons.star_rounded, color: Color(0xFFE9B657), size: 22),
+                    Icon(Icons.star_rounded, color: Color(0xFFE9B657), size: 22),
                   ],
                 ),
-
-                const SizedBox(height: 6),
-
-                Text(
-                  '“$text”',
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                child: Text(
+                  '$name, $date',
+                  textAlign: TextAlign.right,
                   style: const TextStyle(
-                    color: Color(0xFF111111),
-                    fontSize: 14.5,
-                    height: 1.32,
-                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF8D8D92),
+                    fontSize: 14,
+                    height: 1.2,
                   ),
                 ),
-
-                const SizedBox(height: 4),
-
-                Text.rich(
-                  TextSpan(
-                    children: [
-                      TextSpan(
-                        text: '$name, ',
-                        style: const TextStyle(
-                          color: Color(0xFF111111),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      TextSpan(
-                        text: '$age anos',
-                        style: const TextStyle(
-                          color: Color(0xFF66666D),
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            text,
+            style: const TextStyle(
+              color: Color(0xFF111111),
+              fontSize: 18,
+              height: 1.38,
+              fontWeight: FontWeight.w500,
             ),
           ),
         ],

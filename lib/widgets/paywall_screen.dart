@@ -23,6 +23,9 @@ class PaywallFlow extends StatefulWidget {
 class _PaywallFlowState extends State<PaywallFlow> {
   bool _loading = false;
   String _price = '';
+  String _annualPrice = '';
+  String _weeklyPrice = '';
+  String _selectedPlan = 'annual';
 
   static const _bg = Color(0xFFFFFFFF);
   static const _text = Color(0xFF0A0A0A);
@@ -36,6 +39,15 @@ class _PaywallFlowState extends State<PaywallFlow> {
     RevenueCatService.getPrice().then((p) {
       if (mounted) setState(() => _price = p);
     });
+    // Busca os preços reais dos novos planos (Annual/Weekly sem
+    // trial) para uso futuro — não substitui ainda os textos fixos
+    // em _planText(), só deixa os valores prontos.
+    RevenueCatService.getAnnualPrice().then((p) {
+      if (mounted) setState(() => _annualPrice = p);
+    });
+    RevenueCatService.getWeeklyNoTrialPrice().then((p) {
+      if (mounted) setState(() => _weeklyPrice = p);
+    });
   }
 
   @override
@@ -46,7 +58,7 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
   Future<void> _handlePurchase() async {
     setState(() => _loading = true);
-    final result = await RevenueCatService.buyWeekly();
+    final result = await RevenueCatService.buyNewPlan(_selectedPlan);
     setState(() => _loading = false);
     if (!mounted) return;
     if (result.success) {
@@ -192,49 +204,113 @@ class _PaywallFlowState extends State<PaywallFlow> {
     }
   }
 
+  String _planText(String l, String key) {
+    const m = {
+      'pt': {'weekly':'SEMANAL','annual':'ANUAL','save':'ECONOMIZE 62%','month':'2,91 €/mês','annualPrice':'34,99 €/ano','after':'após 3 dias grátis','old':'9,99 €/semana','week':'6,99 €/semana'},
+      'de': {'weekly':'WÖCHENTLICH','annual':'JÄHRLICH','save':'62% SPAREN','month':'2,91 €/Monat','annualPrice':'34,99 €/Jahr','after':'nach 3 kostenlosen Tagen','old':'9,99 €/Woche','week':'6,99 €/Woche'},
+      'es': {'weekly':'SEMANAL','annual':'ANUAL','save':'AHORRA 62%','month':'2,91 €/mes','annualPrice':'34,99 €/año','after':'después de 3 días gratis','old':'9,99 €/semana','week':'6,99 €/semana'},
+      'fr': {'weekly':'HEBDOMADAIRE','annual':'ANNUEL','save':'ÉCONOMISEZ 62%','month':'2,91 €/mois','annualPrice':'34,99 €/an','after':'après 3 jours gratuits','old':'9,99 €/semaine','week':'6,99 €/semaine'},
+      'it': {'weekly':'SETTIMANALE','annual':'ANNUALE','save':'RISPARMIA IL 62%','month':'2,91 €/mese','annualPrice':'34,99 €/anno','after':'dopo 3 giorni gratis','old':'9,99 €/settimana','week':'6,99 €/settimana'},
+      'en': {'weekly':'WEEKLY','annual':'ANNUAL','save':'SAVE 62%','month':'€2.91/month','annualPrice':'€34.99/year','after':'after 3 free days','old':'€9.99/week','week':'€6.99/week'},
+    };
+    return (m[l] ?? m['en']!)[key]!;
+  }
+
+  String _noPaymentNow(String l) {
+    switch (l) {
+      case 'de': return 'Keine Zahlung jetzt';
+      case 'es': return 'Sin pago ahora';
+      case 'pt': return 'Sem pagamento agora';
+      case 'fr': return 'Aucun paiement maintenant';
+      case 'it': return 'Nessun pagamento ora';
+      default: return 'No payment now';
+    }
+  }
+
+  // Texto dinâmico por baixo do botão principal, consoante o plano
+  // selecionado (anual vs semanal).
+  String _belowButtonText(String l) {
+    if (_selectedPlan == 'annual') {
+      switch (l) {
+        case 'de': return '3 Tage kostenlos, danach 34,99 € pro Jahr';
+        case 'es': return '3 días gratis, luego 34,99 € al año';
+        case 'pt': return '3 dias grátis, depois 34,99 € por ano';
+        case 'fr': return '3 jours gratuits, puis 34,99 € par an';
+        case 'it': return '3 giorni gratis, poi 34,99 € all\u2019anno';
+        default: return '3 days free, then \u20ac34.99 per year';
+      }
+    } else {
+      switch (l) {
+        case 'de': return 'Abgerechnet 6,99 € pro Woche';
+        case 'es': return 'Se factura 6,99 € por semana';
+        case 'pt': return 'Cobrado 6,99 € por semana';
+        case 'fr': return 'Facturé 6,99 € par semaine';
+        case 'it': return 'Fatturato 6,99 € a settimana';
+        default: return 'Billed \u20ac6.99 per week';
+      }
+    }
+  }
+
+  String _ctaLabelDynamic(String l) {
+    switch (l) {
+      case 'de': return 'Weiter';
+      case 'es': return 'Continuar';
+      case 'pt': return 'Continuar';
+      case 'fr': return 'Continuer';
+      case 'it': return 'Continua';
+      default: return 'Continue';
+    }
+  }
+
   List<String> _features(String l) {
     switch (l) {
       case 'de':
         return const [
           'Immer wissen, was du antworten kannst',
           'Nachrichten, die zu dir und zur Situation passen',
-          'Mehr Chemie in deinen Gesprächen',
+          'Sei unberechenbar. Nie langweilig.',
           'Gespräche, bei denen das Interesse von beiden Seiten kommt',
+          'Du bleibst du selbst — du weißt nur besser, was du sagen sollst',
         ];
       case 'es':
         return const [
           'Saber siempre qué responder',
           'Mensajes que encajan contigo y con la situación',
-          'Crear más química en tus conversaciones',
+          'Sé impredecible. Nunca aburrido.',
           'Conversaciones donde el interés viene de ambos lados',
+          'Sigues siendo tú, solo que sabes mejor qué decir',
         ];
       case 'pt':
         return const [
           'Sempre saiba o que responder',
           'Mensagens que combinam com você e com a situação',
-          'Crie mais química nas suas conversas',
+          'Seja imprevisível. Nunca monótono.',
           'Conversas em que o interesse vem dos dois lados',
+          'Você continua sendo você, só sabe melhor o que dizer',
         ];
       case 'fr':
         return const [
           'Toujours savoir quoi répondre',
           'Des messages adaptés à toi et à la situation',
-          'Créer plus de complicité dans tes conversations',
+          'Sois imprévisible. Jamais monotone.',
           'Des conversations où l’intérêt vient des deux côtés',
+          'Tu restes toi-même, tu sais juste mieux quoi dire',
         ];
       case 'it':
         return const [
           'Sapere sempre cosa rispondere',
           'Messaggi adatti a te e alla situazione',
-          'Creare più chimica nelle conversazioni',
+          'Sii imprevedibile. Mai monotono.',
           'Conversazioni in cui l’interesse arriva da entrambe le parti',
+          'Resti sempre te stesso, solo che sai meglio cosa dire',
         ];
       default:
         return const [
           'Always know what to reply',
           'Messages that fit you and the situation',
-          'Create more chemistry in your conversations',
+          'Be unpredictable. Never boring.',
           'Conversations where the interest goes both ways',
+          'You\u2019re still you — you just know what to say better',
         ];
     }
   }
@@ -253,18 +329,21 @@ class _PaywallFlowState extends State<PaywallFlow> {
           body: SafeArea(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                child: Column(
-                  children: [
+              child: Center(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
                     const SizedBox(height: 28),
 
+                    // Headline — tamanho reduzido de 32 para 26
                     Text(
                       _headline(l),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         color: _text,
-                        fontSize: 32,
+                        fontSize: 26,
                         height: 1.08,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -1.0,
@@ -273,18 +352,19 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
                     const SizedBox(height: 12),
 
+                    // Subheadline — cor alterada para preto (_text)
                     Text(
                       _subHeadline(l),
                       textAlign: TextAlign.center,
                       style: const TextStyle(
-                        color: _muted,
+                        color: _text,
                         fontSize: 17,
                         height: 1.45,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
 
-                    const SizedBox(height: 30),
+                    const SizedBox(height: 24),
 
                     Container(
                       width: double.infinity,
@@ -300,17 +380,25 @@ class _PaywallFlowState extends State<PaywallFlow> {
                             child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
+                                // Barra vertical — cor verde
                                 Container(
+                                  width: 3,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF22C55E),
+                                    borderRadius: BorderRadius.circular(99),
+                                  ),
+                                ),
+                                const SizedBox(width: 9),
+
+                                // Check simples em verde
+                                const SizedBox(
                                   width: 24,
                                   height: 24,
-                                  decoration: const BoxDecoration(
-                                    color: _text,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
+                                  child: Icon(
                                     Icons.check_rounded,
-                                    color: Colors.white,
-                                    size: 16,
+                                    color: Color(0xFF22C55E),
+                                    size: 22,
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -334,66 +422,69 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
                     const SizedBox(height: 26),
 
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(22),
-                        border: Border.all(
-                          color: const Color(0xFFE3E3E8),
-                          width: 1.2,
-                        ),
-                      ),
-                      child: Column(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 7,
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(child: Stack(
+                          clipBehavior: Clip.none,
+                          alignment: Alignment.topCenter,
+                          children: [
+                            _planCard(
+                              selected: _selectedPlan == 'annual',
+                              onTap: () => setState(() => _selectedPlan = 'annual'),
+                              topPadding: 19,
+                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                                Row(children: [
+                                  Expanded(child: Text(_planText(l,'annual'), style: const TextStyle(fontSize:12,fontWeight:FontWeight.w900))),
+                                  Text(_planText(l,'month'), style: const TextStyle(color:_muted,fontSize:10.5,fontWeight:FontWeight.w700)),
+                                ]),
+                                const SizedBox(height:9),
+                                Text(_planText(l,'annualPrice'), style: const TextStyle(fontSize:16,fontWeight:FontWeight.w900)),
+                                const SizedBox(height:2),
+                                Text(_planText(l,'after'), style: const TextStyle(color:_muted,fontSize:10.5,fontWeight:FontWeight.w600)),
+                              ]),
                             ),
-                            decoration: BoxDecoration(
-                              color: _text,
-                              borderRadius: BorderRadius.circular(999),
-                            ),
-                            child: Text(
-                              _trialBadge(l),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w900,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            _trialLine(l),
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: _text,
-                              fontSize: 18,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            _cancelLine(l),
-                            style: const TextStyle(
-                              color: _muted,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+                            Positioned(top:-10, child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal:10,vertical:4),
+                              decoration: BoxDecoration(color:const Color(0xFF6C63FF),borderRadius:BorderRadius.circular(999)),
+                              child: Text(_planText(l,'save'), style: const TextStyle(color:Colors.white,fontSize:10,fontWeight:FontWeight.w900)),
+                            )),
+                          ],
+                        )),
+
+                        const SizedBox(width:12),
+                        Expanded(child: _planCard(
+                          selected: _selectedPlan == 'weekly',
+                          onTap: () => setState(() => _selectedPlan = 'weekly'),
+                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+                            Text(_planText(l,'weekly'), style: const TextStyle(fontSize:12,fontWeight:FontWeight.w900)),
+                            const SizedBox(height:10),
+                            Text(_planText(l,'old'), style: const TextStyle(color:_muted,fontSize:12,decoration:TextDecoration.lineThrough)),
+                            const SizedBox(height:2),
+                            Text(_planText(l,'week'), style: const TextStyle(fontSize:16,fontWeight:FontWeight.w900)),
+                          ]),
+                        )),
+
+                      ],
+                    ),
+
+                    const SizedBox(height: 14),
+
+                    Text(
+                      _belowButtonText(l),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFF66666D),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
 
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 10),
 
                     SizedBox(
                       width: double.infinity,
-                      height: 60,
+                      height: 52,
                       child: ElevatedButton(
                         onPressed: _loading ? null : _handlePurchase,
                         style: ElevatedButton.styleFrom(
@@ -402,7 +493,7 @@ class _PaywallFlowState extends State<PaywallFlow> {
                           disabledBackgroundColor: _text.withOpacity(0.35),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(30),
+                            borderRadius: BorderRadius.circular(26),
                           ),
                         ),
                         child: _loading
@@ -415,7 +506,7 @@ class _PaywallFlowState extends State<PaywallFlow> {
                                 ),
                               )
                             : Text(
-                                _ctaLabel(l),
+                                _ctaLabelDynamic(l),
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w800,
@@ -424,26 +515,13 @@ class _PaywallFlowState extends State<PaywallFlow> {
                       ),
                     ),
 
-                    const SizedBox(height: 10),
-
-                    Text(
-                      _todayFree(l),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: _muted,
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-
-                    const SizedBox(height: 18),
+                    const SizedBox(height: 16),
 
                     Wrap(
                       alignment: WrapAlignment.center,
                       spacing: 14,
                       runSpacing: 8,
                       children: [
-                        _link(_restore(l), _handleRestore),
                         _link(
                           _terms(l),
                           () => _openUrl(
@@ -460,7 +538,8 @@ class _PaywallFlowState extends State<PaywallFlow> {
                     ),
 
                     SizedBox(height: bottom + 18),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -469,6 +548,28 @@ class _PaywallFlowState extends State<PaywallFlow> {
       },
     );
   }
+
+  Widget _planCard({
+    required bool selected,
+    required VoidCallback onTap,
+    required Widget child,
+    double topPadding = 15,
+  }) => GestureDetector(
+    onTap: onTap,
+    child: Container(
+      width: double.infinity,
+      padding: EdgeInsets.fromLTRB(13, topPadding, 13, 13),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: selected ? const Color(0xFF6C63FF) : const Color(0xFFE3E3E8),
+          width: selected ? 2 : 1.2,
+        ),
+      ),
+      child: child,
+    ),
+  );
 
   Widget _link(String t, VoidCallback onTap) => GestureDetector(
         onTap: onTap,

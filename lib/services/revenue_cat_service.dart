@@ -7,6 +7,17 @@ class RevenueCatService {
   static const String _androidKey = "goog_FEoxrNpkLgRjsZTtNJZEYuVDqua";
   static const String _iosKey = "appl_dmwoiqiILydfkRwbGekYzLFWRRb";
 
+  // ============================================================
+  // NOVO OFFERING (added) — identifier configurado no RevenueCat
+  // para o novo paywall (planos Annual + Weekly sem trial).
+  //
+  // Confirmado no RevenueCat: o Offering Identifier ficou gravado
+  // como "Annual" (não "new_paywall" nem "new paywall"), contendo
+  // os packages $rc_weekly (upcrush_premium_weekly_no_trial) e
+  // $rc_annual (upcrush_premium_yearly_trial).
+  // ============================================================
+  static const String _newOfferingId = 'Annual';
+
   static Future<void> init() async {
     await Purchases.setLogLevel(LogLevel.debug);
     final key = Platform.isIOS ? _iosKey : _androidKey;
@@ -35,6 +46,8 @@ class RevenueCatService {
   }
 
   // Retorna o preco real do produto na moeda local do utilizador
+  // (mantido exatamente como estava — continua a usar o offering
+  // "current", que e o antigo com upcrush_premium_weekly).
   static Future<String> getPrice() async {
     try {
       final offerings = await Purchases.getOfferings();
@@ -95,6 +108,143 @@ class RevenueCatService {
     } catch (e) {
       return PurchaseServiceResult(success: false, error: e.toString());
     }
+  }
+
+  // ============================================================
+  // NOVO OFFERING — FUNÇÕES ADICIONADAS (added)
+  // ============================================================
+  //
+  // Tudo o que vem a seguir e completamente independente do que
+  // ja existe acima. Busca o offering pelo NOME especifico
+  // (_newOfferingId), nunca por "current" — assim o produto antigo
+  // (upcrush_premium_weekly, usado por buyWeekly() e getPrice())
+  // nunca e afetado, mesmo que decidas mais tarde tornar o novo
+  // offering o "Current Offering" no RevenueCat.
+  // ============================================================
+
+  /// Busca o novo Offering pelo identifier configurado.
+  /// Devolve null se ainda nao existir/nao estiver acessivel
+  /// (ex: por causa do "Missing Metadata" no App Store Connect).
+  static Future<Offering?> _getNewOffering() async {
+    try {
+      final offerings = await Purchases.getOfferings();
+      return offerings.all[_newOfferingId];
+    } catch (e) {
+      debugPrint("RevenueCat: erro ao buscar novo offering: $e");
+      return null;
+    }
+  }
+
+  /// Devolve o package do plano ANUAL do novo offering
+  /// (upcrush_premium_yearly_trial, com trial).
+  static Future<Package?> _getAnnualPackage() async {
+    final offering = await _getNewOffering();
+    return offering?.annual;
+  }
+
+  /// Devolve o package do plano SEMANAL sem trial do novo offering
+  /// (upcrush_premium_weekly_no_trial).
+  static Future<Package?> _getWeeklyNoTrialPackage() async {
+    final offering = await _getNewOffering();
+    return offering?.weekly;
+  }
+
+  /// Preco formatado (na moeda local) do plano anual do novo offering.
+  /// Nao interfere com getPrice() — usa o novo offering especificamente.
+  static Future<String> getAnnualPrice() async {
+    try {
+      final package = await _getAnnualPackage();
+      return package?.storeProduct.priceString ?? '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  /// Preco formatado (na moeda local) do plano semanal sem trial
+  /// do novo offering.
+  static Future<String> getWeeklyNoTrialPrice() async {
+    try {
+      final package = await _getWeeklyNoTrialPackage();
+      return package?.storeProduct.priceString ?? '';
+    } catch (e) {
+      return '';
+    }
+  }
+
+  /// Compra o plano ANUAL (upcrush_premium_yearly_trial, com trial).
+  static Future<PurchaseServiceResult> buyAnnual() async {
+    try {
+      final package = await _getAnnualPackage();
+
+      if (package == null) {
+        return PurchaseServiceResult(
+            success: false,
+            error: "Plano anual não encontrado. Verifica a configuração no RevenueCat.");
+      }
+
+      await Purchases.purchasePackage(package);
+
+      final info = await Purchases.getCustomerInfo();
+      final isPremium = info.entitlements.active.containsKey("premium");
+
+      if (isPremium) {
+        await CreditsService.setPremium(true);
+        return PurchaseServiceResult(success: true);
+      }
+
+      return PurchaseServiceResult(
+          success: false, error: "Compra não confirmada");
+    } catch (e) {
+      final err = e.toString().toLowerCase();
+      if (err.contains("cancel") || err.contains("1")) {
+        return PurchaseServiceResult(success: false, cancelled: true);
+      }
+      return PurchaseServiceResult(success: false, error: e.toString());
+    }
+  }
+
+  /// Compra o plano SEMANAL sem trial
+  /// (upcrush_premium_weekly_no_trial).
+  static Future<PurchaseServiceResult> buyWeeklyNoTrial() async {
+    try {
+      final package = await _getWeeklyNoTrialPackage();
+
+      if (package == null) {
+        return PurchaseServiceResult(
+            success: false,
+            error: "Plano semanal não encontrado. Verifica a configuração no RevenueCat.");
+      }
+
+      await Purchases.purchasePackage(package);
+
+      final info = await Purchases.getCustomerInfo();
+      final isPremium = info.entitlements.active.containsKey("premium");
+
+      if (isPremium) {
+        await CreditsService.setPremium(true);
+        return PurchaseServiceResult(success: true);
+      }
+
+      return PurchaseServiceResult(
+          success: false, error: "Compra não confirmada");
+    } catch (e) {
+      final err = e.toString().toLowerCase();
+      if (err.contains("cancel") || err.contains("1")) {
+        return PurchaseServiceResult(success: false, cancelled: true);
+      }
+      return PurchaseServiceResult(success: false, error: e.toString());
+    }
+  }
+
+  /// Compra o package de acordo com o plano escolhido no novo
+  /// paywall ('annual' ou 'weekly'). Função de conveniência para
+  /// o paywall_screen.dart não precisar de decidir qual método
+  /// chamar diretamente.
+  static Future<PurchaseServiceResult> buyNewPlan(String planKey) {
+    if (planKey == 'annual') {
+      return buyAnnual();
+    }
+    return buyWeeklyNoTrial();
   }
 }
 
