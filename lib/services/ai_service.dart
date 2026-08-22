@@ -16,7 +16,7 @@ static const String _anthropicModel = 'claude-opus-4-8';
 
 // Modelo específico para CANTADAS / PICK LINES.
 // Mantido separado para não alterar as outras funcionalidades.
-static const String _openAiModelPickLine = 'gpt-5.6-luna';
+static const String _openAiModelPickLine = 'gpt-4.1';
 static const String _anthropicModelPickLine =
 'claude-haiku-4-5-20251001';
 
@@ -61,49 +61,94 @@ static const Map<String, String> _idiomaCultura = {
 // ============================================================
 
 static const List<String> cantadaCategoriaKeys = [
-'elogios_duplo_sentido',
-'meio_da_conversa',
-'abordagem_rua',
+'surpreenda_me',
+'iniciar_conversa',
+'flertar',
+'criar_curiosidade',
 'respondendo_story',
-'conhecida',
-'esta_rindo',
-'te_olha_varias_vezes',
-'mexe_no_cabelo',
-'provoca_voce',
-'diz_que_bonito',
-'diz_que_engracado',
-'diz_nao_interessado',
-'elogios_coragem',
-'flerte_festa',
-'ambiente_a_favor',
-'elogios_provocacao',
-'elogios_ousados',
+'abordagem_rua',
 'conversa_esfriou',
-'monossilabos',
-'primeira_msg_match',
-'match_sumiu',
+'elogiar',
+'provocar_brincar',
 'pedir_numero_instagram',
 'convidar_sair',
-'confirmar_date',
-'depois_ignorada',
-'testando_voce',
-'depois_primeiro_encontro',
-'elogio_primeiro_date',
+'bom_dia_noite',
 'retomar_conversa_antiga',
-
-// NOVA CATEGORIA
-'criar_curiosidade',
-
-// INICIAR UMA CONVERSA
-'dar_bom_dia',
-'dar_boa_tarde',
-'dar_boa_noite',
-'como_foi_seu_dia',
-'puxar_assunto_do_nada',
-'comecar_com_quem_gosto',
 ];
 
 static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
+'surpreenda_me': {
+'pt': 'Surpreenda-me 🔥',
+'en': 'Surprise me 🔥',
+'de': 'Überrasch mich 🔥',
+'es': 'Sorpréndeme 🔥',
+'fr': 'Surprends-moi 🔥',
+'it': 'Sorprendimi 🔥',
+'tr': 'Şaşırt beni 🔥',
+'pl': 'Zaskocz mnie 🔥',
+'ru': 'Удиви меня 🔥',
+'ar': 'فاجئني 🔥',
+},
+'iniciar_conversa': {
+'pt': 'Iniciar conversa 💬',
+'en': 'Start a conversation 💬',
+'de': 'Gespräch starten 💬',
+'es': 'Iniciar conversación 💬',
+'fr': 'Lancer la conversation 💬',
+'it': 'Inizia una conversazione 💬',
+'tr': 'Sohbet başlat 💬',
+'pl': 'Rozpocznij rozmowę 💬',
+'ru': 'Начать разговор 💬',
+'ar': 'ابدأ محادثة 💬',
+},
+'flertar': {
+'pt': 'Flertar 😏',
+'en': 'Flirt 😏',
+'de': 'Flirten 😏',
+'es': 'Coquetear 😏',
+'fr': 'Flirter 😏',
+'it': 'Flirtare 😏',
+'tr': 'Flört et 😏',
+'pl': 'Flirtuj 😏',
+'ru': 'Флирт 😏',
+'ar': 'غازل 😏',
+},
+'elogiar': {
+'pt': 'Elogiar ❤️',
+'en': 'Compliment ❤️',
+'de': 'Kompliment ❤️',
+'es': 'Elogiar ❤️',
+'fr': 'Complimenter ❤️',
+'it': 'Fare un complimento ❤️',
+'tr': 'İltifat et ❤️',
+'pl': 'Skomplementuj ❤️',
+'ru': 'Сделать комплимент ❤️',
+'ar': 'جامِل ❤️',
+},
+'provocar_brincar': {
+'pt': 'Provocar / brincar 😂',
+'en': 'Tease / play 😂',
+'de': 'Necken / spielen 😂',
+'es': 'Provocar / bromear 😂',
+'fr': 'Taquiner / jouer 😂',
+'it': 'Provocare / scherzare 😂',
+'tr': 'Takıl / şakalaş 😂',
+'pl': 'Drocz się / żartuj 😂',
+'ru': 'Подразнить / пошутить 😂',
+'ar': 'مازح / استفز بلطف 😂',
+},
+'bom_dia_noite': {
+'pt': 'Bom dia / boa noite 🌙',
+'en': 'Good morning / good night 🌙',
+'de': 'Guten Morgen / Gute Nacht 🌙',
+'es': 'Buenos días / buenas noches 🌙',
+'fr': 'Bonjour / bonne nuit 🌙',
+'it': 'Buongiorno / buonanotte 🌙',
+'tr': 'Günaydın / iyi geceler 🌙',
+'pl': 'Dzień dobry / dobranoc 🌙',
+'ru': 'Доброе утро / спокойной ночи 🌙',
+'ar': 'صباح الخير / تصبح على خير 🌙',
+},
 'elogios_duplo_sentido': {
 'pt': 'Duplo sentido 😏',
 'en': 'Compliments with double meaning',
@@ -129,7 +174,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'في منتصف المحادثة',
 },
 'abordagem_rua': {
-'pt': 'Chegar pessoalmente 👀',
+'pt': 'Abordagem na rua 🚶',
 'en': 'Street approach',
 'de': 'Ansprache auf der Straße',
 'es': 'Abordaje en la calle',
@@ -141,7 +186,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'التعارف في الشارع',
 },
 'respondendo_story': {
-'pt': 'Responder story 📲',
+'pt': 'Responder story 📸',
 'en': 'Replying to a story',
 'de': 'Auf eine Story antworten',
 'es': 'Respondiendo a un story',
@@ -309,7 +354,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'مجاملات جريئة',
 },
 'conversa_esfriou': {
-'pt': 'Conversa esfriou 🥶',
+'pt': 'Conversa esfriou 🧊',
 'en': 'Conversation that went cold',
 'de': 'Gespräch ist eingeschlafen',
 'es': 'Conversación que se enfrió',
@@ -357,7 +402,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'اختفى بعد التطابق',
 },
 'pedir_numero_instagram': {
-'pt': 'Pedir Instagram 📲',
+'pt': 'Pedir Instagram/número 📱',
 'en': 'Asking for their number or Instagram',
 'de': 'Nach Nummer oder Instagram fragen',
 'es': 'Pedir el número o Instagram',
@@ -369,7 +414,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'طلب الرقم أو الإنستغرام',
 },
 'convidar_sair': {
-'pt': 'Chamar pra sair 🍸',
+'pt': 'Chamar para sair 🍷',
 'en': 'Asking them out',
 'de': 'Zum Date einladen',
 'es': 'Invitar a salir',
@@ -441,7 +486,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 'ar': 'مجاملات للموعد الأول',
 },
 'retomar_conversa_antiga': {
-'pt': 'Voltar a conversar 💬',
+'pt': 'Retomar conversa 🔄',
 'en': 'Reviving an old conversation',
 'de': 'Ein altes Gespräch wiederaufnehmen',
 'es': 'Retomar una conversación antigua',
@@ -455,7 +500,7 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 
 // NOVA CATEGORIA
 'criar_curiosidade': {
-'pt': 'Deixar curiosa/o 👀',
+'pt': 'Criar curiosidade 👀',
 'en': 'Create curiosity',
 'de': 'Neugier wecken',
 'es': 'Crear curiosidad',
@@ -542,6 +587,18 @@ static const Map<String, Map<String, String>> _cantadaCategoriaNomes = {
 };
 
 static const Map<String, String> _cantadaCategoriaDescricao = {
+'surpreenda_me':
+'FREE PREMIUM MODE. Do not follow one fixed category. Silently choose a fresh strategy that is meaningfully different from recent lines. Rotate between confident flirting, clever teasing, curiosity, playful assumptions, bold but tasteful compliments, pattern breaks, light double meanings and unexpected conversational hooks. The result must feel surprising, premium and immediately sendable. Never announce which strategy was chosen.',
+'iniciar_conversa':
+'Create a strong first message or conversation starter when there is little or no context. Consolidate the best ideas from first-match openers, starting out of nowhere, talking to someone the user already likes and natural everyday conversation. Avoid interview questions and generic greetings. Give the other person an easy, interesting reason to respond.',
+'flertar':
+'Create clear romantic tension in a modern, natural way. Consolidate mid-conversation flirting, party flirting, direct interest, bold compliments and light double meaning. It may tease, imply chemistry or be more direct, but must stay socially calibrated, non-explicit and immediately sendable.',
+'elogiar':
+'Give a compliment with personality instead of generic praise. It may focus on style, energy, attitude, confidence, humor or attraction. Prefer a compliment that creates a conversational opening, playful tension or a memorable reaction rather than simply saying beautiful/handsome.',
+'provocar_brincar':
+'Use playful teasing, a light challenge, playful accusation, witty comeback or humorous framing. It should invite teasing back and never become insulting, humiliating, defensive or aggressive.',
+'bom_dia_noite':
+'Create a morning or nighttime message with personality. Silently choose the appropriate direction from the wording/context available; when no time context exists, generate a versatile warm/flirty check-in rather than a plain greeting. Avoid generic "good morning, did you sleep well?" and plain "good night".',
 'elogios_duplo_sentido':
 'A compliment with a flirtatious second layer. Clever, natural and lightly suggestive, never vulgar or explicit.',
 'meio_da_conversa':
@@ -1759,6 +1816,12 @@ Examples:
 - someone I like -> show calibrated interest and intent without becoming needy or over-romantic
 - after being ignored -> restart without complaint, pressure or resentment
 - rejection/disinterest -> respect the boundary completely
+- surprise me -> freely choose the strongest fresh mechanism; do NOT stay in one pattern and do NOT mention the chosen strategy
+- start a conversation -> create a pattern-breaking but easy-to-answer opener; no generic hello and no interview energy
+- flirt -> create clear, calibrated romantic tension; do not hide the intent behind endless small talk
+- compliment -> make the compliment memorable and conversational, not generic praise
+- tease/play -> create playful tension that invites teasing back; never insult
+- good morning/good night -> add warmth, personality or flirtation instead of sending a plain greeting
 
 ============================================================
 2. CHOOSE A CREATIVE MECHANISM
@@ -2176,9 +2239,29 @@ throw Exception('OpenAI pick line returned invalid JSON object');
 }
 
 final status = data['status']?.toString();
-if (status == 'incomplete' || status == 'failed') {
+
+if (status == 'incomplete') {
+final details = data['incomplete_details'];
 // ignore: avoid_print
-print('OpenAI pick line status=$status. Corpo: ${response.body}');
+print(
+'OpenAI pick line INCOMPLETA. '
+'Detalhes: $details | Corpo: ${response.body}',
+);
+throw Exception(
+'OpenAI pick line incomplete: $details',
+);
+}
+
+if (status == 'failed') {
+final error = data['error'];
+// ignore: avoid_print
+print(
+'OpenAI pick line FALHOU. '
+'Erro: $error | Corpo: ${response.body}',
+);
+throw Exception(
+'OpenAI pick line failed: $error',
+);
 }
 
 return _extractOpenAIResponseText(data);
@@ -2202,7 +2285,7 @@ headers: {
 },
 body: jsonEncode({
 'model': _anthropicModelPickLine,
-'max_tokens': 250,
+'max_tokens': 500,
 'temperature': 1.0,
 'system': '''
 $system
@@ -2232,7 +2315,25 @@ throw Exception(
 
 final data = jsonDecode(response.body);
 
-return data['content'][0]['text'].toString();
+if (data is! Map<String, dynamic>) {
+throw Exception('Anthropic pick line returned invalid JSON object');
+}
+
+final content = data['content'];
+if (content is! List || content.isEmpty) {
+throw Exception('Anthropic pick line returned no content');
+}
+
+for (final block in content) {
+if (block is Map && block['type'] == 'text') {
+final value = block['text']?.toString().trim() ?? '';
+if (value.isNotEmpty) {
+return value;
+}
+}
+}
+
+throw Exception('Anthropic pick line returned no text');
 }
 
 // ============================================================
@@ -2241,7 +2342,16 @@ return data['content'][0]['text'].toString();
 
 static String _parseSinglePickLine(String body) {
 try {
-dynamic decoded = jsonDecode(body);
+var raw = body.trim();
+
+if (raw.startsWith('```')) {
+raw = raw
+.replaceFirst(RegExp(r'^```(?:json)?\s*', caseSensitive: false), '')
+.replaceFirst(RegExp(r'\s*```$'), '')
+.trim();
+}
+
+dynamic decoded = jsonDecode(raw);
 
 if (decoded is String) {
 decoded = jsonDecode(decoded);
@@ -2268,7 +2378,9 @@ return '';
 }
 
 return cleaned;
-} catch (_) {
+} catch (e) {
+// ignore: avoid_print
+print('PICK LINE PARSE ERROR: $e | BODY: $body');
 return '';
 }
 }

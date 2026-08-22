@@ -18,10 +18,8 @@ class _PickLinesScreenState extends State<PickLinesScreen>
   // ============================================================
 
   String _currentLine = '';
-  String _currentCategoryKey = ''; // chave interna estável
-
-  List<String> _categoryDeck = [];
-  int _categoryIndex = 0;
+  String _currentCategoryKey = 'surpreenda_me';
+  String _selectedCategoryKey = 'surpreenda_me';
 
   // Guarda as últimas linhas geradas nesta sessão, para evitar
   // repetição — enviado ao AIService em cada chamada.
@@ -83,8 +81,6 @@ class _PickLinesScreenState extends State<PickLinesScreen>
       CurvedAnimation(parent: _scanController, curve: Curves.easeInOut),
     );
 
-    _resetCategoryDeck();
-
     WidgetsBinding.instance.addPostFrameCallback((_) => _gerar());
   }
 
@@ -106,16 +102,6 @@ class _PickLinesScreenState extends State<PickLinesScreen>
 
   void _onThemeChange() {
     if (mounted) setState(() {});
-  }
-
-  // ============================================================
-  // CATEGORY DECK
-  // ============================================================
-
-  void _resetCategoryDeck() {
-    _categoryDeck = List<String>.from(AIService.cantadaCategoriaKeys);
-    _categoryDeck.shuffle();
-    _categoryIndex = 0;
   }
 
   // ============================================================
@@ -166,19 +152,11 @@ class _PickLinesScreenState extends State<PickLinesScreen>
     });
 
     try {
-      // Se terminou as categorias, cria um novo ciclo aleatório.
-      if (_categoryIndex >= _categoryDeck.length) {
-        _resetCategoryDeck();
-      }
-
-      final categoryKey = _categoryDeck[_categoryIndex];
-      _categoryIndex++;
+      final categoryKey = _selectedCategoryKey;
 
       final line = await AIService.gerarPickLine(
         lang: appLang.languageCode,
         categoria: categoryKey,
-        // ✅ Agora enviamos as últimas linhas geradas nesta sessão,
-        // para o AIService evitar repetição de conteúdo/estrutura.
         recentLines: List<String>.from(_recentLines),
       );
 
@@ -204,6 +182,81 @@ class _PickLinesScreenState extends State<PickLinesScreen>
   void _next() {
     if (_loading) return;
     _gerar();
+  }
+
+  Future<void> _selectCategory(String key) async {
+    if (_loading || key == _selectedCategoryKey) return;
+
+    HapticFeedback.selectionClick();
+
+    setState(() {
+      _selectedCategoryKey = key;
+      _currentCategoryKey = key;
+    });
+
+    await _gerar();
+  }
+
+  Widget _buildCategorySelector(String languageCode) {
+    return SizedBox(
+      height: 46,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const BouncingScrollPhysics(),
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        itemCount: AIService.cantadaCategoriaKeys.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final key = AIService.cantadaCategoriaKeys[index];
+          final selected = key == _selectedCategoryKey;
+          final label = AIService.cantadaCategoriaNome(key, languageCode);
+
+          return GestureDetector(
+            onTap: _loading ? null : () => _selectCategory(key),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              decoration: BoxDecoration(
+                color: selected
+                    ? _accent
+                    : (_dark
+                        ? Colors.white.withOpacity(0.07)
+                        : Colors.white.withOpacity(0.88)),
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: selected
+                      ? _accent
+                      : (_dark
+                          ? Colors.white.withOpacity(0.08)
+                          : Colors.black.withOpacity(0.05)),
+                ),
+                boxShadow: selected && !_dark
+                    ? [
+                        BoxShadow(
+                          color: _accent.withOpacity(0.18),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ]
+                    : [],
+              ),
+              child: Center(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: selected ? Colors.white : _textPrimary,
+                    fontSize: 13,
+                    fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
   }
 
   // ============================================================
@@ -407,17 +460,28 @@ class _PickLinesScreenState extends State<PickLinesScreen>
               onPressed: () => Navigator.pop(context),
             ),
             title: Text(
-              'Get Pick Lines',
+              lang.languageCode == 'pt'
+                  ? 'Cantadas'
+                  : lang.languageCode == 'de'
+                      ? 'Flirtsprüche'
+                      : lang.languageCode == 'es'
+                          ? 'Frases para ligar'
+                          : 'Pick Lines',
               style: TextStyle(color: _textPrimary, fontSize: 17, fontWeight: FontWeight.w700),
             ),
           ),
           body: Column(
             children: [
+              const SizedBox(height: 8),
+              _buildCategorySelector(lang.languageCode),
+              const SizedBox(height: 10),
               Expanded(
                 child: Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 28),
-                    child: _loading ? _buildLoading(lang.languageCode) : _buildResultCard(lang.languageCode),
+                    child: _loading
+                        ? _buildLoading(lang.languageCode)
+                        : _buildResultCard(lang.languageCode),
                   ),
                 ),
               ),

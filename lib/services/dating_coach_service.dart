@@ -14,7 +14,7 @@ import '../models/coach_models.dart';
 ///
 /// Fluxo:
 ///
-/// OpenAI GPT-5.6 Terra
+/// OpenAI GPT-4.1
 /// ↓
 /// se falhar
 /// ↓

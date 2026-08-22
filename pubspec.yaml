@@ -1,8 +1,10 @@
 name: upcrush_app
+
 description: "UpCrush AI— O teu copiloto de conversa."
+
 publish_to: 'none'
 
-version: 1.0.23
+version: 1.0.24
 
 environment:
   sdk: ^3.11.1
@@ -10,24 +12,31 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
   url_launcher: ^6.2.5
   path_provider: ^2.1.1
-
   cupertino_icons: ^1.0.8
   image_picker: ^1.1.2
   http: ^1.2.0
   shared_preferences: ^2.5.5
   purchases_flutter: ^9.16.0
+  video_player: ^2.9.5
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
   flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
+
   assets:
     - assets/
     - assets/images/casal1.jpg
     - assets/images/casal2.jpg
     - assets/images/casal3.jpg
+    - assets/videos/onboarding_intro.mp4
+    - assets/images/onboarding/chat_1.png
+    - assets/images/onboarding/chat_2.png
+    - assets/images/onboarding/chat_3.jpeg
