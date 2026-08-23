@@ -39,9 +39,9 @@ class _PaywallFlowState extends State<PaywallFlow> {
     RevenueCatService.getPrice().then((p) {
       if (mounted) setState(() => _price = p);
     });
-    // Busca os preços reais dos novos planos (Annual/Weekly sem
-    // trial) para uso futuro — não substitui ainda os textos fixos
-    // em _planText(), só deixa os valores prontos.
+    // Busca os preços reais dos novos planos no RevenueCat/App Store.
+    // Esses valores são usados diretamente no paywall para respeitar
+    // a moeda e o preço local do utilizador.
     RevenueCatService.getAnnualPrice().then((p) {
       if (mounted) setState(() => _annualPrice = p);
     });
@@ -205,13 +205,27 @@ class _PaywallFlowState extends State<PaywallFlow> {
   }
 
   String _planText(String l, String key) {
-    const m = {
-      'pt': {'weekly':'SEMANAL','annual':'ANUAL','save':'ECONOMIZE 75%','month':'2,91 €/mês','annualPrice':'34,99 €/ano','after':'após 3 dias grátis','old':'9,99 €/sem','week':'6,99 €/sem'},
-      'de': {'weekly':'WÖCHENTLICH','annual':'JÄHRLICH','save':'75% SPAREN','month':'2,91 €/Mon','annualPrice':'34,99 €/Jr','after':'nach 3 kostenlosen Tagen','old':'9,99 €/Wo','week':'6,99 €/Wo'},
-      'es': {'weekly':'SEMANAL','annual':'ANUAL','save':'AHORRA 75%','month':'2,91 €/mes','annualPrice':'34,99 €/año','after':'después de 3 días gratis','old':'9,99 €/sem','week':'6,99 €/sem'},
-      'fr': {'weekly':'HEBDOMADAIRE','annual':'ANNUEL','save':'ÉCONOMISEZ 75%','month':'2,91 €/mois','annualPrice':'34,99 €/an','after':'après 3 jours gratuits','old':'9,99 €/sem','week':'6,99 €/sem'},
-      'it': {'weekly':'SETTIMANALE','annual':'ANNUALE','save':'RISPARMIA IL 75%','month':'2,91 €/mese','annualPrice':'34,99 €/anno','after':'dopo 3 giorni gratis','old':'9,99 €/sett','week':'6,99 €/sett'},
-      'en': {'weekly':'WEEKLY','annual':'ANNUAL','save':'SAVE 75%','month':'€2.91/mo','annualPrice':'€34.99/yr','after':'after 3 free days','old':'€9.99/wk','week':'€6.99/wk'},
+    final annualPrice = _annualPrice.isEmpty ? '34,99 €' : _annualPrice;
+    final weeklyPrice = _weeklyPrice.isEmpty ? '6,99 €' : _weeklyPrice;
+
+    String monthlyEquivalent() {
+      switch (l) {
+        case 'de': return '2,91 €/Mon';
+        case 'es': return '2,91 €/mes';
+        case 'pt': return '2,91 €/mês';
+        case 'fr': return '2,91 €/mois';
+        case 'it': return '2,91 €/mese';
+        default: return '€2.91/mo';
+      }
+    }
+
+    final m = {
+      'pt': {'weekly':'SEMANAL','annual':'ANUAL','save':'ECONOMIZE 75%','month':monthlyEquivalent(),'annualPrice':'$annualPrice/ano','after':'após 3 dias grátis','old':'9,99 €/sem','week':'$weeklyPrice/sem'},
+      'de': {'weekly':'WÖCHENTLICH','annual':'JÄHRLICH','save':'75% SPAREN','month':monthlyEquivalent(),'annualPrice':'$annualPrice/Jr','after':'nach 3 kostenlosen Tagen','old':'9,99 €/Wo','week':'$weeklyPrice/Wo'},
+      'es': {'weekly':'SEMANAL','annual':'ANUAL','save':'AHORRA 75%','month':monthlyEquivalent(),'annualPrice':'$annualPrice/año','after':'después de 3 días gratis','old':'9,99 €/sem','week':'$weeklyPrice/sem'},
+      'fr': {'weekly':'HEBDOMADAIRE','annual':'ANNUEL','save':'ÉCONOMISEZ 75%','month':monthlyEquivalent(),'annualPrice':'$annualPrice/an','after':'après 3 jours gratuits','old':'9,99 €/sem','week':'$weeklyPrice/sem'},
+      'it': {'weekly':'SETTIMANALE','annual':'ANNUALE','save':'RISPARMIA IL 75%','month':monthlyEquivalent(),'annualPrice':'$annualPrice/anno','after':'dopo 3 giorni gratis','old':'9,99 €/sett','week':'$weeklyPrice/sett'},
+      'en': {'weekly':'WEEKLY','annual':'ANNUAL','save':'SAVE 75%','month':monthlyEquivalent(),'annualPrice':'$annualPrice/yr','after':'after 3 free days','old':'€9.99/wk','week':'$weeklyPrice/wk'},
     };
     return (m[l] ?? m['en']!)[key]!;
   }
@@ -231,23 +245,26 @@ class _PaywallFlowState extends State<PaywallFlow> {
   // selecionado (anual vs semanal). Devolve 2 linhas para o plano
   // anual (garante que cabe mesmo em ecrãs pequenos como o iPhone SE).
   List<String> _belowButtonLines(String l) {
+    final annualPrice = _annualPrice.isEmpty ? '34,99 €' : _annualPrice;
+    final weeklyPrice = _weeklyPrice.isEmpty ? '6,99 €' : _weeklyPrice;
+
     if (_selectedPlan == 'annual') {
       switch (l) {
-        case 'de': return ['3 Tage kostenlos, danach 34,99 € pro Jahr', 'Jederzeit kündbar'];
-        case 'es': return ['3 días gratis, luego 34,99 € al año', 'Cancela cuando quieras'];
-        case 'pt': return ['3 dias grátis, depois 34,99 € por ano', 'Cancele quando quiser'];
-        case 'fr': return ['3 jours gratuits, puis 34,99 € par an', 'Annulable à tout moment'];
-        case 'it': return ['3 giorni gratis, poi 34,99 € all\u2019anno', 'Annulla quando vuoi'];
-        default: return ['3 days free, then \u20ac34.99 per year', 'Cancel anytime'];
+        case 'de': return ['3 Tage kostenlos, danach $annualPrice pro Jahr', 'Jederzeit kündbar'];
+        case 'es': return ['3 días gratis, luego $annualPrice al año', 'Cancela cuando quieras'];
+        case 'pt': return ['3 dias grátis, depois $annualPrice por ano', 'Cancele quando quiser'];
+        case 'fr': return ['3 jours gratuits, puis $annualPrice par an', 'Annulable à tout moment'];
+        case 'it': return ['3 giorni gratis, poi $annualPrice all’anno', 'Annulla quando vuoi'];
+        default: return ['3 days free, then $annualPrice per year', 'Cancel anytime'];
       }
     } else {
       switch (l) {
-        case 'de': return ['Abgerechnet 6,99 € pro Woche'];
-        case 'es': return ['Se factura 6,99 € por semana'];
-        case 'pt': return ['Cobrado 6,99 € por semana'];
-        case 'fr': return ['Facturé 6,99 € par semaine'];
-        case 'it': return ['Fatturato 6,99 € a settimana'];
-        default: return ['Billed \u20ac6.99 per week'];
+        case 'de': return ['Abgerechnet $weeklyPrice pro Woche'];
+        case 'es': return ['Se factura $weeklyPrice por semana'];
+        case 'pt': return ['Cobrado $weeklyPrice por semana'];
+        case 'fr': return ['Facturé $weeklyPrice par semaine'];
+        case 'it': return ['Fatturato $weeklyPrice a settimana'];
+        default: return ['Billed $weeklyPrice per week'];
       }
     }
   }
