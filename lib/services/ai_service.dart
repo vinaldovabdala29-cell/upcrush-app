@@ -25,7 +25,6 @@ final sample = base64Image.length > 16
 : base64Image;
 final bytes = base64Decode(base64.normalize(sample));
 
-// PNG: 89 50 4E 47
 if (bytes.length >= 4 &&
 bytes[0] == 0x89 &&
 bytes[1] == 0x50 &&
@@ -34,7 +33,6 @@ bytes[3] == 0x47) {
 return 'image/png';
 }
 
-// JPEG: FF D8 FF
 if (bytes.length >= 3 &&
 bytes[0] == 0xFF &&
 bytes[1] == 0xD8 &&
@@ -42,7 +40,6 @@ bytes[2] == 0xFF) {
 return 'image/jpeg';
 }
 
-// WEBP: RIFF....WEBP
 if (bytes.length >= 4 &&
 bytes[0] == 0x52 &&
 bytes[1] == 0x49 &&
@@ -1492,11 +1489,76 @@ Analyze the entire visible profile internally and prioritize hooks in this order
 1. Unusual or distinctive profile detail
 2. Activity, hobby, object, animal, food, sport or event
 3. Bio, prompt, caption, job or written profile detail
-4. Location/environment ONLY when genuinely recognizable
-5. Style or outfit detail that creates an actual conversational idea
-6. Generic physical appearance ONLY as a last resort
+4. A distinctive VISIBLE face, expression, smile, gaze, pose, hairstyle, glasses, makeup, beard or facial styling when it creates a real conversational idea
+5. Location/environment ONLY when genuinely recognizable
+6. Style or outfit detail that creates an actual conversational idea
+7. Generic physical attractiveness only as a last resort
+
+A face/expression hook is NOT automatically weaker than an object or outfit hook.
+If the face or expression is the most distinctive, conversationally useful element in the image, you may choose it.
 
 Never choose a weaker hook when a more specific one is visible.
+
+============================================================
+FACE / EXPRESSION HOOKS
+============================================================
+
+The person's visible face and expression may be used directly as conversational material.
+
+You MAY use clearly visible, non-sensitive details such as:
+- smiling or not smiling
+- a broad, subtle or playful-looking smile
+- gaze direction
+- a visibly serious, neutral, amused or surprised expression
+- raised eyebrow or other obvious facial pose
+- glasses
+- hairstyle
+- beard or mustache
+- makeup
+- visible piercings
+- head tilt
+- a deliberate photo pose
+- an unusual facial styling detail
+
+IMPORTANT:
+Describe only what is visibly observable.
+Do NOT infer hidden personality, mental state, intentions, attraction, morality, profession, wealth, ethnicity, religion, sexuality, health, intelligence or other personal traits from the face.
+
+Do NOT say:
+- you look toxic
+- you look crazy
+- you look insecure
+- you look rich
+- you look like a cheater
+- you look innocent
+- you look dangerous
+unless it is clearly an obviously playful, non-literal conversational frame based on a visible expression and not presented as a factual judgment.
+
+FACE HOOK QUALITY RULE:
+Do not merely compliment appearance.
+
+WEAK:
+You have a beautiful smile
+
+BETTER:
+That smile looks way too confident for someone who expects me to behave
+
+WEAK:
+You look serious
+
+BETTER:
+That expression is making this feel suspiciously like I have to earn the first reply
+
+The goal is to transform a visible facial detail into:
+- a playful observation
+- a light tease
+- a mini challenge
+- a confident frame
+- a clever contrast
+- a natural curiosity hook
+
+Never sexualize a face by default.
+Do not make explicit sexual comments based only on appearance.
 
 ============================================================
 OBSERVATION VS INVENTION
@@ -1511,7 +1573,9 @@ You MUST NOT invent:
 - relationship status
 - intentions
 - experiences
-- emotions
+- emotions or internal states
+- attraction or interest
+- sensitive personal traits
 - facts outside the image
 
 You may make playful assumptions ONLY when they are obviously framed as jokes, not facts.
@@ -1584,15 +1648,16 @@ Before returning, silently verify:
 
 1. Did I use something concrete from THIS profile?
 2. Did I transform the detail instead of merely describing it?
-3. Would a real young adult actually send this?
-4. Is there a natural reason to reply?
-5. Does it avoid interview energy?
-6. Does it avoid generic compliments?
-7. Could it work on 20 random profiles?
+3. If I used the face, did I stick to visible features instead of inventing personality or intent?
+4. Would a real young adult actually send this?
+5. Is there a natural reason to reply?
+6. Does it avoid interview energy?
+7. Does it avoid generic compliments?
+8. Could it work on 20 random profiles?
 
-If #7 is YES, rewrite it.
+If #8 is YES, rewrite it.
 
-8. Are A and B genuinely different?
+9. Are A and B genuinely different?
 
 If NO, rewrite one of them.
 
@@ -1621,6 +1686,9 @@ Analyze the entire dating profile image carefully.
 
 Find the strongest concrete conversational hooks, including details most people would overlook.
 
+Treat a distinctive visible face, smile, expression, gaze, hairstyle, glasses, makeup, beard, piercing or pose as a valid hook when it creates the strongest conversational idea.
+
+Do not infer personality or hidden traits from the face.
 Do NOT just mention the detail. Turn it into an engaging first-message idea.
 
 Generate:
