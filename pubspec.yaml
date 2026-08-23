@@ -4,7 +4,7 @@ description: "UpCrush AI— O teu copiloto de conversa."
 
 publish_to: 'none'
 
-version: 1.0.25
+version: 1.0.26
 
 environment:
   sdk: ^3.11.1
@@ -33,9 +33,6 @@ flutter:
 
   assets:
     - assets/
-    - assets/images/casal1.jpg
-    - assets/images/casal2.jpg
-    - assets/images/casal3.jpg
     - assets/videos/onboarding_intro.mp4
     - assets/images/onboarding/chat_1.png
     - assets/images/onboarding/chat_2.png

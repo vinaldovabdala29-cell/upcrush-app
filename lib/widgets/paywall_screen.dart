@@ -206,12 +206,12 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
   String _planText(String l, String key) {
     const m = {
-      'pt': {'weekly':'SEMANAL','annual':'ANUAL','save':'ECONOMIZE 62%','month':'2,91 €/mês','annualPrice':'34,99 €/ano','after':'após 3 dias grátis','old':'9,99 €/semana','week':'6,99 €/semana'},
-      'de': {'weekly':'WÖCHENTLICH','annual':'JÄHRLICH','save':'62% SPAREN','month':'2,91 €/Monat','annualPrice':'34,99 €/Jahr','after':'nach 3 kostenlosen Tagen','old':'9,99 €/Woche','week':'6,99 €/Woche'},
-      'es': {'weekly':'SEMANAL','annual':'ANUAL','save':'AHORRA 62%','month':'2,91 €/mes','annualPrice':'34,99 €/año','after':'después de 3 días gratis','old':'9,99 €/semana','week':'6,99 €/semana'},
-      'fr': {'weekly':'HEBDOMADAIRE','annual':'ANNUEL','save':'ÉCONOMISEZ 62%','month':'2,91 €/mois','annualPrice':'34,99 €/an','after':'après 3 jours gratuits','old':'9,99 €/semaine','week':'6,99 €/semaine'},
-      'it': {'weekly':'SETTIMANALE','annual':'ANNUALE','save':'RISPARMIA IL 62%','month':'2,91 €/mese','annualPrice':'34,99 €/anno','after':'dopo 3 giorni gratis','old':'9,99 €/settimana','week':'6,99 €/settimana'},
-      'en': {'weekly':'WEEKLY','annual':'ANNUAL','save':'SAVE 62%','month':'€2.91/month','annualPrice':'€34.99/year','after':'after 3 free days','old':'€9.99/week','week':'€6.99/week'},
+      'pt': {'weekly':'SEMANAL','annual':'ANUAL','save':'ECONOMIZE 62%','month':'2,91 €/mês','annualPrice':'34,99 €/ano','after':'após 3 dias grátis','old':'9,99 €/sem','week':'6,99 €/sem'},
+      'de': {'weekly':'WÖCHENTLICH','annual':'JÄHRLICH','save':'62% SPAREN','month':'2,91 €/Mon','annualPrice':'34,99 €/Jr','after':'nach 3 kostenlosen Tagen','old':'9,99 €/Wo','week':'6,99 €/Wo'},
+      'es': {'weekly':'SEMANAL','annual':'ANUAL','save':'AHORRA 62%','month':'2,91 €/mes','annualPrice':'34,99 €/año','after':'después de 3 días gratis','old':'9,99 €/sem','week':'6,99 €/sem'},
+      'fr': {'weekly':'HEBDOMADAIRE','annual':'ANNUEL','save':'ÉCONOMISEZ 62%','month':'2,91 €/mois','annualPrice':'34,99 €/an','after':'après 3 jours gratuits','old':'9,99 €/sem','week':'6,99 €/sem'},
+      'it': {'weekly':'SETTIMANALE','annual':'ANNUALE','save':'RISPARMIA IL 62%','month':'2,91 €/mese','annualPrice':'34,99 €/anno','after':'dopo 3 giorni gratis','old':'9,99 €/sett','week':'6,99 €/sett'},
+      'en': {'weekly':'WEEKLY','annual':'ANNUAL','save':'SAVE 62%','month':'€2.91/mo','annualPrice':'€34.99/yr','after':'after 3 free days','old':'€9.99/wk','week':'€6.99/wk'},
     };
     return (m[l] ?? m['en']!)[key]!;
   }
@@ -228,25 +228,26 @@ class _PaywallFlowState extends State<PaywallFlow> {
   }
 
   // Texto dinâmico por baixo do botão principal, consoante o plano
-  // selecionado (anual vs semanal).
-  String _belowButtonText(String l) {
+  // selecionado (anual vs semanal). Devolve 2 linhas para o plano
+  // anual (garante que cabe mesmo em ecrãs pequenos como o iPhone SE).
+  List<String> _belowButtonLines(String l) {
     if (_selectedPlan == 'annual') {
       switch (l) {
-        case 'de': return '3 Tage kostenlos, danach 34,99 € pro Jahr';
-        case 'es': return '3 días gratis, luego 34,99 € al año';
-        case 'pt': return '3 dias grátis, depois 34,99 € por ano';
-        case 'fr': return '3 jours gratuits, puis 34,99 € par an';
-        case 'it': return '3 giorni gratis, poi 34,99 € all\u2019anno';
-        default: return '3 days free, then \u20ac34.99 per year';
+        case 'de': return ['3 Tage kostenlos, danach 34,99 € pro Jahr', 'Jederzeit kündbar'];
+        case 'es': return ['3 días gratis, luego 34,99 € al año', 'Cancela cuando quieras'];
+        case 'pt': return ['3 dias grátis, depois 34,99 € por ano', 'Cancele quando quiser'];
+        case 'fr': return ['3 jours gratuits, puis 34,99 € par an', 'Annulable à tout moment'];
+        case 'it': return ['3 giorni gratis, poi 34,99 € all\u2019anno', 'Annulla quando vuoi'];
+        default: return ['3 days free, then \u20ac34.99 per year', 'Cancel anytime'];
       }
     } else {
       switch (l) {
-        case 'de': return 'Abgerechnet 6,99 € pro Woche';
-        case 'es': return 'Se factura 6,99 € por semana';
-        case 'pt': return 'Cobrado 6,99 € por semana';
-        case 'fr': return 'Facturé 6,99 € par semaine';
-        case 'it': return 'Fatturato 6,99 € a settimana';
-        default: return 'Billed \u20ac6.99 per week';
+        case 'de': return ['Abgerechnet 6,99 € pro Woche'];
+        case 'es': return ['Se factura 6,99 € por semana'];
+        case 'pt': return ['Cobrado 6,99 € por semana'];
+        case 'fr': return ['Facturé 6,99 € par semaine'];
+        case 'it': return ['Fatturato 6,99 € a settimana'];
+        default: return ['Billed \u20ac6.99 per week'];
       }
     }
   }
@@ -470,14 +471,21 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
                     const SizedBox(height: 14),
 
-                    Text(
-                      _belowButtonText(l),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Color(0xFF66666D),
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                      ),
+                    Column(
+                      children: _belowButtonLines(l).map((line) {
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: Text(
+                            line,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: Color(0xFF66666D),
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        );
+                      }).toList(),
                     ),
 
                     const SizedBox(height: 10),

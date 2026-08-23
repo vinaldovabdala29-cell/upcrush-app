@@ -201,7 +201,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
 
                 // 4
-                _RecognitionPage(lang: lang, onContinue: _goNext),
+                _RecognitionPage(lang: lang, audience: _audience ?? 'both', onContinue: _goNext),
 
                 // 5
                 _CompetitionAwarenessPage(
@@ -456,7 +456,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(99),
                             child: LinearProgressIndicator(
-                              value: (_currentPage + 1) / 21,
+                              value: (_currentPage + 1) / 20,
                               minHeight: 5,
                               backgroundColor: const Color(0xFFE8E8EA),
                               valueColor: const AlwaysStoppedAnimation<Color>(
@@ -1298,21 +1298,24 @@ class _DesireScreenshotsPageState extends State<_DesireScreenshotsPage> {
 // ═══════════════════════════════════════════════════════════════════════
 class _RecognitionPage extends StatelessWidget {
   final String lang;
+  final String audience;
   final VoidCallback onContinue;
 
   const _RecognitionPage({
     required this.lang,
+    required this.audience,
     required this.onContinue,
   });
 
   // Mensagens de exemplo "clichê" — traduzidas para cada idioma.
+  // A linha de elogio ("bonita/bonito") NÃO está aqui — é inserida
+  // dinamicamente por _messages, consoante o audience escolhido.
   static const Map<String, List<String>> _messagesByLang = {
     'de': [
       'Hey',
       'Wie geht’s?',
       'Was machst du?',
       'Wie war dein Tag?',
-      'Du bist hübsch',
       'Was machst du so?',
       'Warum antwortest du mir nicht?',
       'Guten Morgen',
@@ -1323,7 +1326,6 @@ class _RecognitionPage extends StatelessWidget {
       'Tudo bem?',
       'O que você está fazendo?',
       'Como foi seu dia?',
-      'Você é muito bonita',
       'O que você anda fazendo?',
       'Por que você não me responde?',
       'Bom dia',
@@ -1334,7 +1336,6 @@ class _RecognitionPage extends StatelessWidget {
       '¿Qué tal?',
       '¿Qué haces?',
       '¿Cómo estuvo tu día?',
-      'Eres muy guapa',
       '¿Qué andas haciendo?',
       '¿Por qué no me respondes?',
       'Buenos días',
@@ -1345,7 +1346,6 @@ class _RecognitionPage extends StatelessWidget {
       'Ça va ?',
       'Tu fais quoi ?',
       'C’était comment ta journée ?',
-      'Tu es très jolie',
       'Tu fais quoi de beau ?',
       'Pourquoi tu ne me réponds pas ?',
       'Bonjour',
@@ -1356,7 +1356,6 @@ class _RecognitionPage extends StatelessWidget {
       'Come va?',
       'Cosa fai?',
       'Com’è andata la giornata?',
-      'Sei molto carina',
       'Cosa combini?',
       'Perché non mi rispondi?',
       'Buongiorno',
@@ -1367,7 +1366,6 @@ class _RecognitionPage extends StatelessWidget {
       'How are you?',
       'What are you up to?',
       'How was your day?',
-      'You’re pretty',
       'What have you been up to?',
       'Why aren’t you answering me?',
       'Good morning',
@@ -1375,8 +1373,46 @@ class _RecognitionPage extends StatelessWidget {
     ],
   };
 
-  List<String> get _messages =>
-      _messagesByLang[lang] ?? _messagesByLang['en']!;
+  // Linha de elogio ajustada consoante o género da pessoa com quem
+  // o utilizador está a conversar (audience: women | men | both).
+  String get _complimentLine {
+    switch (lang) {
+      case 'de':
+        if (audience == 'men') return 'Du bist gutaussehend';
+        if (audience == 'both') return 'Du bist attraktiv';
+        return 'Du bist hübsch';
+      case 'pt':
+        if (audience == 'men') return 'Você é muito bonito';
+        if (audience == 'both') return 'Você é muito atraente';
+        return 'Você é muito bonita';
+      case 'es':
+        if (audience == 'men') return 'Eres muy guapo';
+        if (audience == 'both') return 'Eres muy atractivo/a';
+        return 'Eres muy guapa';
+      case 'fr':
+        if (audience == 'men') return 'Tu es très beau';
+        if (audience == 'both') return 'Tu es très séduisant(e)';
+        return 'Tu es très jolie';
+      case 'it':
+        if (audience == 'men') return 'Sei molto bello';
+        if (audience == 'both') return 'Sei molto attraente';
+        return 'Sei molto carina';
+      default:
+        if (audience == 'men') return 'You’re handsome';
+        if (audience == 'both') return 'You’re attractive';
+        return 'You’re pretty';
+    }
+  }
+
+  // Monta a lista final: pega na lista base do idioma (sem a linha
+  // de elogio) e insere a versão certa na 5ª posição (índice 4),
+  // onde originalmente estava a linha fixa.
+  List<String> get _messages {
+    final base = List<String>.from(
+        _messagesByLang[lang] ?? _messagesByLang['en']!);
+    base.insert(4, _complimentLine);
+    return base;
+  }
 
   String _title(String lang) {
     switch (lang) {
