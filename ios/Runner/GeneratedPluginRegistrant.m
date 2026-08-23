@@ -12,6 +12,12 @@
 @import image_picker_ios;
 #endif
 
+#if __has_include(<in_app_review/InAppReviewPlugin.h>)
+#import <in_app_review/InAppReviewPlugin.h>
+#else
+@import in_app_review;
+#endif
+
 #if __has_include(<purchases_flutter/PurchasesFlutterPlugin.h>)
 #import <purchases_flutter/PurchasesFlutterPlugin.h>
 #else
@@ -40,6 +46,7 @@
 
 + (void)registerWithRegistry:(NSObject<FlutterPluginRegistry>*)registry {
   [FLTImagePickerPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTImagePickerPlugin"]];
+  [InAppReviewPlugin registerWithRegistrar:[registry registrarForPlugin:@"InAppReviewPlugin"]];
   [PurchasesFlutterPlugin registerWithRegistrar:[registry registrarForPlugin:@"PurchasesFlutterPlugin"]];
   [SharedPreferencesPlugin registerWithRegistrar:[registry registrarForPlugin:@"SharedPreferencesPlugin"]];
   [URLLauncherPlugin registerWithRegistrar:[registry registrarForPlugin:@"URLLauncherPlugin"]];
