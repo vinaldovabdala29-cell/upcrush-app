@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../../main.dart';
+import '../services/review_request_service.dart';
 import '../models/coach_models.dart';
 import '../services/dating_coach_service.dart';
 import '../services/coach_history_service.dart';
@@ -391,6 +392,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         _responses[assistantMessage.id] = response;
         _loading = false;
       });
+
+      // ✅ Adicionado: notifica o serviço de avaliação que a Dolla
+      // respondeu com sucesso (primeira "vitória" real no Coach).
+      ReviewRequestService.notifySuccess();
 
       await _saveConversation();
       _scrollToBottom();

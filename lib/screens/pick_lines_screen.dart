@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/ai_service.dart';
 import '../../../main.dart';
+import '../services/review_request_service.dart';
 
 class PickLinesScreen extends StatefulWidget {
   const PickLinesScreen({super.key});
@@ -268,6 +269,8 @@ class _PickLinesScreenState extends State<PickLinesScreen>
 
     await Clipboard.setData(ClipboardData(text: _currentLine));
     HapticFeedback.lightImpact();
+    // ✅ Adicionado: notifica o serviço de avaliação.
+    ReviewRequestService.notifySuccess();
 
     if (!mounted) return;
     setState(() => _copied = true);

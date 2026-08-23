@@ -4,7 +4,7 @@ description: "UpCrush AI— O teu copiloto de conversa."
 
 publish_to: 'none'
 
-version: 1.0.26
+version: 1.0.27
 
 environment:
   sdk: ^3.11.1
@@ -12,6 +12,7 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  in_app_review: ^2.0.9
 
   url_launcher: ^6.2.5
   path_provider: ^2.1.1

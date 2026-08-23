@@ -206,12 +206,12 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
   String _planText(String l, String key) {
     const m = {
-      'pt': {'weekly':'SEMANAL','annual':'ANUAL','save':'ECONOMIZE 62%','month':'2,91 €/mês','annualPrice':'34,99 €/ano','after':'após 3 dias grátis','old':'9,99 €/sem','week':'6,99 €/sem'},
-      'de': {'weekly':'WÖCHENTLICH','annual':'JÄHRLICH','save':'62% SPAREN','month':'2,91 €/Mon','annualPrice':'34,99 €/Jr','after':'nach 3 kostenlosen Tagen','old':'9,99 €/Wo','week':'6,99 €/Wo'},
-      'es': {'weekly':'SEMANAL','annual':'ANUAL','save':'AHORRA 62%','month':'2,91 €/mes','annualPrice':'34,99 €/año','after':'después de 3 días gratis','old':'9,99 €/sem','week':'6,99 €/sem'},
-      'fr': {'weekly':'HEBDOMADAIRE','annual':'ANNUEL','save':'ÉCONOMISEZ 62%','month':'2,91 €/mois','annualPrice':'34,99 €/an','after':'après 3 jours gratuits','old':'9,99 €/sem','week':'6,99 €/sem'},
-      'it': {'weekly':'SETTIMANALE','annual':'ANNUALE','save':'RISPARMIA IL 62%','month':'2,91 €/mese','annualPrice':'34,99 €/anno','after':'dopo 3 giorni gratis','old':'9,99 €/sett','week':'6,99 €/sett'},
-      'en': {'weekly':'WEEKLY','annual':'ANNUAL','save':'SAVE 62%','month':'€2.91/mo','annualPrice':'€34.99/yr','after':'after 3 free days','old':'€9.99/wk','week':'€6.99/wk'},
+      'pt': {'weekly':'SEMANAL','annual':'ANUAL','save':'ECONOMIZE 75%','month':'2,91 €/mês','annualPrice':'34,99 €/ano','after':'após 3 dias grátis','old':'9,99 €/sem','week':'6,99 €/sem'},
+      'de': {'weekly':'WÖCHENTLICH','annual':'JÄHRLICH','save':'75% SPAREN','month':'2,91 €/Mon','annualPrice':'34,99 €/Jr','after':'nach 3 kostenlosen Tagen','old':'9,99 €/Wo','week':'6,99 €/Wo'},
+      'es': {'weekly':'SEMANAL','annual':'ANUAL','save':'AHORRA 75%','month':'2,91 €/mes','annualPrice':'34,99 €/año','after':'después de 3 días gratis','old':'9,99 €/sem','week':'6,99 €/sem'},
+      'fr': {'weekly':'HEBDOMADAIRE','annual':'ANNUEL','save':'ÉCONOMISEZ 75%','month':'2,91 €/mois','annualPrice':'34,99 €/an','after':'après 3 jours gratuits','old':'9,99 €/sem','week':'6,99 €/sem'},
+      'it': {'weekly':'SETTIMANALE','annual':'ANNUALE','save':'RISPARMIA IL 75%','month':'2,91 €/mese','annualPrice':'34,99 €/anno','after':'dopo 3 giorni gratis','old':'9,99 €/sett','week':'6,99 €/sett'},
+      'en': {'weekly':'WEEKLY','annual':'ANNUAL','save':'SAVE 75%','month':'€2.91/mo','annualPrice':'€34.99/yr','after':'after 3 free days','old':'€9.99/wk','week':'€6.99/wk'},
     };
     return (m[l] ?? m['en']!)[key]!;
   }

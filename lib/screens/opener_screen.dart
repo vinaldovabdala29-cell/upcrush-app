@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../services/ai_service.dart';
 import '../widgets/background_blobs.dart';
 import '../../../main.dart';
+import '../services/review_request_service.dart';
 
 class OpenerScreen extends StatefulWidget {
   const OpenerScreen({super.key});
@@ -122,6 +123,8 @@ class _OpenerScreenState extends State<OpenerScreen>
   Future<void> _copiar(String texto, int index) async {
     await Clipboard.setData(ClipboardData(text: texto));
     HapticFeedback.lightImpact();
+    // ✅ Adicionado: notifica o serviço de avaliação.
+    ReviewRequestService.notifySuccess();
     setState(() => _copiedIndex = index);
     await Future.delayed(const Duration(seconds: 2));
     if (mounted) setState(() => _copiedIndex = null);

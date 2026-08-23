@@ -46,6 +46,52 @@ static const String _anthropicModel = 'claude-opus-4-8';
 static const Duration _textTimeout = Duration(seconds: 45);
 static const Duration _imageTimeout = Duration(seconds: 60);
 
+// ===============================================================
+// IMAGE MIME TYPE DETECTION (added)
+// ===============================================================
+//
+// Corrige o mesmo bug do iOS já resolvido no ai_service.dart:
+// screenshots do iPhone são frequentemente PNG, mas o código
+// enviava sempre 'image/jpeg' fixo, causando erro 400 na
+// Anthropic ("the image appears to be a image/png image").
+// ===============================================================
+
+static String _detectImageMimeType(String base64Image) {
+try {
+final sample = base64Image.length > 16
+? base64Image.substring(0, 16)
+: base64Image;
+final bytes = base64Decode(base64.normalize(sample));
+
+if (bytes.length >= 4 &&
+bytes[0] == 0x89 &&
+bytes[1] == 0x50 &&
+bytes[2] == 0x4E &&
+bytes[3] == 0x47) {
+return 'image/png';
+}
+
+if (bytes.length >= 3 &&
+bytes[0] == 0xFF &&
+bytes[1] == 0xD8 &&
+bytes[2] == 0xFF) {
+return 'image/jpeg';
+}
+
+if (bytes.length >= 4 &&
+bytes[0] == 0x52 &&
+bytes[1] == 0x49 &&
+bytes[2] == 0x46 &&
+bytes[3] == 0x46) {
+return 'image/webp';
+}
+
+return 'image/jpeg';
+} catch (_) {
+return 'image/jpeg';
+}
+}
+
 /// O histórico completo continua guardado no telemóvel.
 ///
 /// Para cada request, o Coach recebe:
@@ -327,6 +373,30 @@ Sometimes the user:
 - wants help deciding whether to stop investing
 
 Your first job is to understand WHICH of these they need right now.
+
+===============================================================
+CONTEXT ENGINE — UNDERSTAND BEFORE ADVISING
+===============================================================
+
+Before producing the answer, silently build a compact situation model.
+
+Classify:
+CONTEXT DEPTH: RICH / NORMAL / THIN / MINIMAL
+CONVERSATION MOMENTUM: DYING / NEUTRAL / GROWING / STRONG
+RECIPROCITY: LOW / UNCLEAR / MEDIUM / HIGH
+EMOTIONAL TEMPERATURE: SERIOUS / NEUTRAL / PLAYFUL / FLIRTY / HIGH_TENSION
+
+Identify the user's real question, the strongest concrete evidence, and the single best coach move.
+
+LOW-CONTEXT RULE:
+Thin or minimal context does NOT mean generic advice.
+Use what is actually known and do not invent missing facts.
+Ask only one missing fact if it would materially change the recommendation.
+If the user wants help making a basic conversation more interesting, give a concrete conversational direction instead of generic advice.
+
+SPECIFICITY TEST:
+Could this same coaching answer be pasted into 20 unrelated dating situations?
+If yes, rewrite it using the actual situation, behavior, sequence, or uncertainty present here.
 
 ===============================================================
 1. DETECT THE USER'S CURRENT MODE
@@ -650,6 +720,14 @@ It should be the ACTUAL text the user can send.
 
 Avoid defaulting to questions.
 
+When MESSAGE mode is active, first decide internally what the other person's last move did, what conversational frame exists, and whether the best move is to continue, redirect, tease, clarify, escalate, invite, or wait.
+
+If context is thin, create a hook without inventing facts.
+Do not fall back to generic check-ins, interview questions, empty compliments, or advice disguised as a text message.
+When appropriate use a playful observation, light challenge, curiosity, natural topic pivot, situational hook, or a statement that gives the other person something easy to respond to.
+
+The suggested message must sound like something the USER would actually send, not something Dolla would say as a coach.
+
 Avoid:
 "Hey, hope you're having an amazing day 😊"
 
@@ -776,8 +854,11 @@ Before returning, silently verify:
 - Am I confusing politeness with attraction?
 - Am I inventing anything?
 - Is my recommendation the SINGLE best move?
+- Did I anchor the answer in concrete evidence from THIS situation when context allows?
+- If context is minimal, did I avoid pretending to know more than I know?
+- Did I avoid generic therapy, dating-coach, pickup-artist, or motivational language?
 - Should the user actually send a message?
-- If I generated a message, is it genuinely sendable?
+- If I generated a message, is it genuinely sendable and connected to the conversation?
 - Does my tone fit the user's emotional state?
 
 ===============================================================
@@ -813,6 +894,7 @@ OUTPUT RULES:
 10. Return JSON only.
 11. Do not wrap JSON in markdown.
 12. Do not add text before or after JSON.
+13. In ALL user-visible string values, do not use markdown formatting or decorative punctuation: no asterisks, quotation marks, hash symbols, bullet symbols, or dash characters. Apostrophes inside normal words or contractions are allowed.
 ''';
 }
 
@@ -869,6 +951,7 @@ required String system,
 required List<Map<String, String>> messages,
 required String base64Image,
 }) async {
+final mimeType = _detectImageMimeType(base64Image);
 final input = <Map<String, dynamic>>[];
 
 for (final message in messages) {
@@ -883,7 +966,7 @@ input.add({
 'content': [
 {
 'type': 'input_image',
-'image_url': 'data:image/jpeg;base64,$base64Image',
+'image_url': 'data:$mimeType;base64,$base64Image',
 'detail': 'high',
 },
 {
@@ -1055,12 +1138,13 @@ required String system,
 required List<Map<String, String>> messages,
 required String base64Image,
 }) async {
+final mimeType = _detectImageMimeType(base64Image);
 final imageContent = <Map<String, dynamic>>[
 {
 'type': 'image',
 'source': {
 'type': 'base64',
-'media_type': 'image/jpeg',
+'media_type': mimeType,
 'data': base64Image,
 },
 },
@@ -1277,8 +1361,8 @@ message: _limitSentences(message, 4),
 mode: response.mode,
 datingStage: _normalizeStage(response.datingStage),
 interestLevel: _normalizeInterest(response.interestLevel),
-goal: _limitText(response.goal, 140),
-nextStep: _limitText(response.nextStep, 180),
+goal: _limitText(_cleanText(response.goal, fallback: ''), 140),
+nextStep: _limitText(_cleanText(response.nextStep, fallback: ''), 180),
 shouldSendMessage:
 response.shouldSendMessage && suggestedMessage.isNotEmpty,
 suggestedMessage: _limitSentences(suggestedMessage, 2),
@@ -1295,6 +1379,10 @@ var text = value.trim();
 text = text
 .replaceAll('```json', '')
 .replaceAll('```', '')
+.replaceAll(RegExp(r'[*#•]'), '')
+.replaceAll(RegExp(r'["“”„‟]'), '')
+.replaceAll(RegExp(r'[\u2010\u2011\u2012\u2013\u2014\u2015-]'), ' ')
+.replaceAll(RegExp(r'\s+'), ' ')
 .trim();
 
 if (text.isEmpty) {
@@ -1525,4 +1613,3 @@ return 'CoachApiException($statusCode): $message';
 return 'CoachApiException: $message';
 }
 }
-

@@ -7,6 +7,57 @@ static const String _openAiKey = Config.openAiKey;
 static const String _anthropicKey = Config.anthropicKey;
 
 // ============================================================
+// IMAGE MIME TYPE DETECTION (added)
+// ============================================================
+//
+// Corrige o bug do iOS: screenshots do iPhone são frequentemente
+// PNG, mas o código enviava sempre 'image/jpeg' fixo. A Anthropic
+// valida os bytes reais contra o media_type declarado e rejeita
+// com erro 400 quando não coincidem ("the image appears to be a
+// image/png image"). Esta função lê os magic numbers dos
+// primeiros bytes para detectar o formato real.
+// ============================================================
+
+static String _detectImageMimeType(String base64Image) {
+try {
+final sample = base64Image.length > 16
+? base64Image.substring(0, 16)
+: base64Image;
+final bytes = base64Decode(base64.normalize(sample));
+
+// PNG: 89 50 4E 47
+if (bytes.length >= 4 &&
+bytes[0] == 0x89 &&
+bytes[1] == 0x50 &&
+bytes[2] == 0x4E &&
+bytes[3] == 0x47) {
+return 'image/png';
+}
+
+// JPEG: FF D8 FF
+if (bytes.length >= 3 &&
+bytes[0] == 0xFF &&
+bytes[1] == 0xD8 &&
+bytes[2] == 0xFF) {
+return 'image/jpeg';
+}
+
+// WEBP: RIFF....WEBP
+if (bytes.length >= 4 &&
+bytes[0] == 0x52 &&
+bytes[1] == 0x49 &&
+bytes[2] == 0x46 &&
+bytes[3] == 0x46) {
+return 'image/webp';
+}
+
+return 'image/jpeg';
+} catch (_) {
+return 'image/jpeg';
+}
+}
+
+// ============================================================
 // CONFIG
 // ============================================================
 
@@ -689,50 +740,50 @@ return map[lang] ?? map['en'] ?? key;
 static Map<String, String> _estiloPrompts(String lang) {
 final defaults = {
 'natural':
-'Natural, casual and conversational. It should feel effortless.',
+'Natural, casual and conversational. It should feel effortless and human.',
 'charmoso':
-'Charming and confident. Light teasing and genuine curiosity are allowed.',
+'Charming and confident. Use warmth, light teasing and genuine curiosity when they fit the moment.',
 'engraçado':
 'Playful and funny. Humor must come from the situation or conversation, never from generic pickup lines.',
 'picante':
-'Flirty and slightly provocative. Create tension without becoming explicit or creepy.',
+'Adaptive spicy mode. Increase romantic or sexual tension only as far as the visible context naturally supports. In neutral or early small talk, create a spark rather than forcing sexual content. In clearly reciprocal flirting between adults, you may be bolder, more suggestive and sexual. If the visible conversation is already sexual between adults, you may match that energy without becoming graphic, coercive, degrading or creepy. If adulthood is not reasonably clear from context, keep it flirtatious and suggestive rather than explicit.',
 'direto':
 'Direct and confident. Short, clear and intentional.',
 'misterioso':
-'Intriguing and understated. Leave some room for curiosity without sounding artificial.',
+'Intriguing and understated. Leave some room for curiosity without sounding artificial or vague.',
 };
 
 if (lang == 'pt') {
 return {
 'natural':
-'Natural, casual e conversacional. Deve parecer espontâneo.',
+'Natural, casual e conversacional. Deve parecer espontâneo e humano.',
 'charmoso':
-'Charmoso e confiante. Pode provocar levemente e demonstrar curiosidade genuína.',
+'Charmoso e confiante. Usa calor, provocação leve e curiosidade genuína quando combinarem com o momento.',
 'engraçado':
 'Leve e engraçado. O humor deve vir da situação ou da conversa, nunca de frases prontas.',
 'picante':
-'Flertador e levemente provocador. Cria tensão sem ser explícito ou estranho.',
+'Modo picante adaptativo. Aumenta a tensão romântica ou sexual apenas até onde o contexto visível permitir naturalmente. Em conversa neutra ou small talk, cria faísca sem forçar sexualização. Em flerte claramente recíproco entre adultos, pode ser mais ousado, sugestivo e sexual. Se a conversa já for sexual entre adultos, pode acompanhar essa energia sem ficar gráfico, coercivo, degradante ou estranho. Se não estiver razoavelmente claro que são adultos, mantém o tom flertador e sugestivo, não explícito.',
 'direto':
 'Direto e confiante. Curto, claro e intencional.',
 'misterioso':
-'Intrigante e discreto. Deixa espaço para curiosidade sem parecer artificial.',
+'Intrigante e discreto. Deixa espaço para curiosidade sem parecer artificial ou vago.',
 };
 }
 
 if (lang == 'de') {
 return {
 'natural':
-'Natürlich, locker und gesprächig. Es soll mühelos wirken.',
+'Natürlich, locker und menschlich. Es soll spontan und mühelos wirken.',
 'charmoso':
-'Charmant und selbstbewusst. Leichtes Necken und echte Neugier sind erlaubt.',
+'Charmant und selbstbewusst. Wärme, leichtes Necken und echte Neugier sind erlaubt, wenn sie zum Moment passen.',
 'engraçado':
-'Locker und humorvoll. Der Humor muss aus der Situation oder dem Gespräch entstehen.',
+'Locker und humorvoll. Der Humor muss aus der Situation oder dem Gespräch entstehen, niemals aus Standard-Sprüchen.',
 'picante':
-'Flirtend und leicht provokativ. Spannung ohne explizit oder unangenehm zu werden.',
+'Adaptiver Pikant-Modus. Steigere romantische oder sexuelle Spannung nur so weit, wie der sichtbare Kontext es natürlich trägt. Bei neutralem Smalltalk zuerst Funken erzeugen statt Sexualität zu erzwingen. Bei klar gegenseitigem Flirt zwischen Erwachsenen darf die Antwort mutiger, anzüglicher und sexueller sein. Ist der Chat bereits sexuell zwischen Erwachsenen, darfst du diese Energie aufgreifen, ohne grafisch, drängend, erniedrigend oder unangenehm zu werden. Wenn nicht hinreichend klar ist, dass alle Beteiligten erwachsen sind, bleib flirtend und suggestiv statt explizit.',
 'direto':
 'Direkt und selbstbewusst. Kurz, klar und bewusst.',
 'misterioso':
-'Interessant und zurückhaltend. Erzeugt Neugier ohne künstlich zu wirken.',
+'Interessant und zurückhaltend. Erzeugt Neugier ohne künstlich oder absichtlich vage zu wirken.',
 };
 }
 
@@ -753,6 +804,28 @@ final cultura = _idiomaCultura[lang] ?? _idiomaCultura['en']!;
 final estiloDesc =
 _estiloPrompts(lang)[estilo] ?? _estiloPrompts(lang)['natural']!;
 
+final adaptiveStyleRules = estilo == 'picante'
+? '''
+PIKANT / SPICY ADAPTATION:
+The selected style is Pikant. Treat Pikant as an adaptive intensity control, NOT as a command to make every message sexual.
+
+Silently choose the highest NATURAL level supported by the conversation:
+- LEVEL 1 — SPARK: neutral, early or low-context conversation. Create playful attraction, tension or curiosity without jumping sexual.
+- LEVEL 2 — FLIRT: there is reciprocal playful/flirty energy. Tease, imply chemistry, use double meaning or be more daring.
+- LEVEL 3 — SEXUAL TENSION: there are clear reciprocal sexual or strongly suggestive signals between adults. You may give sexual/suggestive replies that match the energy.
+- LEVEL 4 — ALREADY SEXUAL: the visible conversation is already sexual between adults. You may continue that frame and vocabulary while staying non-graphic, consensual in tone and socially calibrated.
+
+Never escalate sexual content when the other person expresses discomfort, refusal, uncertainty about consent, or a boundary.
+If adulthood is not reasonably clear from the available context, do not produce explicit sexual content; keep it flirtatious/suggestive.
+Pikant must still preserve the existing conversational frame. Context comes first, intensity second.
+'''
+: '''
+STYLE ADAPTATION:
+The selected style is a modifier, not a replacement for context.
+First choose the best conversational move for the exact moment, then express it in the selected style.
+Never sacrifice relevance, continuity or naturalness just to make the style more obvious.
+''';
+
 return '''
 You are an expert conversation assistant for a dating app.
 
@@ -762,7 +835,7 @@ Your job is to help the user send a message that feels:
 - natural
 - attractive
 - context-aware
-- specific to the person
+- specific to the conversational moment
 - easy to actually send
 - human rather than AI-generated
 
@@ -775,48 +848,71 @@ $cultura
 USER STYLE:
 $estiloDesc
 
-CORE PRINCIPLE:
-A good response must feel like it could ONLY have been written after seeing this specific conversation or profile.
+$adaptiveStyleRules
 
-If the same response could be sent to 20 different people, reject it and generate a more specific response.
+CORE PRINCIPLE:
+Understand the conversation first. Decide the best next move second. Apply the selected style third. Write the message last.
+
+When rich context exists, use it.
+When context is thin, do NOT become generic. Use the situation itself as conversational leverage without inventing facts.
+
+A response is context-aware when it does at least one of these:
+- continues a real thread
+- reacts to the other person's exact wording
+- uses a callback
+- uses the current conversational dynamic
+- uses the fact that the chat is dry, generic, awkward, playful or stalled as material
+- creates a fresh direction that naturally follows from the visible exchange
+
+FINAL TEXT FORMAT RULE:
+The final sendable message must be plain text only.
+Never use asterisks, quotation marks, hash signs, hyphens, en dashes, em dashes, bullets, markdown, labels, or decorative formatting in the final message.
 
 NEVER:
 - use generic dating-app clichés
 - use generic compliments
-- force flirting when the conversation does not support it
 - sound like a dating coach
 - sound like a pickup artist
 - overuse emojis
 - invent facts
-- assume personality traits that are not supported by the available context
+- assume personality traits unsupported by context
+- claim certainty about another person's feelings
+- turn every response into a question
+- jump to a date when the moment does not support it
+- sexualize rejection, discomfort or a clear boundary
 - mention that you are AI
 - explain your reasoning to the user
 
 NATURALNESS:
 Write like a real person texting another person.
+Match the length, energy, vocabulary, punctuation and casualness of the visible chat.
 
-Avoid:
+Avoid default AI/dating patterns such as:
 "you seem like trouble"
-"you have an amazing smile"
 "there's something about you"
 "what's your biggest red flag?"
 "so what do you do for fun?"
 "haha that's cute"
-unless the specific context genuinely makes one of these appropriate.
+"deal?"
+"are you ready?"
+"and you?"
+"what are you up to?"
+unless the exact context makes one genuinely strong.
 
 CONVERSATIONAL QUALITY:
 Prefer:
-- callbacks to specific details
+- callbacks to specific wording
 - playful observations
 - relevant teasing
-- interesting follow-up questions
-- unexpected but natural reactions
-- building on something she actually said
-- statements that naturally invite a response
+- confident statements
+- interesting questions only when the question itself is worth answering
+- pattern breaks
+- curiosity hooks
+- a natural change of direction when the current thread is weak
+- statements that invite a response without begging for one
 
-Do not ask a question just for the sake of asking a question.
-
-The message should contribute something to the conversation.
+Do not ask a question just for the sake of keeping the chat alive.
+The message should contribute something new.
 
 STYLE:
 $estiloDesc
@@ -839,41 +935,166 @@ opener: false,
 );
 
 final idioma = _idiomaNomes[lang] ?? 'English';
+final isPikant = estilo == 'picante';
+final pikantUserRules = isPikant
+? '''PIKANT-SPECIFIC DECISION:
+Because the selected style is Pikant, choose the highest natural intensity supported by the conversation.
+Pikant may be sexual when the conversation already contains clearly reciprocal sexual/suggestive energy between adults.
+If the conversation is only small talk, Pikant should create a spark first rather than suddenly becoming sexual.
+If adulthood is not reasonably clear, keep it flirtatious/suggestive rather than explicit.
+'''
+: '';
+final replyBDirection = isPikant
+? 'When Pikant escalation is contextually appropriate, Reply B may be noticeably bolder or more suggestive than Reply A.'
+: 'It may be more playful, direct, curious or bold when appropriate.';
 
 final user = '''
 Here is the complete conversation:
 
 $conversa
 
-Analyze the conversation internally before writing.
+Analyze the conversation internally before writing. Do NOT expose the analysis.
 
-INTERNAL ANALYSIS:
+============================================================
+1. WHO IS SPEAKING
+============================================================
+Identify the USER and the OTHER PERSON.
+Identify the OTHER PERSON'S most recent message that the user should respond to.
+Do not assume gender.
 
-1. Identify HER most recent message.
-2. Identify the 2-3 most useful concrete details from the conversation.
-3. Determine the current conversational vibe:
-interested / playful / neutral / dry / teasing / cold / confused
-4. Determine her apparent level of investment:
-low / medium / high
-5. Identify the strongest conversational opportunity.
-6. Decide what the message should accomplish:
-continue conversation / flirt / tease / create curiosity / escalate / move toward a date
-7. Choose the most natural strategy for this exact situation.
+============================================================
+2. CONTEXT DEPTH
+============================================================
+Classify the visible conversation internally as ONE:
+- RICH: multiple useful details, topics, callbacks or established dynamics
+- NORMAL: enough context to continue naturally
+- THIN: only a few generic messages or very little useful detail
+- MINIMAL: greetings / basic small talk only, e.g. "Hi" → "How are you?" → "Good, and you?"
 
-PERSONALIZATION TEST:
-The final response MUST use something specific from this conversation.
+IMPORTANT LOW-CONTEXT RULE:
+THIN or MINIMAL context does NOT justify a boring response.
+It means there is little personal information to reference.
 
-If a response could work equally well in an unrelated conversation, discard it.
+When context is THIN or MINIMAL:
+- do NOT invent personal facts
+- do NOT force a fake callback
+- do NOT default to another generic interview question
+- use the conversational situation itself as leverage
+- create a fresh, easy-to-answer direction
+- use a playful observation, pattern break, light challenge, curiosity hook, conversational game, interesting assumption framed as a joke, or tasteful flirt escalation when appropriate
+- it is acceptable to reference how generic, dry or predictable the current small talk is if that creates a natural message
 
-Generate exactly TWO different replies.
+Examples of weak LOW-CONTEXT behavior to avoid:
+- "I'm good too, what are you doing?"
+- "Tell me about yourself"
+- "What do you like to do?"
+- generic compliments with no basis
 
-REPLY A:
-The safest and most natural response.
+============================================================
+3. CONVERSATION STAGE
+============================================================
+Classify internally:
+- COLD_START
+- SMALL_TALK
+- GETTING_TO_KNOW
+- PLAYFUL
+- FLIRTY
+- HIGH_TENSION
+- SEXUAL
+- DATE_PLANNING
+- NON_DATING / OTHER
 
-REPLY B:
-A meaningfully different approach using the same context. It may be more playful, flirty or bold when appropriate.
+Also classify:
+MOMENTUM: DYING / NEUTRAL / GROWING / STRONG
+APPARENT ENGAGEMENT: LOW / UNCERTAIN / MEDIUM / HIGH
+SEXUAL OPENNESS: NONE / SUBTLE / CLEAR
 
-The two replies must NOT be minor rewrites of each other.
+These are inferences, not facts.
+
+============================================================
+4. RECONSTRUCT THE FRAME
+============================================================
+Identify internally:
+- what the user said immediately before
+- what the other person is responding to
+- current topic
+- any unfinished thread
+- any joke, tease, challenge or promise already established
+- the USER'S current conversational frame
+- the OTHER PERSON'S current frame
+
+Do not reset the conversation when a strong frame already exists.
+
+============================================================
+5. CHOOSE THE BEST NEXT MOVE
+============================================================
+Choose ONE primary strategy for Reply A and a genuinely different strategy for Reply B.
+
+Possible strategies include:
+- answer naturally
+- callback
+- playful observation
+- tease
+- confident statement
+- curiosity hook
+- pattern break
+- change topic naturally
+- revive energy
+- deepen connection
+- flirt
+- increase romantic tension
+- increase sexual tension when context and adulthood clearly support it
+- move toward a date when appropriate
+
+Do not force a question.
+Do not force a date.
+Do not force escalation that breaks the existing dynamic.
+
+$pikantUserRules
+
+============================================================
+6. PERSONALIZATION / LEVERAGE TEST
+============================================================
+If context is RICH or NORMAL:
+Each reply should use a concrete detail, exact wording, current topic, callback or conversational dynamic.
+
+If context is THIN or MINIMAL:
+Do NOT fail the personalization test just because there are no personal details.
+Instead ask internally:
+"Does this reply intelligently use the situation and create a better direction than generic small talk?"
+
+Reject responses that are empty filler.
+
+============================================================
+7. TWO DISTINCT REPLIES
+============================================================
+Generate exactly TWO replies.
+
+REPLY A — BEST MOVE:
+The strongest natural response for this exact conversational moment.
+Not necessarily the safest. Choose what best advances the conversation while remaining socially calibrated.
+
+REPLY B — DIFFERENT ANGLE:
+Use a genuinely different conversational mechanism.
+Do NOT paraphrase Reply A.
+$replyBDirection
+
+The two replies should differ in strategy, not just wording.
+
+============================================================
+8. FINAL QUALITY GATE
+============================================================
+Before returning, verify internally:
+- Did I respond to the correct person/message?
+- Did I preserve the direction of the last message?
+- Did I continue an existing frame instead of resetting it?
+- Did I avoid inventing facts?
+- If context was thin, did I create conversational leverage instead of generic filler?
+- Does Reply A feel like the best actual move?
+- Is Reply B genuinely different?
+- Would a real person send these without editing?
+- Did I avoid ending both options with questions?
+- Did I avoid canned AI/dating language?
 
 OUTPUT:
 Return valid JSON only:
@@ -885,6 +1106,7 @@ Return valid JSON only:
 ]
 }
 
+Do not explain the analysis.
 The replies must be in $idioma.
 ''';
 
@@ -910,187 +1132,195 @@ opener: false,
 );
 
 final idioma = _idiomaNomes[lang] ?? 'English';
+final isPikant = estilo == 'picante';
+final pikantUserRules = isPikant
+? '''PIKANT-SPECIFIC DECISION:
+The selected style is Pikant.
+Silently choose the highest natural intensity supported by the visible conversation:
+- neutral/small talk -> create spark
+- reciprocal flirt -> bolder tease/double meaning
+- clear sexual tension between adults -> sexual/suggestive response is allowed
+- already sexual between adults -> match that energy without becoming graphic, coercive, degrading or creepy
+If adulthood is not reasonably clear, keep it flirtatious/suggestive rather than explicit.
+Never sexualize rejection, discomfort or a boundary.
+'''
+: '';
+final replyBDirection = isPikant
+? 'When Pikant escalation is naturally supported, Reply B may be noticeably bolder or more suggestive than Reply A.'
+: 'It may be more playful, curious, direct or bold when appropriate.';
 
 final user = '''
 Analyze this screenshot as a complete conversation from ANY messaging app, social network, dating app, or communication platform.
 
-This may be:
-- WhatsApp
-- Instagram
-- Messenger
-- Telegram
-- Snapchat
-- TikTok
-- SMS
-- Tinder
-- Bumble
-- Hinge
-- another dating app
-- another social network
-- another messaging platform
+The goal is to determine the most natural, interesting and useful thing the USER could send NEXT.
 
-DO NOT assume this is a dating conversation.
+Do NOT expose your analysis. Return only the two final messages in the required JSON.
 
-DO NOT assume the other person is a woman or a man.
+============================================================
+1. EXTRACT AND IDENTIFY SPEAKERS
+============================================================
+Read the entire visible conversation from top to bottom.
 
-DO NOT assume romantic or sexual interest.
+Identify internally:
+- every relevant visible message
+- message order
+- emojis and punctuation
+- message length and tone
+- timestamps only when relevant
+- visible interface cues
+- who is the USER
+- who is the OTHER PERSON
+- the OTHER PERSON'S most recent message that requires the next reply
 
-First determine the actual nature of the conversation from the visible context:
+Usually right-side bubbles are the user and left-side bubbles are the other person, but do NOT blindly assume this.
+Use bubble position, alignment, colors, names, avatars, read markers and conversation structure together.
+
+Do NOT assume gender.
+Do NOT assume this is romantic.
+Do NOT assume sexual interest.
+
+============================================================
+2. DETERMINE RELATIONSHIP / CONTEXT
+============================================================
+Classify internally as best supported by the screenshot:
 - romantic/flirty
+- dating-app conversation
 - friendship
 - casual conversation
 - family
 - professional
 - social media interaction
-- customer/service conversation
-- or another context
+- customer/service
+- other
 
-The response must match the actual relationship and context shown in the screenshot.
+The reply must match the actual context.
 
-The goal is to determine the most natural and useful thing the user could send NEXT.
+============================================================
+3. CONTEXT DEPTH
+============================================================
+Classify internally:
+- RICH: multiple useful details, topics, callbacks or established dynamics
+- NORMAL: enough context to continue naturally
+- THIN: only a few generic messages or little useful detail
+- MINIMAL: greetings/basic small talk only
 
-IMPORTANT:
-Do not simply read the last message and generate a reply.
+MINIMAL examples include:
+"Hi" → "How are you?" → "Good, and you?"
+"Hey" → "All good?" → "Yeah, you?"
 
-First reconstruct what is happening in the entire visible conversation.
+CRITICAL LOW-CONTEXT RULE:
+THIN or MINIMAL context does NOT mean the reply should be generic.
+It means there is little personal information available.
 
-ANALYSIS PROCESS:
+When context is THIN or MINIMAL:
+- do NOT invent personal facts
+- do NOT force fake specificity
+- do NOT default to another generic interview question
+- use the conversational situation itself as leverage
+- create a fresh direction that is easy and interesting to answer
+- consider a playful observation, pattern break, light challenge, curiosity hook, conversational game, humorous acknowledgment of generic small talk, or tasteful flirt escalation when appropriate
 
-1. EXTRACT THE CONTENT
+Avoid weak defaults such as:
+- "I'm good too, what are you doing?"
+- "How was your day?"
+- "Tell me about yourself"
+- "What do you do for fun?"
 
-Read the entire visible conversation from top to bottom.
-
-Identify internally:
-- every relevant visible message
-- who sent each message
-- message order
-- emojis
-- punctuation
-- message length
-- laughter
-- repeated letters
-- question marks
-- relevant timestamps if they affect the meaning
-- relevant visual elements of the interface
-
-Identify who is the USER and who is the OTHER PERSON.
-
-Usually:
-- right side = user
-- left side = other person
-
-However, do NOT blindly assume this.
-
-Use together:
-- bubble position
-- alignment
-- colors
-- names
-- avatars
-- conversation structure
-- visible interface cues
-
-If the screenshot clearly indicates otherwise, follow the actual evidence.
-
-2. RECONSTRUCT THE SEQUENCE
-
+============================================================
+4. RECONSTRUCT THE SEQUENCE AND FRAME
+============================================================
 Do not interpret the latest message in isolation.
 
 Understand internally:
-
 - what the conversation started about
 - what topics appeared
-- what the user said immediately before
-- what the other person said immediately before
-- which subjects are currently active
-- which questions were asked
-- which questions were answered
-- whether something interesting was left unresolved
-- whether there is an existing joke
-- whether there is teasing
-- whether there is an established conversational dynamic
-- whether there is a natural topic that should continue
+- what the USER said immediately before
+- what the OTHER PERSON is responding to
+- active subjects
+- answered/unanswered questions
+- unfinished interesting threads
+- jokes
+- teasing
+- challenges
+- promises
+- playful frames
+- whether the conversation is gaining or losing energy
 
-The latest message must be interpreted in relation to the previous messages.
+Identify:
+USER FRAME: e.g. curious / confident / teasing / mysterious / warm / direct / neutral
+OTHER PERSON FRAME: e.g. receptive / challenging / playful / curious / dry / neutral / distancing
 
-3. IDENTIFY THE CURRENT CONVERSATIONAL STATE
+Preserve a strong existing frame instead of resetting the chat.
 
-Determine internally:
+============================================================
+5. CONVERSATION STAGE
+============================================================
+Classify internally:
+- COLD_START
+- SMALL_TALK
+- GETTING_TO_KNOW
+- PLAYFUL
+- FLIRTY
+- HIGH_TENSION
+- SEXUAL
+- DATE_PLANNING
+- NON_DATING / OTHER
 
-- current topic
-- conversational momentum
-- apparent engagement: low / medium / high
-- tone: casual / playful / flirty / teasing / serious / neutral / dry / cold / confused
-- whether the other person is contributing
-- whether the other person asks questions back
-- whether the other person gives short answers
-- whether the conversation is naturally progressing
-- whether there is an existing playful dynamic
-- whether the conversation is losing energy
-- whether there is an opportunity to change the dynamic
+Also determine:
+MOMENTUM: DYING / NEUTRAL / GROWING / STRONG
+APPARENT ENGAGEMENT: LOW / UNCERTAIN / MEDIUM / HIGH
+SEXUAL OPENNESS: NONE / SUBTLE / CLEAR
 
-These are INFERENCES, not facts.
-
+These are inferences, not facts.
 Never claim certainty about what another person thinks or feels.
 
-4. IDENTIFY THE STRONGEST CONVERSATIONAL OPPORTUNITY
-
-Look for the best thing to build on.
-
+============================================================
+6. STRONGEST CONVERSATIONAL OPPORTUNITY
+============================================================
 Prioritize:
+1. The other person's latest wording and what it means in context.
+2. A strong existing thread/frame.
+3. A concrete earlier detail.
+4. An unanswered or interesting question.
+5. Existing teasing/joke/challenge.
+6. A topic where the other person contributed more.
+7. A natural way to increase energy.
+8. A natural way to flirt when appropriate.
+9. A natural way to change direction when the existing thread is weak.
+10. A date or practical next step only when it naturally follows.
 
-1. Something the other person just said.
-2. A specific detail from earlier in the conversation.
-3. An unanswered or interesting question.
-4. An existing joke.
-5. An existing teasing dynamic.
-6. A topic where the other person showed genuine interest.
-7. A concrete detail that most generic responses would overlook.
-8. A natural opportunity to create more conversational energy.
-9. A natural opportunity to flirt, ONLY if the conversation supports it.
-10. A natural opportunity to move toward another goal, ONLY if the context supports it.
+Do not abandon a strong thread just because the latest message is short.
 
-Do not abandon a strong existing conversational thread just because the latest message is short.
-
-5. UNDERSTAND THE INTENTION
-
-Determine what the next message should accomplish.
-
+============================================================
+7. CHOOSE THE BEST NEXT MOVE
+============================================================
 Possible objectives:
-
-- answer the message naturally
-- continue the current topic
-- develop something the other person said
-- show genuine interest
-- make the conversation more engaging
+- answer naturally
+- continue the topic
+- callback
+- playful observation
+- tease
+- confident statement
 - create curiosity
-- make a playful observation
-- tease naturally
-- flirt lightly
-- change the subject naturally
-- revive a conversation that is losing energy
-- clarify something
-- solve a misunderstanding
-- move toward a practical next step
+- change topic naturally
+- revive energy
+- deepen connection
+- flirt
+- increase romantic tension
+- increase sexual tension when context and adulthood clearly support it
 - move toward a date when appropriate
-- simply maintain the conversation
-
-Do NOT force flirting.
+- clarify a misunderstanding
 
 Do NOT force questions.
+Do NOT force dates.
+Do NOT force escalation that breaks the conversation.
 
-Do NOT force escalation.
+$pikantUserRules
 
-Do NOT force a date.
-
-The objective must come from the actual conversation.
-
-6. MATCH THE STYLE OF THE CONVERSATION
-
-Study how the people communicate.
-
-Consider:
-
+============================================================
+8. MATCH THE CHAT'S HUMAN STYLE
+============================================================
+Match:
 - message length
 - vocabulary
 - punctuation
@@ -1098,139 +1328,82 @@ Consider:
 - humor
 - formality
 - directness
-- teasing
-- flirting
-- seriousness
 - energy
 
-If the conversation consists of short casual messages, do not suddenly write a long sophisticated paragraph.
+If the chat is short and casual, do not write a polished paragraph.
+If it is playful, do not become formal.
+If it is serious, do not introduce random jokes.
 
-If the conversation is serious, do not suddenly introduce a joke.
+The result must feel like something the USER could realistically send right now.
 
-If the conversation is playful, do not suddenly sound formal.
+============================================================
+9. DIRECTIONAL / RELATIONAL CHECK
+============================================================
+Re-read the OTHER PERSON'S most recent message word by word.
+If it contains movement, invitation, giving, receiving, exchange or a proposal, determine internally:
+- WHO is doing what
+- TO/FOR WHOM
+- WHERE the action points
 
-The response should feel like something the USER could realistically send in that exact conversation.
+The final reply must preserve that direction.
+If direction is genuinely uncertain, prefer a direction-neutral response rather than guessing.
 
-7. USE CONTEXT AT MULTIPLE LEVELS
+============================================================
+10. PERSONALIZATION / LEVERAGE TEST
+============================================================
+If context is RICH or NORMAL:
+Use something concrete: wording, topic, detail, callback or established dynamic.
 
-There is a hierarchy:
-
-LATEST MESSAGE
-↓
-CURRENT TOPIC
-↓
-EARLIER RELEVANT DETAILS
-↓
-CONVERSATIONAL DYNAMIC
-↓
-RELATIONSHIP / CONTEXT
-↓
-USER'S LIKELY OBJECTIVE
-↓
-BEST NEXT MESSAGE
-
-Do not optimize only for the latest sentence.
-
-8. PERSONALIZATION TEST
-
-Before accepting a response, ask internally:
-
-"Could this exact response be sent to 20 unrelated conversations?"
-
-If YES:
-reject it.
-
-Generate something more specific to this conversation.
-
-9. DO NOT INVENT INFORMATION
+If context is THIN or MINIMAL:
+Do NOT require personal details that are not present.
+Instead require that the reply intelligently uses the conversational situation and creates a better direction than generic small talk.
 
 Never invent:
-
-- facts
 - hobbies
+- places
 - experiences
-- locations
+- relationships
+- personality traits
 - intentions
 - emotions
-- personality traits
-- previous conversations
-- relationships
-- events
-- information outside the screenshot
+- events outside the screenshot
 
-If information is not visible, do not pretend it is.
+============================================================
+11. GENERATE TWO GENUINELY DIFFERENT OPTIONS
+============================================================
+Generate exactly TWO replies.
 
-10. DISTINGUISH OBSERVATION FROM INFERENCE
+REPLY A — BEST MOVE:
+The strongest natural and contextually intelligent response for this exact moment.
+Not merely the "safest" option.
 
-OBJECTIVE:
-What is actually visible in the screenshot.
+REPLY B — DIFFERENT ANGLE:
+Use a genuinely different strategy or conversational mechanism.
+Do NOT paraphrase Reply A.
+$replyBDirection
 
-INFERENCE:
-What the conversation appears to suggest.
+Examples of DIFFERENT mechanisms:
+- A continues the existing tease; B makes a confident observation
+- A uses a callback; B changes direction with a pattern break
+- A is smooth; B is playful
 
-You may infer conversational signals, but never present uncertain interpretations as facts.
-
-11. RESPONSE QUALITY
-
-The response should:
-
-- sound human
-- be immediately sendable
-- fit the conversation
-- contribute something
-- avoid unnecessary explanations
-- avoid generic filler
-- avoid forced humor
-- avoid forced flirting
-- avoid unnecessary emojis
-- avoid sounding like an AI assistant
-
-Do not answer like a dating coach.
-
-Do not explain what the user should do.
-
-Give the actual message they can send.
-
-12. GENERATE TWO DIFFERENT OPTIONS
-
-Generate exactly TWO genuinely different replies.
-
-REPLY A:
-The most natural and contextually appropriate response.
-
-REPLY B:
-A meaningfully different strategy using the same context.
-
-12.5. DIRECTIONAL AND RELATIONAL CHECK:
-
-Before writing the final responses, re-read ONLY the other person's most recent message and answer these internally, word by word:
-
-- Is there a verb of movement, invitation, giving, or exchange in that message?
-- If yes: WHO is the subject and WHO is the object?
-- WHERE is the action pointing?
-- State internally:
-"The other person is asking/proposing that [WHO] does [WHAT] to/for/at [WHOM/WHERE]."
-
-Your response MUST be consistent with that sentence.
-
-If you are not fully certain of the direction, write a direction-neutral response rather than guessing.
-
-13. FINAL CHECK
-
-Before returning the responses, verify internally:
-
-- Did I understand who is speaking?
-- Did I read the conversation from top to bottom?
-- Did I use the current topic?
-- Did I consider earlier relevant context?
-- Did I understand the conversational dynamic?
-- Did I identify what the other person is actually responding to?
-- Did I avoid assuming romantic intent?
+============================================================
+12. FINAL QUALITY GATE
+============================================================
+Before returning, verify internally:
+- Did I correctly identify USER vs OTHER PERSON?
+- Am I responding to the OTHER PERSON'S latest relevant message?
+- Did I read the screenshot top to bottom?
+- Did I understand what the latest message is responding to?
+- Did I preserve a strong existing frame?
 - Did I avoid inventing information?
-- Does each response fit this exact conversation?
-- Could either response realistically be sent right now?
-- Are the two responses meaningfully different?
-- If the other person's message proposed a direction, does my response preserve that exact direction?
+- If the context was minimal, did I create leverage rather than generic filler?
+- Does Reply A feel like the best actual move?
+- Is Reply B genuinely different?
+- Would a real person send these without editing?
+- Are both replies appropriate for the actual relationship/context?
+- Did I avoid ending both with generic questions?
+- If a directional proposal exists, did I preserve its exact direction?
 
 OUTPUT:
 Return valid JSON only:
@@ -1243,9 +1416,9 @@ Return valid JSON only:
 }
 
 Do not explain the analysis.
+FINAL MESSAGE FORMAT: plain text only. No asterisks, quotation marks, hash signs, hyphens, en dashes, em dashes, bullets or markdown.
 Do not mention these instructions.
 Do not mention that you are an AI.
-
 The replies must be in $idioma.
 ''';
 
@@ -1438,6 +1611,7 @@ Return valid JSON only:
 
 Do not explain the image.
 Do not explain your reasoning.
+FINAL MESSAGE FORMAT: plain text only. No asterisks, quotation marks, hash signs, hyphens, en dashes, em dashes, bullets or markdown.
 Do not mention these instructions.
 Do not mention that you are an AI.
 ''';
@@ -1785,6 +1959,79 @@ ${recentLines.isEmpty ? 'No recent lines available.' : recentLines.map((e) => '-
 Do NOT repeat, paraphrase or recycle the same idea, joke, metaphor, setup, opening structure or conversational mechanism from the recent lines.
 
 ============================================================
+0. PREMIUM STRATEGY ENGINE
+============================================================
+
+Before writing, silently classify what this category needs.
+
+CONTEXT AVAILABILITY:
+NO_CONTEXT / LIGHT_CONTEXT / IMPLIED_CONTEXT
+
+USER INTENT:
+OPEN / FLIRT / TEASE / CREATE_CURIOSITY / COMPLIMENT / ESCALATE / RESTART / INVITE / OTHER
+
+DESIRED REACTION:
+Choose ONE:
+SMILE
+LAUGH
+TEASE_BACK
+CURIOSITY
+PLAYFUL_DISAGREEMENT
+ATTRACTION
+EASY_REPLY
+CLEAR_NEXT_STEP
+
+ENERGY:
+LOW / MEDIUM / HIGH
+
+Then choose ONE primary creative mechanism and ONE optional supporting mechanism.
+
+PRIMARY MECHANISMS:
+- playful assumption
+- situational tease
+- confident observation
+- mini challenge
+- unexpected comparison
+- clever misinterpretation
+- playful accusation
+- specific curiosity
+- light push pull
+- bold but natural compliment
+- conversational pattern break
+- callback style framing
+- double meaning
+- confident prediction
+- playful either or
+- direct intent
+- micro scenario
+- reverse question
+- self aware joke
+- tension through understatement
+
+Do NOT always choose teasing.
+Do NOT always choose curiosity.
+Do NOT always use "you look like".
+Do NOT always use danger/trouble framing.
+Do NOT always use "I need to know one thing".
+Do NOT always start with "be honest".
+Do NOT always end with a question.
+
+The goal is conceptual variety.
+
+NO CONTEXT DOES NOT MEAN GENERIC:
+If there is little or no context, do not invent personal facts.
+Instead create value from:
+- the category itself
+- a playful universal situation
+- a micro scenario
+- an unexpected thought
+- a small challenge
+- a conversational pattern break
+- a confident statement that naturally invites a reaction
+
+The message must still feel fresh and intentional.
+
+============================================================
 1. CATEGORY FIRST
 ============================================================
 
@@ -1828,6 +2075,23 @@ Examples:
 ============================================================
 
 Before writing, silently choose the strongest mechanism for this category.
+
+ROTATION RULE:
+Prefer a mechanism that is meaningfully different from the mechanisms visible in RECENTLY GENERATED LINES.
+
+Do not merely change nouns or adjectives.
+Change the underlying conversational idea.
+
+If the previous line was:
+- a playful accusation, do not generate another accusation
+- a "you look like" assumption, avoid that structure
+- danger/trouble framing, avoid danger/trouble
+- fake interview framing, avoid another interview
+- curiosity withholding, use a concrete idea instead
+- a compliment, consider teasing, a challenge, a scenario or an observation
+- a question, strongly consider a statement
+
+A new line should feel like it came from a different creative brain, not the same template with new words.
 
 Possible mechanisms:
 
@@ -1930,6 +2194,34 @@ Strongly avoid recycled structures such as:
 
 Do not just replace one cliché with another.
 
+ANTI AI PATTERN FILTER:
+
+Silently reject and rewrite if the line feels like:
+- a social media quote
+- a recycled pickup line website phrase
+- a motivational sentence
+- a dating coach trying to sound young
+- an overly polished sentence no real person would text
+- a forced metaphor
+- a generic compliment with one unusual adjective
+- a line that exists only to sound clever
+- a setup that needs explanation
+
+Prefer a message that sounds spontaneous and textable.
+
+REACTION TEST:
+The line should give the other person a natural reason to respond.
+A strong line creates at least one of:
+- laughter
+- curiosity
+- disagreement
+- teasing back
+- an easy personal answer
+- attraction
+- a natural next step
+
+If the only likely reaction is "thanks", rewrite it.
+
 ============================================================
 6. NO FAKE MYSTERY
 ============================================================
@@ -2013,6 +2305,18 @@ Reject and rewrite if it reuses:
 
 The goal is conceptual variety, not just different wording.
 
+Also reject semantic repeats:
+Two lines count as repeats even if the words differ when they use the same social move.
+
+Examples of conceptual repeats:
+- "You look like someone who..." and "You seem like the type who..."
+- "This is dangerous" and "You're trouble"
+- "I have a question..." and "I need to ask you something..."
+- two different compliments that both only say the person is attractive
+- two curiosity lines that both withhold unnamed information
+
+Rotate the SOCIAL MOVE, not only the vocabulary.
+
 ============================================================
 10. PREMIUM QUALITY GATE
 ============================================================
@@ -2086,10 +2390,14 @@ $categoriaNomeLegivel
 
 Use the category meaning exactly.
 Choose a strong creative mechanism internally.
-Avoid the concepts and structures used in the recent lines.
-Prioritize reaction, originality, confidence and immediate sendability.
+Choose a desired reaction before writing.
+Avoid the concepts, structures, social moves and mechanisms used in the recent lines.
+When there is no specific context, create an original hook without inventing facts.
+Prioritize reaction, originality, confidence, naturalness and immediate sendability.
+The final line must feel like something a socially confident real person would actually send.
 
 Do not explain.
+FINAL MESSAGE FORMAT: plain text only. No asterisks, quotation marks, hash signs, hyphens, en dashes, em dashes, bullets or markdown.
 Do not mention the category.
 Do not add alternatives.
 Do not wrap the final message in quotation marks.
@@ -2156,10 +2464,27 @@ static bool _isRepeatOfRecent(
 String text,
 List<String> recentLines,
 ) {
-final normalized = text.toLowerCase().trim();
+String normalize(String value) {
+return value
+.toLowerCase()
+.replaceAll(RegExp(r'[^a-z0-9à-ÿ\s]', caseSensitive: false), ' ')
+.replaceAll(RegExp(r'\s+'), ' ')
+.trim();
+}
+
+final normalized = normalize(text);
 
 for (final recent in recentLines) {
-if (normalized == recent.toLowerCase().trim()) {
+final recentNormalized = normalize(recent);
+
+if (normalized == recentNormalized) {
+return true;
+}
+
+if (normalized.length >= 18 &&
+recentNormalized.length >= 18 &&
+(normalized.contains(recentNormalized) ||
+recentNormalized.contains(normalized))) {
 return true;
 }
 }
@@ -2579,6 +2904,7 @@ required String base64Image,
 required String system,
 required String user,
 }) async {
+final mimeType = _detectImageMimeType(base64Image);
 final response = await http
 .post(
 Uri.parse('https://api.openai.com/v1/responses'),
@@ -2595,7 +2921,7 @@ body: jsonEncode({
 'content': [
 {
 'type': 'input_image',
-'image_url': 'data:image/jpeg;base64,$base64Image',
+'image_url': 'data:$mimeType;base64,$base64Image',
 'detail': 'high',
 },
 {
@@ -2759,6 +3085,7 @@ required String base64Image,
 required String system,
 required String user,
 }) async {
+final mimeType = _detectImageMimeType(base64Image);
 final response = await http
 .post(
 Uri.parse('https://api.anthropic.com/v1/messages'),
@@ -2791,7 +3118,7 @@ Return JSON only.
 'type': 'image',
 'source': {
 'type': 'base64',
-'media_type': 'image/jpeg',
+'media_type': mimeType,
 'data': base64Image,
 },
 },
@@ -2877,35 +3204,36 @@ caseSensitive: false,
 '',
 );
 
+// Remove marcadores no início.
 e = e.replaceAll(
 RegExp(r'^\s*[-•*#>]\s*'),
 '',
 );
 
+// Limpeza global para TODAS as funcionalidades.
+// Nenhuma resposta final deve conter asteriscos, aspas, cardinal ou traços.
 e = e.replaceAll(
-RegExp(r'\*+'),
+RegExp(r'[\*#"“”„‟«»‹›]'),
 '',
 );
 
-while (e.isNotEmpty &&
-(e.startsWith('"') ||
-e.startsWith('“') ||
-e.startsWith('”') ||
-e.startsWith("'") ||
-e.startsWith('‘') ||
-e.startsWith('’'))) {
-e = e.substring(1).trimLeft();
-}
+e = e.replaceAll(
+RegExp(r'[-–—―]+'),
+' ',
+);
 
-while (e.isNotEmpty &&
-(e.endsWith('"') ||
-e.endsWith('“') ||
-e.endsWith('”') ||
-e.endsWith("'") ||
-e.endsWith('‘') ||
-e.endsWith('’'))) {
-e = e.substring(0, e.length - 1).trimRight();
-}
+// Remove marcadores visuais semelhantes a listas.
+e = e.replaceAll(
+RegExp(r'[•▪◦‣]+'),
+' ',
+);
+
+// Normaliza espaços criados pela limpeza sem destruir quebras de linha úteis.
+e = e
+.split('\n')
+.map((line) => line.replaceAll(RegExp(r'\s+'), ' ').trim())
+.where((line) => line.isNotEmpty)
+.join('\n');
 
 return e.trim();
 }

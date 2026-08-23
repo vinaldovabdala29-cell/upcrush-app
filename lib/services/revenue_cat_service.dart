@@ -4,6 +4,17 @@ import 'dart:io';
 import 'credits_service.dart';
 
 class RevenueCatService {
+  // ============================================================
+  // 🔧 DEBUG ONLY — desbloqueia o paywall para testares a app
+  // livremente, sem pagamento real.
+  //
+  // ⚠️ IMPORTANTE: muda para `false` antes de fazeres qualquer
+  // build para a App Store / Play Store / TestFlight público.
+  // Deixar `true` em produção dá acesso premium GRÁTIS a todos
+  // os utilizadores.
+  // ============================================================
+  static const bool _debugUnlockPremium = true;
+
   static const String _androidKey = "goog_FEoxrNpkLgRjsZTtNJZEYuVDqua";
   static const String _iosKey = "appl_dmwoiqiILydfkRwbGekYzLFWRRb";
 
@@ -27,6 +38,10 @@ class RevenueCatService {
   }
 
   static Future<void> _syncPremiumStatus() async {
+    if (_debugUnlockPremium) {
+      await CreditsService.setPremium(true); // 🔧 DEBUG — remover/desativar antes de produção
+      return;
+    }
     try {
       final info = await Purchases.getCustomerInfo();
       final isPremium = info.entitlements.active.containsKey("premium");
@@ -37,6 +52,7 @@ class RevenueCatService {
   }
 
   static Future<bool> isPremium() async {
+    if (_debugUnlockPremium) return true; // 🔧 DEBUG — remover/desativar antes de produção
     try {
       final info = await Purchases.getCustomerInfo();
       return info.entitlements.active.containsKey("premium");

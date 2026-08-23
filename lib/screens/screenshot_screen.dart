@@ -8,6 +8,7 @@ import 'package:image_picker/image_picker.dart';
 import '../services/ai_service.dart';
 import '../widgets/background_blobs.dart';
 import '../../../main.dart';
+import '../services/review_request_service.dart';
 
 class ScreenshotScreen extends StatefulWidget {
   const ScreenshotScreen({super.key});
@@ -411,6 +412,10 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
     );
 
     HapticFeedback.lightImpact();
+
+    // ✅ Adicionado: notifica o serviço de avaliação que o
+    // utilizador teve uma "vitória" real (copiou uma resposta).
+    ReviewRequestService.notifySuccess();
 
     if (!mounted) return;
 

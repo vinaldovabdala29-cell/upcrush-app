@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:video_player/video_player.dart';
+import 'package:in_app_review/in_app_review.dart';
 import '../../../main.dart';
 import '../widgets/paywall_screen.dart';
 
@@ -29,6 +30,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   String? _reaction;
   String? _stuckMoment;
   int? _confidence;
+  Timer? _reviewTimer;
+  bool _reviewRequested = false;
 
   @override
   void initState() {
@@ -51,6 +54,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   void dispose() {
     _typingTimer?.cancel();
+    _reviewTimer?.cancel();
     _pageController.dispose();
     super.dispose();
   }
@@ -62,6 +66,46 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       setState(() => _visibleFeatures++);
       if (_visibleFeatures >= 3) timer.cancel();
     });
+  }
+
+  // ============================================================
+  // PEDIDO DE AVALIAÇÃO (In-App Review)
+  // ============================================================
+  //
+  // Assim que o utilizador entra na página 20 (SocialProofPage,
+  // índice 20 no PageView), espera alguns segundos — para ele ver
+  // as provas sociais primeiro — e só depois dispara o popup nativo
+  // de avaliação. Só acontece uma vez por sessão de onboarding.
+  // ============================================================
+
+  static const int _socialProofPageIndex = 20;
+  static const Duration _reviewDelay = Duration(seconds: 4);
+
+  void _maybeScheduleReviewRequest(int pageIndex) {
+    if (pageIndex != _socialProofPageIndex) return;
+    if (_reviewRequested) return;
+
+    _reviewTimer?.cancel();
+    _reviewTimer = Timer(_reviewDelay, () {
+      if (!mounted) return;
+      // Só dispara se o utilizador ainda estiver na mesma página
+      // (não avançou para o paywall entretanto).
+      if (_currentPage != _socialProofPageIndex) return;
+      _requestReview();
+    });
+  }
+
+  Future<void> _requestReview() async {
+    if (_reviewRequested) return;
+    _reviewRequested = true;
+    try {
+      final inAppReview = InAppReview.instance;
+      if (await inAppReview.isAvailable()) {
+        await inAppReview.requestReview();
+      }
+    } catch (_) {
+      // Falha silenciosa — nunca deve interromper o onboarding.
+    }
   }
 
   void _goNext() {
@@ -168,7 +212,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   child: PageView(
                     controller: _pageController,
                     physics: const NeverScrollableScrollPhysics(),
-                    onPageChanged: (i) => setState(() => _currentPage = i),
+                    onPageChanged: (i) {
+                      setState(() => _currentPage = i);
+                      _maybeScheduleReviewRequest(i);
+                    },
                     children: [
                 // 1
                 _FeatureShowcasePage(lang: lang, onContinue: _goNext),
@@ -224,7 +271,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   onContinue: _goNext,
                 ),
 
-                // 8 — Introdução às perguntas
+                // NOVA TELA — Nunca mais pensar no que escrever
+                _NeverThinkWhatToWritePage(
+                  lang: lang,
+                  onContinue: _goNext,
+                ),
+
+                // Introdução às perguntas
                 _QuestionIntroPage(lang: lang, userName: _userName, onContinue: _goNext),
 
                 // 9 — Idade
@@ -421,7 +474,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ],
                   ),
                 ),
-                if (_currentPage > 0 && _currentPage < 20)
+                if (_currentPage > 0 && _currentPage < 21)
                   Positioned(
                     left: 22,
                     right: 22,
@@ -456,7 +509,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(99),
                             child: LinearProgressIndicator(
-                              value: (_currentPage + 1) / 20,
+                              value: (_currentPage + 1) / 21,
                               minHeight: 5,
                               backgroundColor: const Color(0xFFE8E8EA),
                               valueColor: const AlwaysStoppedAnimation<Color>(
@@ -600,7 +653,7 @@ class _NamePageState extends State<_NamePage> {
           Text(
             _eyebrow(),
             style: const TextStyle(
-              color: Color(0xFFB0B0B5),
+              color: Color(0xFF4A4A4E),
               fontSize: 17,
               fontWeight: FontWeight.w500,
             ),
@@ -1215,7 +1268,7 @@ class _DesireScreenshotsPageState extends State<_DesireScreenshotsPage> {
                             return const Center(
                               child: Icon(
                                 Icons.image_not_supported_outlined,
-                                color: Color(0xFF8E8E93),
+                                color: Color(0xFF3A3A3C),
                                 size: 38,
                               ),
                             );
@@ -1749,7 +1802,7 @@ class _CompetitionAwarenessPage extends StatelessWidget {
             _body(),
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Color(0xFF66666D),
+              color: Color(0xFF2B2B2F),
               fontSize: 18,
               height: 1.48,
               fontWeight: FontWeight.w500,
@@ -1948,7 +2001,7 @@ class _DesireShiftPage extends StatelessWidget {
             _feeling(),
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Color(0xFF66666D),
+              color: Color(0xFF2B2B2F),
               fontSize: 18,
               height: 1.50,
               fontWeight: FontWeight.w500,
@@ -2149,6 +2202,249 @@ class _MorningMessageDesirePage extends StatelessWidget {
 }
 
 
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// NOVA TELA — CONVERSA BOA / EXEMPLOS FIXOS
+// ═══════════════════════════════════════════════════════════════════════
+
+class _NeverThinkWhatToWritePage extends StatelessWidget {
+  final String lang;
+  final VoidCallback onContinue;
+
+  const _NeverThinkWhatToWritePage({
+    required this.lang,
+    required this.onContinue,
+  });
+
+  String _headline() {
+    switch (lang) {
+      case 'de':
+        return 'Ein gutes Gespräch beginnt schon vor der ersten Antwort.';
+      case 'es':
+        return 'Una buena conversación empieza antes de la primera respuesta.';
+      case 'fr':
+        return 'Une bonne conversation commence avant même la première réponse.';
+      case 'it':
+        return 'Una bella conversazione inizia prima ancora della prima risposta.';
+      case 'tr':
+        return 'İyi bir sohbet, daha ilk cevaptan önce başlar.';
+      case 'pl':
+        return 'Dobra rozmowa zaczyna się jeszcze przed pierwszą odpowiedzią.';
+      case 'ru':
+        return 'Хороший разговор начинается ещё до первого ответа.';
+      case 'ar':
+        return 'تبدأ المحادثة الجيدة قبل أول رد.';
+      case 'pt':
+        return 'Uma boa conversa começa antes da primeira resposta.';
+      default:
+        return 'A good conversation starts before the first reply.';
+    }
+  }
+
+  String _subtitle() {
+    switch (lang) {
+      case 'de':
+        return 'Stell dir vor, du müsstest nie wieder überlegen, was du schreiben sollst.';
+      case 'es':
+        return 'Imagina no volver a pensar nunca qué escribir.';
+      case 'fr':
+        return 'Imagine ne plus jamais avoir à réfléchir à quoi écrire.';
+      case 'it':
+        return 'Immagina di non dover mai più pensare a cosa scrivere.';
+      case 'tr':
+        return 'Bir daha ne yazacağını düşünmek zorunda kalmadığını hayal et.';
+      case 'pl':
+        return 'Wyobraź sobie, że już nigdy nie musisz zastanawiać się, co napisać.';
+      case 'ru':
+        return 'Представь, что тебе больше никогда не нужно думать, что написать.';
+      case 'ar':
+        return 'تخيل ألا تضطر مرة أخرى للتفكير فيما ستكتبه.';
+      case 'pt':
+        return 'Imagine nunca mais ter que pensar no que escrever.';
+      default:
+        return 'Imagine never having to think about what to write again.';
+    }
+  }
+
+  List<String> _messages() {
+    switch (lang) {
+      case 'de':
+        return const [
+          'Ich weiß nicht, was gefährlicher ist: dieses Lächeln oder dass ich langsam anfange, dich zu mögen.',
+          'Ich wollte dich etwas fragen, aber deine Antwort entscheidet, ob ich es wirklich tue.',
+          'Du siehst aus wie jemand, der im Lebenslauf lügt und trotzdem den Job bekommt.',
+        ];
+      case 'es':
+        return const [
+          'No sé qué es más peligroso: esa sonrisa o que esté empezando a gustarme tú.',
+          'Quería preguntarte algo, pero tu respuesta decidirá si de verdad lo hago.',
+          'Pareces alguien que miente en el currículum y aun así consigue el trabajo.',
+        ];
+      case 'fr':
+        return const [
+          'Je ne sais pas ce qui est le plus dangereux : ce sourire ou le fait que je commence à bien t’aimer.',
+          'Je voulais te demander quelque chose, mais ta réponse décidera si je le fais vraiment.',
+          'Tu as l’air du genre à mentir sur ton CV et à décrocher le poste quand même.',
+        ];
+      case 'it':
+        return const [
+          'Non so cosa sia più pericoloso: quel sorriso o il fatto che tu stia iniziando a piacermi.',
+          'Volevo chiederti una cosa, ma la tua risposta deciderà se lo farò davvero.',
+          'Sembri una persona che mente nel curriculum e riesce comunque a ottenere il lavoro.',
+        ];
+      case 'tr':
+        return const [
+          'Hangisi daha tehlikeli bilmiyorum: o gülüşün mü, yoksa senden hoşlanmaya başlamam mı.',
+          'Sana bir şey soracaktım ama cevabın, gerçekten sorup sormayacağıma karar verecek.',
+          'CV’de yalan söyleyip yine de işi alan biri gibi görünüyorsun.',
+        ];
+      case 'pl':
+        return const [
+          'Nie wiem, co jest bardziej niebezpieczne: ten uśmiech czy to, że zaczynam cię lubić.',
+          'Chciałem cię o coś zapytać, ale od twojej odpowiedzi zależy, czy naprawdę to zrobię.',
+          'Wyglądasz jak ktoś, kto kłamie w CV, a i tak dostaje tę pracę.',
+        ];
+      case 'ru':
+        return const [
+          'Не знаю, что опаснее: эта улыбка или то, что ты начинаешь мне нравиться.',
+          'Я хотел кое-что спросить, но от твоего ответа зависит, решусь ли я на это.',
+          'Ты выглядишь как человек, который врёт в резюме и всё равно получает работу.',
+        ];
+      case 'ar':
+        return const [
+          'لا أعرف ما الأخطر: هذه الابتسامة أم أنني بدأت أعجب بك.',
+          'كنت أريد أن أسألك شيئًا، لكن إجابتك ستحدد إن كنت سأفعل ذلك فعلًا.',
+          'تبدو كشخص يكذب في سيرته الذاتية ومع ذلك يحصل على الوظيفة.',
+        ];
+      case 'pt':
+        return const [
+          'Não sei o que é mais perigoso: esse sorriso ou eu estar começando a gostar de você.',
+          'Eu queria te perguntar uma coisa, mas a sua resposta decide se eu realmente faço isso.',
+          'Você parece alguém que mente no currículo e ainda consegue o emprego.',
+        ];
+      default:
+        return const [
+          'I don’t know what’s more dangerous: that smile or the fact that I’m starting to like you.',
+          'I wanted to ask you something, but your answer decides whether I actually do it.',
+          'You look like someone who lies on their résumé and still gets the job.',
+        ];
+    }
+  }
+
+  String _button() {
+    switch (lang) {
+      case 'de': return 'Weiter';
+      case 'es': return 'Continuar';
+      case 'pt': return 'Continuar';
+      case 'fr': return 'Continuer';
+      case 'it': return 'Continua';
+      case 'tr': return 'Devam et';
+      case 'pl': return 'Dalej';
+      case 'ru': return 'Далее';
+      case 'ar': return 'متابعة';
+      default: return 'Continue';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final messages = _messages();
+
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(24, 24, 24, 26),
+      child: Column(
+        children: [
+          Text(
+            _headline(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF080808),
+              fontSize: 30,
+              height: 1.10,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.9,
+            ),
+          ),
+          const SizedBox(height: 13),
+          Text(
+            _subtitle(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF3F3F45),
+              fontSize: 17,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.2,
+            ),
+          ),
+          const SizedBox(height: 22),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(messages.length, (index) {
+                return Padding(
+                  padding: EdgeInsets.only(
+                    bottom: index == messages.length - 1 ? 0 : 12,
+                  ),
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 18,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF5F5F7),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      messages[index],
+                      textAlign: TextAlign.left,
+                      style: const TextStyle(
+                        color: Color(0xFF111111),
+                        fontSize: 16.5,
+                        height: 1.30,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: -0.25,
+                      ),
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            height: 60,
+            child: ElevatedButton(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                onContinue();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: Text(
+                _button(),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 
 // ═══════════════════════════════════════════════════════════════════════
@@ -2441,7 +2737,7 @@ class _QuestionScaffold extends StatelessWidget {
               subtitle!,
               textAlign: TextAlign.center,
               style: const TextStyle(
-                color: Color(0xFF8E8E93),
+                color: Color(0xFF3A3A3C),
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -2772,7 +3068,7 @@ class _ConfidencePageState extends State<_ConfidencePage> {
                 child: Text(
                   isDe ? 'Gar nicht selbstsicher' : 'Nada confiante',
                   style: const TextStyle(
-                    color: Color(0xFF8E8E93),
+                    color: Color(0xFF3A3A3C),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -2783,7 +3079,7 @@ class _ConfidencePageState extends State<_ConfidencePage> {
                   isDe ? 'Sehr selbstsicher' : 'Muito confiante',
                   textAlign: TextAlign.right,
                   style: const TextStyle(
-                    color: Color(0xFF8E8E93),
+                    color: Color(0xFF3A3A3C),
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -3060,7 +3356,7 @@ class _PersonalizationBridgePageState
             _status(),
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Color(0xFF66666D),
+              color: Color(0xFF2B2B2F),
               fontSize: 15,
               fontWeight: FontWeight.w600,
             ),
@@ -3125,7 +3421,7 @@ class _PersonalizationBridgePageState
                             Text(
                               row['label']!,
                               style: const TextStyle(
-                                color: Color(0xFF8E8E93),
+                                color: Color(0xFF3A3A3C),
                                 fontSize: 12.5,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -3304,7 +3600,7 @@ class _UnderstandingYouPage extends StatelessWidget {
             _bodyOne(),
             textAlign: TextAlign.center,
             style: const TextStyle(
-              color: Color(0xFF66666D),
+              color: Color(0xFF2B2B2F),
               fontSize: 18,
               height: 1.48,
               fontWeight: FontWeight.w500,
