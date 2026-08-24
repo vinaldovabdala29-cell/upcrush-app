@@ -39,9 +39,10 @@ class _PaywallFlowState extends State<PaywallFlow> {
     RevenueCatService.getPrice().then((p) {
       if (mounted) setState(() => _price = p);
     });
-    // Busca os preços reais dos novos planos no RevenueCat/App Store.
-    // Esses valores são usados diretamente no paywall para respeitar
-    // a moeda e o preço local do utilizador.
+    // NOTA: estes valores já NÃO alimentam a UI (preços agora fixos
+    // em _planText/_belowButtonLines, ver comentário lá). Mantidos
+    // aqui apenas para diagnóstico/uso futuro depois de resolvido
+    // o problema de região da conta de teste (preço em dólar).
     RevenueCatService.getAnnualPrice().then((p) {
       if (mounted) setState(() => _annualPrice = p);
     });
@@ -205,8 +206,12 @@ class _PaywallFlowState extends State<PaywallFlow> {
   }
 
   String _planText(String l, String key) {
-    final annualPrice = _annualPrice.isEmpty ? '34,99 €' : _annualPrice;
-    final weeklyPrice = _weeklyPrice.isEmpty ? '6,99 €' : _weeklyPrice;
+    // Preços fixos visuais — não usam o valor devolvido pela API
+    // do RevenueCat, para evitar mostrar moeda errada (ex: dólar
+    // em vez de euro) quando a conta/região do utilizador de teste
+    // está configurada incorretamente.
+    const annualPrice = '34,99 €';
+    const weeklyPrice = '6,99 €';
 
     String monthlyEquivalent() {
       switch (l) {
@@ -245,8 +250,9 @@ class _PaywallFlowState extends State<PaywallFlow> {
   // selecionado (anual vs semanal). Devolve 2 linhas para o plano
   // anual (garante que cabe mesmo em ecrãs pequenos como o iPhone SE).
   List<String> _belowButtonLines(String l) {
-    final annualPrice = _annualPrice.isEmpty ? '34,99 €' : _annualPrice;
-    final weeklyPrice = _weeklyPrice.isEmpty ? '6,99 €' : _weeklyPrice;
+    // Mesmo raciocínio: preços fixos visuais, não vindos da API.
+    const annualPrice = '34,99 €';
+    const weeklyPrice = '6,99 €';
 
     if (_selectedPlan == 'annual') {
       switch (l) {
