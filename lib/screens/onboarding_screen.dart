@@ -78,7 +78,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   // de avaliação. Só acontece uma vez por sessão de onboarding.
   // ============================================================
 
-  static const int _socialProofPageIndex = 20;
+  static const int _socialProofPageIndex = 23;
   static const Duration _reviewDelay = Duration(seconds: 4);
 
   void _maybeScheduleReviewRequest(int pageIndex) {
@@ -271,8 +271,27 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   onContinue: _goNext,
                 ),
 
+                // NOVA TELA — Conversa ou entrevista
+                _InterviewAwarenessPage(
+                  lang: lang,
+                  audience: _audience ?? 'both',
+                  onContinue: _goNext,
+                ),
+
+                // NOVA TELA — Pare de apagar e reescrever
+                _RewriteMessagePage(
+                  lang: lang,
+                  onContinue: _goNext,
+                ),
+
                 // NOVA TELA — Nunca mais pensar no que escrever
                 _NeverThinkWhatToWritePage(
+                  lang: lang,
+                  onContinue: _goNext,
+                ),
+
+                // NOVA TELA — Confirmação de compromisso
+                _CommitmentConfirmPage(
                   lang: lang,
                   onContinue: _goNext,
                 ),
@@ -474,7 +493,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                     ],
                   ),
                 ),
-                if (_currentPage > 0 && _currentPage < 21)
+                if (_currentPage > 0 && _currentPage < 24)
                   Positioned(
                     left: 22,
                     right: 22,
@@ -509,7 +528,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(99),
                             child: LinearProgressIndicator(
-                              value: (_currentPage + 1) / 21,
+                              value: (_currentPage + 1) / 24,
                               minHeight: 5,
                               backgroundColor: const Color(0xFFE8E8EA),
                               valueColor: const AlwaysStoppedAnimation<Color>(
@@ -1507,7 +1526,7 @@ class _RecognitionPage extends StatelessWidget {
       case 'de':
         return 'Verlier keine guten Gespräche, nur weil du nicht weißt, was du schreiben sollst.';
       case 'pt':
-        return 'Pare de perder conversas boas por não saber o que dizer.';
+        return 'Se você manda sempre as mesmas mensagens, não espere conversas diferentes.';
       case 'es':
         return 'Deja de perder buenas conversaciones por no saber qué decir.';
       case 'fr':
@@ -2096,7 +2115,7 @@ class _MorningMessageDesirePage extends StatelessWidget {
       case 'de':
         return 'Hör auf, dieselbe Nachricht immer wieder zu löschen und neu zu schreiben.';
       case 'pt':
-        return 'Pare de apagar e reescrever a mesma mensagem.';
+        return 'Pare de pensar no que ela quer ouvir.\nComece a dizer o que ela vai lembrar.';
       case 'es':
         return 'Deja de borrar y reescribir el mismo mensaje una y otra vez.';
       case 'fr':
@@ -2204,9 +2223,680 @@ class _MorningMessageDesirePage extends StatelessWidget {
 
 
 
+
+// ═══════════════════════════════════════════════════════════════════════
+// NOVA TELA — CONVERSA OU ENTREVISTA
+// ═══════════════════════════════════════════════════════════════════════
+
+class _InterviewAwarenessPage extends StatelessWidget {
+  final String lang;
+  final String audience;
+  final VoidCallback onContinue;
+
+  const _InterviewAwarenessPage({
+    required this.lang,
+    required this.audience,
+    required this.onContinue,
+  });
+
+  String _headline() {
+    switch (lang) {
+      case 'de':
+        return 'Führst du ein Gespräch oder ein Interview?';
+      case 'es':
+        return '¿Estás teniendo una conversación o una entrevista?';
+      case 'fr':
+        return 'Tu as une conversation ou tu fais passer un entretien ?';
+      case 'it':
+        return 'Stai avendo una conversazione o facendo un’intervista?';
+      case 'tr':
+        return 'Sohbet mi ediyorsun, yoksa röportaj mı yapıyorsun?';
+      case 'pl':
+        return 'Prowadzisz rozmowę czy wywiad?';
+      case 'ru':
+        return 'Ты разговариваешь или проводишь собеседование?';
+      case 'ar':
+        return 'هل تجري محادثة أم مقابلة؟';
+      case 'pt':
+        return 'Você está tendo uma conversa ou uma entrevista?';
+      default:
+        return 'Are you having a conversation or an interview?';
+    }
+  }
+
+  List<String> _questions() {
+    switch (lang) {
+      case 'de':
+        return const [
+          'Woher kommst du?',
+          'Was machst du beruflich?',
+          'Was machst du am Wochenende?',
+          'Was machst du gern in deiner Freizeit?',
+        ];
+      case 'es':
+        return const [
+          '¿De dónde eres?',
+          '¿A qué te dedicas?',
+          '¿Qué haces el fin de semana?',
+          '¿Qué te gusta hacer en tu tiempo libre?',
+        ];
+      case 'fr':
+        return const [
+          'Tu viens d’où ?',
+          'Tu fais quoi dans la vie ?',
+          'Tu fais quoi ce week-end ?',
+          'Tu aimes faire quoi pendant ton temps libre ?',
+        ];
+      case 'it':
+        return const [
+          'Di dove sei?',
+          'Che lavoro fai?',
+          'Cosa fai nel weekend?',
+          'Cosa ti piace fare nel tempo libero?',
+        ];
+      case 'tr':
+        return const [
+          'Nerelisin?',
+          'Ne iş yapıyorsun?',
+          'Hafta sonu ne yapıyorsun?',
+          'Boş zamanlarında ne yapmayı seversin?',
+        ];
+      case 'pl':
+        return const [
+          'Skąd jesteś?',
+          'Czym się zajmujesz?',
+          'Co robisz w weekend?',
+          'Co lubisz robić w wolnym czasie?',
+        ];
+      case 'ru':
+        return const [
+          'Ты откуда?',
+          'Чем занимаешься?',
+          'Что делаешь на выходных?',
+          'Что любишь делать в свободное время?',
+        ];
+      case 'ar':
+        return const [
+          'من أين أنت؟',
+          'ماذا تعمل؟',
+          'ماذا تفعل في عطلة نهاية الأسبوع؟',
+          'ماذا تحب أن تفعل في وقت فراغك؟',
+        ];
+      case 'pt':
+        return const [
+          'De onde você é?',
+          'O que você faz?',
+          'O que você faz no fim de semana?',
+          'O que gosta de fazer no tempo livre?',
+        ];
+      default:
+        return const [
+          'Where are you from?',
+          'What do you do?',
+          'What are you doing this weekend?',
+          'What do you like to do in your free time?',
+        ];
+    }
+  }
+
+  String _impactLine() {
+    switch (lang) {
+      case 'de':
+        return 'Wenn du nur fragst, antwortet die andere Person auch nur.';
+      case 'es':
+        return 'Si solo preguntas, la otra persona solo responde.';
+      case 'fr':
+        return 'Si tu ne fais que poser des questions, l’autre ne fait que répondre.';
+      case 'it':
+        return 'Se fai solo domande, l’altra persona si limita a rispondere.';
+      case 'tr':
+        return 'Sadece soru sorarsan, karşı taraf da sadece cevap verir.';
+      case 'pl':
+        return 'Jeśli tylko pytasz, druga osoba tylko odpowiada.';
+      case 'ru':
+        return 'Если ты только спрашиваешь, другой человек только отвечает.';
+      case 'ar':
+        return 'إذا كنت تسأل فقط، فالشخص الآخر سيكتفي بالإجابة.';
+      case 'pt':
+        return 'Pergunta atrás de pergunta só faz ela se sentir interrogada — não interessada.';
+      default:
+        return 'If you only ask questions, the other person only answers.';
+    }
+  }
+
+  String _positiveExample() {
+    switch (lang) {
+      case 'de':
+        return 'Du wirkst irgendwie nicht wie jemand, der am Wochenende ruhig zu Hause sitzt';
+      case 'es':
+        return 'No pareces alguien que se queda tranquilo en casa el fin de semana';
+      case 'fr':
+        return 'Tu n\u2019as pas l\u2019air du genre à rester tranquille chez toi le week-end';
+      case 'it':
+        return 'Non sembri il tipo che se ne sta tranquillo a casa nel weekend';
+      case 'tr':
+        return 'Hafta sonu evde sessizce oturan biri gibi görünmüyorsun';
+      case 'pl':
+        return 'Nie wyglądasz na kogoś, kto w weekend siedzi spokojnie w domu';
+      case 'ru':
+        return 'Ты не похож(а) на того, кто тихо сидит дома по выходным';
+      case 'ar':
+        return 'لا تبدو كشخص يجلس بهدوء في المنزل خلال عطلة نهاية الأسبوع';
+      case 'pt':
+        return 'Você não parece alguém que fica quieto em casa no fim de semana';
+      default:
+        return 'You don\u2019t really look like someone who sits quietly at home on weekends';
+    }
+  }
+
+  String _button() {
+    switch (lang) {
+      case 'de': return 'Weiter';
+      case 'es': return 'Continuar';
+      case 'fr': return 'Continuer';
+      case 'it': return 'Continua';
+      case 'tr': return 'Devam et';
+      case 'pl': return 'Dalej';
+      case 'ru': return 'Далее';
+      case 'ar': return 'متابعة';
+      case 'pt': return 'Continuar';
+      default: return 'Continue';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final questions = _questions();
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxHeight < 700;
+        final veryCompact = constraints.maxHeight < 620;
+
+        final horizontalPadding = compact ? 20.0 : 24.0;
+        final titleSize = veryCompact ? 27.0 : (compact ? 29.0 : 32.0);
+        final questionFont = veryCompact ? 15.5 : (compact ? 16.5 : 18.0);
+        final impactFont = veryCompact ? 15.0 : (compact ? 16.0 : 17.5);
+        final positiveFont = veryCompact ? 15.5 : (compact ? 16.5 : 18.0);
+        final closingFont = veryCompact ? 15.0 : (compact ? 16.0 : 17.0);
+        final cardVertical = veryCompact ? 9.0 : (compact ? 10.0 : 12.0);
+        final cardGap = veryCompact ? 7.0 : (compact ? 8.0 : 10.0);
+
+        return Container(
+          color: Colors.white,
+          padding: EdgeInsets.fromLTRB(
+            horizontalPadding,
+            compact ? 12 : 18,
+            horizontalPadding,
+            compact ? 12 : 20,
+          ),
+          child: Column(
+            children: [
+              Text(
+                _headline(),
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: const Color(0xFF080808),
+                  fontSize: titleSize,
+                  height: 1.05,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -0.9,
+                ),
+              ),
+
+              SizedBox(height: compact ? 14 : 18),
+
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 460),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.all(compact ? 13 : 16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF5F5F7),
+                              borderRadius: BorderRadius.circular(24),
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: List.generate(questions.length, (index) {
+                                return Container(
+                                  width: double.infinity,
+                                  margin: EdgeInsets.only(
+                                    bottom: index == questions.length - 1
+                                        ? 0
+                                        : cardGap,
+                                  ),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: cardVertical,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Text(
+                                    questions[index],
+                                    textAlign: TextAlign.center,
+                                    style: TextStyle(
+                                      color: const Color(0xFF111111),
+                                      fontSize: questionFont,
+                                      height: 1.15,
+                                      fontWeight: FontWeight.w700,
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+
+                          SizedBox(height: compact ? 14 : 18),
+
+                          // Primeiro vem o impacto negativo.
+                          Text(
+                            _impactLine(),
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: const Color(0xFFFF3B30),
+                              fontSize: impactFont,
+                              height: 1.22,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+
+                          SizedBox(height: compact ? 12 : 16),
+
+                          // Depois vem o exemplo positivo.
+                          Container(
+                            width: double.infinity,
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: veryCompact ? 10 : 13,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFEAF8EE),
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.check_circle_rounded,
+                                  color: const Color(0xFF34C759),
+                                  size: compact ? 21 : 24,
+                                ),
+                                SizedBox(height: compact ? 6 : 8),
+                                Text(
+                                  _positiveExample(),
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: const Color(0xFF111111),
+                                    fontSize: positiveFont,
+                                    height: 1.20,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+                          SizedBox(height: compact ? 12 : 16),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+
+              SizedBox(height: compact ? 10 : 14),
+
+              SizedBox(
+                width: double.infinity,
+                height: compact ? 56 : 60,
+                child: ElevatedButton(
+                  onPressed: () {
+                    HapticFeedback.mediumImpact();
+                    onContinue();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                  ),
+                  child: Text(
+                    _button(),
+                    style: TextStyle(
+                      fontSize: compact ? 18 : 19,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════
+// NOVA TELA — APAGAR E REESCREVER
+// ═══════════════════════════════════════════════════════════════════════
+
+class _RewriteMessagePage extends StatelessWidget {
+  final String lang;
+  final VoidCallback onContinue;
+
+  const _RewriteMessagePage({
+    required this.lang,
+    required this.onContinue,
+  });
+
+  String _headline() {
+    switch (lang) {
+      case 'de':
+        return 'Hör auf, dieselbe Nachricht immer wieder zu löschen und neu zu schreiben.';
+      case 'es':
+        return 'Deja de borrar y reescribir el mismo mensaje.';
+      case 'fr':
+        return 'Arrête d’effacer et de réécrire le même message.';
+      case 'it':
+        return 'Smetti di cancellare e riscrivere lo stesso messaggio.';
+      case 'tr':
+        return 'Aynı mesajı silip tekrar tekrar yazmayı bırak.';
+      case 'pl':
+        return 'Przestań usuwać i pisać w kółko tę samą wiadomość.';
+      case 'ru':
+        return 'Перестань удалять и переписывать одно и то же сообщение.';
+      case 'ar':
+        return 'توقف عن حذف الرسالة نفسها وإعادة كتابتها مرارًا.';
+      case 'pt':
+        return 'Pare de apagar e reescrever a mesma mensagem.';
+      default:
+        return 'Stop deleting and rewriting the same message.';
+    }
+  }
+
+  String _subtitle() {
+    switch (lang) {
+      case 'de':
+        return 'Erhalte Antworten, die zum Gespräch und zum Moment passen \u2014 in Sekunden.';
+      case 'es':
+        return 'Recibe respuestas que encajan con la conversación y el momento, en segundos.';
+      case 'fr':
+        return 'Re\u00e7ois des r\u00e9ponses adapt\u00e9es \u00e0 la conversation et au moment \u2014 en quelques secondes.';
+      case 'it':
+        return 'Ricevi risposte che si adattano alla conversazione e al momento, in pochi secondi.';
+      case 'tr':
+        return 'Sohbete ve ana uygun cevaplar\u0131 saniyeler i\u00e7inde al.';
+      case 'pl':
+        return 'Otrzymuj odpowiedzi dopasowane do rozmowy i chwili \u2014 w kilka sekund.';
+      case 'ru':
+        return '\u041f\u043e\u043b\u0443\u0447\u0430\u0439 \u043e\u0442\u0432\u0435\u0442\u044b, \u043a\u043e\u0442\u043e\u0440\u044b\u0435 \u043f\u043e\u0434\u0445\u043e\u0434\u044f\u0442 \u0440\u0430\u0437\u0433\u043e\u0432\u043e\u0440\u0443 \u0438 \u043c\u043e\u043c\u0435\u043d\u0442\u0443 \u2014 \u0437\u0430 \u0441\u0435\u043a\u0443\u043d\u0434\u044b.';
+      case 'ar':
+        return '\u0627\u062d\u0635\u0644 \u0639\u0644\u0649 \u0631\u062f\u0648\u062f \u062a\u062a\u0646\u0627\u0633\u0628 \u0645\u0639 \u0627\u0644\u0645\u062d\u0627\u062f\u062b\u0629 \u0648\u0627\u0644\u0644\u062d\u0638\u0629 \u2014 \u0641\u064a \u062b\u0648\u0627\u0646\u064d.';
+      case 'pt':
+        return 'Receba respostas que combinam com a conversa e o momento \u2014 em segundos.';
+      default:
+        return 'Get replies that match the conversation and the moment \u2014 in seconds.';
+    }
+  }
+
+  String _closing() {
+    switch (lang) {
+      case 'de':
+        return 'Wisse, was du sagen kannst, ohne dich zu verstellen.';
+      case 'es':
+        return 'Sabe qué decir sin dejar de ser tú.';
+      case 'fr':
+        return 'Sache quoi dire sans cesser d’être toi-même.';
+      case 'it':
+        return 'Sai cosa dire senza smettere di essere te stesso.';
+      case 'tr':
+        return 'Kendin olmaktan vazgeçmeden ne söyleyeceğini bil.';
+      case 'pl':
+        return 'Wiedz, co powiedzieć, nie przestając być sobą.';
+      case 'ru':
+        return 'Знай, что сказать, оставаясь собой.';
+      case 'ar':
+        return 'اعرف ماذا تقول دون أن تتوقف عن كونك نفسك.';
+      case 'pt':
+        return 'Saiba o que dizer sem deixar de ser você.';
+      default:
+        return 'Know what to say without stopping being yourself.';
+    }
+  }
+
+  String _button() {
+    switch (lang) {
+      case 'de': return 'Weiter';
+      case 'es': return 'Continuar';
+      case 'fr': return 'Continuer';
+      case 'it': return 'Continua';
+      case 'tr': return 'Devam et';
+      case 'pl': return 'Dalej';
+      case 'ru': return 'Далее';
+      case 'ar': return 'متابعة';
+      case 'pt': return 'Continuar';
+      default: return 'Continue';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(24, 18, 24, 22),
+      child: Column(
+        children: [
+          Text(
+            _headline(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF080808),
+              fontSize: 27,
+              height: 1.08,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.8,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            _subtitle(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF3F3F45),
+              fontSize: 16,
+              height: 1.32,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 390),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(24),
+                  child: Image.asset(
+                    'assets/images/onboarding/rewrite_message.png',
+                    width: double.infinity,
+                    fit: BoxFit.contain,
+                    errorBuilder: (_, __, ___) {
+                      return Container(
+                        width: double.infinity,
+                        constraints: const BoxConstraints(minHeight: 260),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF5F5F7),
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                        alignment: Alignment.center,
+                        padding: const EdgeInsets.all(24),
+                        child: const Icon(
+                          Icons.chat_bubble_outline_rounded,
+                          size: 56,
+                          color: Color(0xFFB8B8BE),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 18),
+          SizedBox(
+            width: double.infinity,
+            height: 58,
+            child: ElevatedButton(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                onContinue();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: Text(
+                _button(),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+
 // ═══════════════════════════════════════════════════════════════════════
 // NOVA TELA — CONVERSA BOA / EXEMPLOS FIXOS
 // ═══════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════
+// NOVA TELA — CONFIRMAÇÃO DE COMPROMISSO
+// ═══════════════════════════════════════════════════════════════════════
+
+class _CommitmentConfirmPage extends StatelessWidget {
+  final String lang;
+  final VoidCallback onContinue;
+
+  const _CommitmentConfirmPage({
+    required this.lang,
+    required this.onContinue,
+  });
+
+  String _headline() {
+    switch (lang) {
+      case 'de':
+        return 'Bist du dir sicher, dass du deine Art zu kommunizieren verbessern willst?';
+      case 'es':
+        return '¿Estás seguro de que quieres mejorar tu forma de conversar?';
+      case 'fr':
+        return 'Es-tu sûr(e) de vouloir améliorer ta façon de communiquer ?';
+      case 'it':
+        return 'Sei sicuro/a di voler migliorare il tuo modo di comunicare?';
+      case 'tr':
+        return 'Konuşma tarzını geliştirmek istediğinden emin misin?';
+      case 'pl':
+        return 'Czy na pewno chcesz poprawić swój sposób rozmawiania?';
+      case 'ru':
+        return 'Ты уверен(а), что хочешь улучшить свою манеру общения?';
+      case 'ar':
+        return 'هل أنت متأكد من رغبتك في تحسين طريقتك في التحدث؟';
+      case 'pt':
+        return 'Tem certeza que quer melhorar o seu jeito de conversar?';
+      default:
+        return 'Are you sure you want to improve the way you communicate?';
+    }
+  }
+
+  String _button() {
+    switch (lang) {
+      case 'de': return 'Ja, ich will besser kommunizieren';
+      case 'es': return 'Sí, quiero conversar mejor';
+      case 'fr': return 'Oui, je veux mieux communiquer';
+      case 'it': return 'Sì, voglio comunicare meglio';
+      case 'tr': return 'Evet, daha iyi iletişim kurmak istiyorum';
+      case 'pl': return 'Tak, chcę lepiej rozmawiać';
+      case 'ru': return 'Да, хочу общаться лучше';
+      case 'ar': return 'نعم، أريد التواصل بشكل أفضل';
+      case 'pt': return 'Sim, quero melhorar minhas conversas';
+      default: return 'Yes, I want to communicate better';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.white,
+      padding: const EdgeInsets.fromLTRB(28, 30, 28, 26),
+      child: Column(
+        children: [
+          const Spacer(flex: 2),
+          Text(
+            _headline(),
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: Color(0xFF080808),
+              fontSize: 32,
+              height: 1.12,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.9,
+            ),
+          ),
+          const Spacer(flex: 3),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () {
+                HapticFeedback.mediumImpact();
+                onContinue();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.black,
+                foregroundColor: Colors.white,
+                elevation: 0,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 18,
+                  horizontal: 16,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+              ),
+              child: Text(
+                _button(),
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 16,
+                  height: 1.2,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
 
 class _NeverThinkWhatToWritePage extends StatelessWidget {
   final String lang;
@@ -2236,7 +2926,7 @@ class _NeverThinkWhatToWritePage extends StatelessWidget {
       case 'ar':
         return 'تبدأ المحادثة الجيدة قبل أول رد.';
       case 'pt':
-        return 'Uma boa conversa começa antes da primeira resposta.';
+        return 'Lembre-se: uma boa conversa começa antes da primeira resposta.';
       default:
         return 'A good conversation starts before the first reply.';
     }

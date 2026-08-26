@@ -96,12 +96,12 @@ class _PaywallFlowState extends State<PaywallFlow> {
   // ── Textos ──────────────────────────────────────────────────────────────
   String _headline(String l) {
     switch (l) {
-      case 'de': return 'Bereit, anders zu schreiben?';
-      case 'es': return '¿Listo para conversar de otra manera?';
-      case 'pt': return 'Pronto para conversar de um jeito diferente?';
-      case 'fr': return 'Prêt à écrire autrement ?';
-      case 'it': return 'Pronto a scrivere in modo diverso?';
-      default: return 'Ready to text differently?';
+      case 'de': return 'Bereit, nie wieder ohne Worte dazustehen?';
+      case 'es': return '¿Listo para nunca más quedarte sin saber qué decir?';
+      case 'pt': return 'Pronto para nunca mais ficar sem saber o que dizer?';
+      case 'fr': return 'Prêt à ne plus jamais rester sans mots ?';
+      case 'it': return 'Pronto a non restare mai più senza parole?';
+      default: return 'Ready to never run out of things to say again?';
     }
   }
 
@@ -277,12 +277,12 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
   String _ctaLabelDynamic(String l) {
     switch (l) {
-      case 'de': return 'Weiter';
-      case 'es': return 'Continuar';
-      case 'pt': return 'Continuar';
-      case 'fr': return 'Continuer';
-      case 'it': return 'Continua';
-      default: return 'Continue';
+      case 'de': return 'Ich will besser kommunizieren';
+      case 'es': return 'Quiero conversar mejor';
+      case 'pt': return 'Quero melhorar minhas conversas';
+      case 'fr': return 'Je veux mieux communiquer';
+      case 'it': return 'Voglio comunicare meglio';
+      default: return 'I want to communicate better';
     }
   }
 
