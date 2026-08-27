@@ -4,6 +4,14 @@ import 'dart:io';
 import 'credits_service.dart';
 
 class RevenueCatService {
+  // ============================================================
+  // BYPASS TEMPORÁRIO PARA TESTES
+  // true  = Premium desbloqueado sem compra
+  // false = RevenueCat / App Store funcionam normalmente
+  // IMPORTANTE: colocar false antes de publicar na App Store.
+  // ============================================================
+  static const bool testPremiumBypass = true;
+
   static const String _androidKey = "goog_FEoxrNpkLgRjsZTtNJZEYuVDqua";
   static const String _iosKey = "appl_dmwoiqiILydfkRwbGekYzLFWRRb";
 
@@ -26,6 +34,12 @@ class RevenueCatService {
   }
 
   static Future<void> _syncPremiumStatus() async {
+    if (testPremiumBypass) {
+      await CreditsService.setPremium(true);
+      debugPrint("RevenueCat: TEST BYPASS ativo — Premium desbloqueado.");
+      return;
+    }
+
     try {
       final info = await Purchases.getCustomerInfo();
       final isPremium = info.entitlements.active.containsKey("premium");
@@ -36,6 +50,11 @@ class RevenueCatService {
   }
 
   static Future<bool> isPremium() async {
+    if (testPremiumBypass) {
+      await CreditsService.setPremium(true);
+      return true;
+    }
+
     try {
       final info = await Purchases.getCustomerInfo();
       return info.entitlements.active.containsKey("premium");
@@ -93,6 +112,11 @@ class RevenueCatService {
   }
 
   static Future<PurchaseServiceResult> restorePurchases() async {
+    if (testPremiumBypass) {
+      await CreditsService.setPremium(true);
+      return const PurchaseServiceResult(success: true, restored: true);
+    }
+
     try {
       final info = await Purchases.restorePurchases();
       final isPremium = info.entitlements.active.containsKey("premium");
@@ -237,7 +261,15 @@ class RevenueCatService {
   /// paywall ('annual' ou 'weekly'). Função de conveniência para
   /// o paywall_screen.dart não precisar de decidir qual método
   /// chamar diretamente.
-  static Future<PurchaseServiceResult> buyNewPlan(String planKey) {
+  static Future<PurchaseServiceResult> buyNewPlan(String planKey) async {
+    if (testPremiumBypass) {
+      await CreditsService.setPremium(true);
+      debugPrint(
+        "RevenueCat: TEST BYPASS — plano $planKey liberado sem cobrança.",
+      );
+      return const PurchaseServiceResult(success: true);
+    }
+
     if (planKey == 'annual') {
       return buyAnnual();
     }
