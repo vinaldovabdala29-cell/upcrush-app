@@ -144,7 +144,10 @@ class _PaywallFlowState extends State<PaywallFlow> {
   }
 
   String _trialLine(String l) {
-    final price = _price.isEmpty ? '6,99 €' : _price;
+    // Preço fixo visual — não usa o valor devolvido pela API do
+    // RevenueCat, para evitar mostrar moeda errada (ex: dólar em
+    // vez de euro) consoante a região da conta do dispositivo.
+    const price = '6,99 €';
     final eligible = _eligibleForTrial ?? true;
 
     if (eligible) {
