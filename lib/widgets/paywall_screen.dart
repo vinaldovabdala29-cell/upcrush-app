@@ -23,43 +23,56 @@ class PaywallFlow extends StatefulWidget {
 class _PaywallFlowState extends State<PaywallFlow> {
   bool _loading = false;
   String _price = '';
-  String _annualPrice = '';
-  String _weeklyPrice = '';
-  String _selectedPlan = 'annual';
+  bool? _eligibleForTrial;
+  int _currentPhoto = 0;
+  late Timer _timer;
+  late PageController _pageController;
 
-  static const _bg = Color(0xFFFFFFFF);
-  static const _text = Color(0xFF0A0A0A);
-  static const _muted = Color(0xFF6B6B70);
-  static const _soft = Color(0xFFF5F5F7);
+  static const _bgTop    = Color(0xFF050008);
+  static const _bgBottom = Color(0xFF0D0118);
+  static const _accent   = Color(0xFFFF2D55);
+  static const _green    = Color(0xFF34C759);
+  static const _purple   = Color(0xFFBB86FC);
+
+  static const _photos = [
+    'assets/images/casal1.jpg',
+    'assets/images/casal2.jpg',
+    'assets/images/casal3.jpg',
+  ];
 
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
+    _pageController = PageController();
     RevenueCatService.getPrice().then((p) {
       if (mounted) setState(() => _price = p);
     });
-    // NOTA: estes valores já NÃO alimentam a UI (preços agora fixos
-    // em _planText/_belowButtonLines, ver comentário lá). Mantidos
-    // aqui apenas para diagnóstico/uso futuro depois de resolvido
-    // o problema de região da conta de teste (preço em dólar).
-    RevenueCatService.getAnnualPrice().then((p) {
-      if (mounted) setState(() => _annualPrice = p);
+    // Verifica se o utilizador já usou o trial de 7 dias antes,
+    // para mostrar o texto certo por baixo do botão.
+    RevenueCatService.isEligibleForTrial().then((eligible) {
+      if (mounted) setState(() => _eligibleForTrial = eligible);
     });
-    RevenueCatService.getWeeklyNoTrialPrice().then((p) {
-      if (mounted) setState(() => _weeklyPrice = p);
+    _timer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (!mounted) return;
+      final next = (_currentPhoto + 1) % _photos.length;
+      _pageController.animateToPage(next,
+        duration: const Duration(milliseconds: 500),
+        curve: Curves.easeInOut);
     });
   }
 
   @override
   void dispose() {
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
+    _timer.cancel();
+    _pageController.dispose();
     super.dispose();
   }
 
   Future<void> _handlePurchase() async {
     setState(() => _loading = true);
-    final result = await RevenueCatService.buyNewPlan(_selectedPlan);
+    final result = await RevenueCatService.buyWeekly();
     setState(() => _loading = false);
     if (!mounted) return;
     if (result.success) {
@@ -96,79 +109,58 @@ class _PaywallFlowState extends State<PaywallFlow> {
   // ── Textos ──────────────────────────────────────────────────────────────
   String _headline(String l) {
     switch (l) {
-      case 'de': return 'Bereit, nie wieder ohne Worte dazustehen?';
-      case 'es': return '¿Listo para nunca más quedarte sin saber qué decir?';
-      case 'pt': return 'Pronto para nunca mais ficar sem saber o que dizer?';
-      case 'fr': return 'Prêt à ne plus jamais rester sans mots ?';
-      case 'it': return 'Pronto a non restare mai più senza parole?';
-      default: return 'Ready to never run out of things to say again?';
+      case 'de': return 'Verbessere dein Sozialleben';
+      case 'es': return 'Mejora tu vida social';
+      case 'pt': return 'Melhore a tua vida social';
+      default:   return 'Improve Your Social Life';
     }
   }
 
   String _subHeadline(String l) {
     switch (l) {
-      case 'de': return 'Mach aus Unsicherheit echte Sicherheit in deinen Gesprächen.';
-      case 'es': return 'Convierte la inseguridad en confianza en tus conversaciones.';
-      case 'pt': return 'Transforme a insegurança em confiança nas suas conversas.';
-      case 'fr': return 'Transforme l’hésitation en confiance dans tes conversations.';
-      case 'it': return 'Trasforma l’insicurezza in sicurezza nelle tue conversazioni.';
-      default: return 'Turn uncertainty into confidence in your conversations.';
+      case 'de': return 'Werde besser darin, mit Mädels zu sprechen';
+      case 'es': return 'Mejora hablando con chicas';
+      case 'pt': return 'Melhora a falar com garotas';
+      default:   return 'Get better at speaking with girls';
     }
   }
 
   String _ctaLabel(String l) {
     switch (l) {
-      case 'de': return 'Kostenlos testen';
-      case 'es': return 'Probar gratis';
-      case 'pt': return 'Experimentar grátis';
-      case 'fr': return 'Essayer gratuitement';
-      case 'it': return 'Prova gratis';
-      default: return 'Try for free';
+      case 'de': return 'Weiter';
+      case 'es': return 'Continuar';
+      case 'pt': return 'Continuar';
+      default:   return 'Continue';
     }
   }
 
-  String _todayFree(String l) {
+  String _noCommitment(String l) {
     switch (l) {
-      case 'de': return 'Heute zahlst du nichts.';
-      case 'es': return 'Hoy no pagas nada.';
-      case 'pt': return 'Hoje você não paga nada.';
-      case 'fr': return 'Aujourd’hui, tu ne paies rien.';
-      case 'it': return 'Oggi non paghi nulla.';
-      default: return 'You pay nothing today.';
-    }
-  }
-
-  String _trialBadge(String l) {
-    switch (l) {
-      case 'de': return '3 TAGE KOSTENLOS';
-      case 'es': return '3 DÍAS GRATIS';
-      case 'pt': return '3 DIAS GRÁTIS';
-      case 'fr': return '3 JOURS GRATUITS';
-      case 'it': return '3 GIORNI GRATIS';
-      default: return '3 DAYS FREE';
+      case 'de': return 'Keine Verpflichtung, jederzeit kündbar';
+      case 'es': return 'Sin compromiso, cancela cuando quieras';
+      case 'pt': return 'Sem compromisso, cancele quando quiser';
+      default:   return 'No commitment, cancel anytime';
     }
   }
 
   String _trialLine(String l) {
-    final price = _price.isEmpty ? '—' : _price;
-    switch (l) {
-      case 'de': return '0,00 € heute · danach 6,99 €/Woche';
-      case 'es': return '0,00 € hoy · después 6,99 €/semana';
-      case 'pt': return '0,00 € hoje · depois 6,99 €/semana';
-      case 'fr': return '0,00 € aujourd’hui · puis 6,99 €/semaine';
-      case 'it': return '0,00 € oggi · poi 6,99 €/settimana';
-      default: return '0.00 today · then €6.99/week';
-    }
-  }
+    final price = _price.isEmpty ? '6,99 €' : _price;
+    final eligible = _eligibleForTrial ?? true;
 
-  String _cancelLine(String l) {
-    switch (l) {
-      case 'de': return 'Jederzeit kündbar.';
-      case 'es': return 'Cancela cuando quieras.';
-      case 'pt': return 'Cancele quando quiser.';
-      case 'fr': return 'Annulable à tout moment.';
-      case 'it': return 'Annulla quando vuoi.';
-      default: return 'Cancel anytime.';
+    if (eligible) {
+      switch (l) {
+        case 'de': return '7 Tage kostenlos, danach $price/Woche';
+        case 'es': return '7 días gratis, luego $price/semana';
+        case 'pt': return '7 dias grátis, depois $price/semana';
+        default:   return '7 days free, then $price per week';
+      }
+    } else {
+      switch (l) {
+        case 'de': return 'Abgerechnet $price/Woche';
+        case 'es': return 'Se factura $price/semana';
+        case 'pt': return 'Cobrado $price/semana';
+        default:   return 'Billed $price per week';
+      }
     }
   }
 
@@ -176,166 +168,33 @@ class _PaywallFlowState extends State<PaywallFlow> {
     switch (l) {
       case 'de': return 'Wiederherstellen';
       case 'es': return 'Restaurar';
-      case 'pt': return 'Restaurar compras';
-      case 'fr': return 'Restaurer';
-      case 'it': return 'Ripristina';
-      default: return 'Restore';
+      case 'pt': return 'Restaurar';
+      default:   return 'Restore';
     }
   }
 
-  String _terms(String l) {
+  List<Map<String, String>> _features(String l) {
     switch (l) {
-      case 'de': return 'Bedingungen';
-      case 'es': return 'Términos';
-      case 'pt': return 'Termos';
-      case 'fr': return 'Conditions';
-      case 'it': return 'Termini';
-      default: return 'Terms';
-    }
-  }
-
-  String _privacy(String l) {
-    switch (l) {
-      case 'de': return 'Datenschutz';
-      case 'es': return 'Privacidad';
-      case 'pt': return 'Privacidade';
-      case 'fr': return 'Confidentialité';
-      case 'it': return 'Privacy';
-      default: return 'Privacy';
-    }
-  }
-
-  String _planText(String l, String key) {
-    // Preços fixos visuais — não usam o valor devolvido pela API
-    // do RevenueCat, para evitar mostrar moeda errada (ex: dólar
-    // em vez de euro) quando a conta/região do utilizador de teste
-    // está configurada incorretamente.
-    const annualPrice = '34,99 €';
-    const weeklyPrice = '6,99 €';
-
-    String monthlyEquivalent() {
-      switch (l) {
-        case 'de': return '2,91 €/Mon';
-        case 'es': return '2,91 €/mes';
-        case 'pt': return '2,91 €/mês';
-        case 'fr': return '2,91 €/mois';
-        case 'it': return '2,91 €/mese';
-        default: return '€2.91/mo';
-      }
-    }
-
-    final m = {
-      'pt': {'weekly':'SEMANAL','annual':'ANUAL','save':'ECONOMIZE 75%','month':monthlyEquivalent(),'annualPrice':'$annualPrice/ano','after':'após 3 dias grátis','old':'9,99 €/sem','week':'$weeklyPrice/sem'},
-      'de': {'weekly':'WÖCHENTLICH','annual':'JÄHRLICH','save':'75% SPAREN','month':monthlyEquivalent(),'annualPrice':'$annualPrice/Jr','after':'nach 3 kostenlosen Tagen','old':'9,99 €/Wo','week':'$weeklyPrice/Wo'},
-      'es': {'weekly':'SEMANAL','annual':'ANUAL','save':'AHORRA 75%','month':monthlyEquivalent(),'annualPrice':'$annualPrice/año','after':'después de 3 días gratis','old':'9,99 €/sem','week':'$weeklyPrice/sem'},
-      'fr': {'weekly':'HEBDOMADAIRE','annual':'ANNUEL','save':'ÉCONOMISEZ 75%','month':monthlyEquivalent(),'annualPrice':'$annualPrice/an','after':'après 3 jours gratuits','old':'9,99 €/sem','week':'$weeklyPrice/sem'},
-      'it': {'weekly':'SETTIMANALE','annual':'ANNUALE','save':'RISPARMIA IL 75%','month':monthlyEquivalent(),'annualPrice':'$annualPrice/anno','after':'dopo 3 giorni gratis','old':'9,99 €/sett','week':'$weeklyPrice/sett'},
-      'en': {'weekly':'WEEKLY','annual':'ANNUAL','save':'SAVE 75%','month':monthlyEquivalent(),'annualPrice':'$annualPrice/yr','after':'after 3 free days','old':'€9.99/wk','week':'$weeklyPrice/wk'},
-    };
-    return (m[l] ?? m['en']!)[key]!;
-  }
-
-  String _noPaymentNow(String l) {
-    switch (l) {
-      case 'de': return 'Keine Zahlung jetzt';
-      case 'es': return 'Sin pago ahora';
-      case 'pt': return 'Sem pagamento agora';
-      case 'fr': return 'Aucun paiement maintenant';
-      case 'it': return 'Nessun pagamento ora';
-      default: return 'No payment now';
-    }
-  }
-
-  // Texto dinâmico por baixo do botão principal, consoante o plano
-  // selecionado (anual vs semanal). Devolve 2 linhas para o plano
-  // anual (garante que cabe mesmo em ecrãs pequenos como o iPhone SE).
-  List<String> _belowButtonLines(String l) {
-    // Mesmo raciocínio: preços fixos visuais, não vindos da API.
-    const annualPrice = '34,99 €';
-    const weeklyPrice = '6,99 €';
-
-    if (_selectedPlan == 'annual') {
-      switch (l) {
-        case 'de': return ['3 Tage kostenlos, danach $annualPrice pro Jahr', 'Jederzeit kündbar'];
-        case 'es': return ['3 días gratis, luego $annualPrice al año', 'Cancela cuando quieras'];
-        case 'pt': return ['3 dias grátis, depois $annualPrice por ano', 'Cancele quando quiser'];
-        case 'fr': return ['3 jours gratuits, puis $annualPrice par an', 'Annulable à tout moment'];
-        case 'it': return ['3 giorni gratis, poi $annualPrice all’anno', 'Annulla quando vuoi'];
-        default: return ['3 days free, then $annualPrice per year', 'Cancel anytime'];
-      }
-    } else {
-      switch (l) {
-        case 'de': return ['Abgerechnet $weeklyPrice pro Woche'];
-        case 'es': return ['Se factura $weeklyPrice por semana'];
-        case 'pt': return ['Cobrado $weeklyPrice por semana'];
-        case 'fr': return ['Facturé $weeklyPrice par semaine'];
-        case 'it': return ['Fatturato $weeklyPrice a settimana'];
-        default: return ['Billed $weeklyPrice per week'];
-      }
-    }
-  }
-
-  String _ctaLabelDynamic(String l) {
-    switch (l) {
-      case 'de': return 'Ich will besser kommunizieren';
-      case 'es': return 'Quiero conversar mejor';
-      case 'pt': return 'Quero melhorar minhas conversas';
-      case 'fr': return 'Je veux mieux communiquer';
-      case 'it': return 'Voglio comunicare meglio';
-      default: return 'I want to communicate better';
-    }
-  }
-
-  List<String> _features(String l) {
-    switch (l) {
-      case 'de':
-        return const [
-          'Immer wissen, was du antworten kannst',
-          'Nachrichten, die zu dir und zur Situation passen',
-          'Sei unberechenbar. Nie langweilig.',
-          'Gespräche, bei denen das Interesse von beiden Seiten kommt',
-          'Du bleibst du selbst — du weißt nur besser, was du sagen sollst',
-        ];
-      case 'es':
-        return const [
-          'Saber siempre qué responder',
-          'Mensajes que encajan contigo y con la situación',
-          'Sé impredecible. Nunca aburrido.',
-          'Conversaciones donde el interés viene de ambos lados',
-          'Sigues siendo tú, solo que sabes mejor qué decir',
-        ];
-      case 'pt':
-        return const [
-          'Sempre saiba o que responder',
-          'Mensagens que combinam com você e com a situação',
-          'Seja imprevisível. Nunca monótono.',
-          'Conversas em que o interesse vem dos dois lados',
-          'Você continua sendo você, só sabe melhor o que dizer',
-        ];
-      case 'fr':
-        return const [
-          'Toujours savoir quoi répondre',
-          'Des messages adaptés à toi et à la situation',
-          'Sois imprévisible. Jamais monotone.',
-          'Des conversations où l’intérêt vient des deux côtés',
-          'Tu restes toi-même, tu sais juste mieux quoi dire',
-        ];
-      case 'it':
-        return const [
-          'Sapere sempre cosa rispondere',
-          'Messaggi adatti a te e alla situazione',
-          'Sii imprevedibile. Mai monotono.',
-          'Conversazioni in cui l’interesse arriva da entrambe le parti',
-          'Resti sempre te stesso, solo che sai meglio cosa dire',
-        ];
-      default:
-        return const [
-          'Always know what to reply',
-          'Messages that fit you and the situation',
-          'Be unpredictable. Never boring.',
-          'Conversations where the interest goes both ways',
-          'You\u2019re still you — you just know what to say better',
-        ];
+      case 'de': return [
+        {'icon': '🎯', 'text': 'Nachrichten, die echte Reaktionen erzeugen'},
+        {'icon': '🔥', 'text': 'Gespräche aufwärmen oder eskalieren'},
+        {'icon': '📆', 'text': 'Mehr echte Dates, weniger Ghosting'},
+      ];
+      case 'es': return [
+        {'icon': '🎯', 'text': 'Mensajes que generan reacciones reales'},
+        {'icon': '🔥', 'text': 'Calienta conversaciones o escala'},
+        {'icon': '📆', 'text': 'Más citas reales, menos ghosting'},
+      ];
+      case 'pt': return [
+        {'icon': '🎯', 'text': 'Mensagens que geram reações reais'},
+        {'icon': '🔥', 'text': 'Reaqueça conversas ou escale'},
+        {'icon': '📆', 'text': 'Mais encontros reais, menos ghosting'},
+      ];
+      default: return [
+        {'icon': '🎯', 'text': 'Messages that generate real reactions'},
+        {'icon': '🔥', 'text': 'Warm up conversations or escalate'},
+        {'icon': '📆', 'text': 'More real dates, less ghosting'},
+      ];
     }
   }
 
@@ -346,229 +205,238 @@ class _PaywallFlowState extends State<PaywallFlow> {
       builder: (_, lang, __) {
         final l = lang.languageCode;
         final bottom = MediaQuery.of(context).padding.bottom;
-        final features = _features(l);
 
         return Scaffold(
-          backgroundColor: _bg,
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Center(
+          body: Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [_bgTop, _bgBottom],
+              ),
+            ),
+            child: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
                   child: Column(
-                    mainAxisSize: MainAxisSize.min,
                     children: [
-                    const SizedBox(height: 28),
 
-                    // Headline — tamanho reduzido de 32 para 26
-                    Text(
-                      _headline(l),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: _text,
-                        fontSize: 26,
-                        height: 1.08,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -1.0,
+                      const SizedBox(height: 16),
+
+                      // ── Headline + subheadline ───────────────────
+                      Text(
+                        _headline(l),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: _purple,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.7,
+                          height: 1.08,
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 12),
+                      const SizedBox(height: 8),
 
-                    // Subheadline — cor alterada para preto (_text)
-                    Text(
-                      _subHeadline(l),
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: _text,
-                        fontSize: 17,
-                        height: 1.45,
-                        fontWeight: FontWeight.w500,
+                      Text(
+                        _subHeadline(l),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.78),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w500,
+                          height: 1.25,
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 24),
+                      const SizedBox(height: 28),
 
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.fromLTRB(18, 20, 18, 6),
-                      decoration: BoxDecoration(
-                        color: _soft,
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Column(
-                        children: features.map((feature) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 14),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                // Barra vertical — cor verde
-                                Container(
-                                  width: 3,
-                                  height: 24,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF22C55E),
-                                    borderRadius: BorderRadius.circular(99),
-                                  ),
-                                ),
-                                const SizedBox(width: 9),
-
-                                // Check simples em verde
-                                const SizedBox(
-                                  width: 24,
-                                  height: 24,
-                                  child: Icon(
-                                    Icons.check_rounded,
-                                    color: Color(0xFF22C55E),
-                                    size: 22,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    feature,
-                                    style: const TextStyle(
-                                      color: _text,
-                                      fontSize: 16,
-                                      height: 1.35,
-                                      fontWeight: FontWeight.w700,
+                      // ── Carrossel centralizado ─────────────────────────
+                      SizedBox(
+                        height: 355,
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 390),
+                            child: PageView.builder(
+                              controller: _pageController,
+                              onPageChanged: (i) =>
+                                  setState(() => _currentPhoto = i),
+                              itemCount: _photos.length,
+                              itemBuilder: (_, i) => Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 4),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(24),
+                                  child: Image.asset(
+                                    _photos[i],
+                                    fit: BoxFit.cover,
+                                    width: double.infinity,
+                                    height: double.infinity,
+                                    errorBuilder: (_, __, ___) => Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(24),
+                                        gradient: LinearGradient(
+                                          colors: [
+                                            [
+                                              const Color(0xFF6C3483),
+                                              const Color(0xFFAB47BC)
+                                            ],
+                                            [
+                                              const Color(0xFF1A237E),
+                                              const Color(0xFF42A5F5)
+                                            ],
+                                            [
+                                              const Color(0xFF880E4F),
+                                              const Color(0xFFEC407A)
+                                            ],
+                                          ][i],
+                                          begin: Alignment.topLeft,
+                                          end: Alignment.bottomRight,
+                                        ),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          ['💑', '🛋️', '💬'][i],
+                                          style: const TextStyle(fontSize: 60),
+                                        ),
+                                      ),
                                     ),
                                   ),
                                 ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ),
-
-                    const SizedBox(height: 26),
-
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(child: Stack(
-                          clipBehavior: Clip.none,
-                          alignment: Alignment.topCenter,
-                          children: [
-                            _planCard(
-                              selected: _selectedPlan == 'annual',
-                              onTap: () => setState(() => _selectedPlan = 'annual'),
-                              topPadding: 19,
-                              child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                                Row(children: [
-                                  Expanded(child: Text(_planText(l,'annual'), style: const TextStyle(fontSize:12,fontWeight:FontWeight.w900))),
-                                  Text(_planText(l,'month'), style: const TextStyle(color:_muted,fontSize:10.5,fontWeight:FontWeight.w700)),
-                                ]),
-                                const SizedBox(height:9),
-                                Text(_planText(l,'annualPrice'), style: const TextStyle(fontSize:16,fontWeight:FontWeight.w900)),
-                                const SizedBox(height:2),
-                                Text(_planText(l,'after'), style: const TextStyle(color:_muted,fontSize:10.5,fontWeight:FontWeight.w600)),
-                              ]),
-                            ),
-                            Positioned(top:-10, child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal:10,vertical:4),
-                              decoration: BoxDecoration(color:const Color(0xFF6C63FF),borderRadius:BorderRadius.circular(999)),
-                              child: Text(_planText(l,'save'), style: const TextStyle(color:Colors.white,fontSize:10,fontWeight:FontWeight.w900)),
-                            )),
-                          ],
-                        )),
-
-                        const SizedBox(width:12),
-                        Expanded(child: _planCard(
-                          selected: _selectedPlan == 'weekly',
-                          onTap: () => setState(() => _selectedPlan = 'weekly'),
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            Text(_planText(l,'weekly'), style: const TextStyle(fontSize:12,fontWeight:FontWeight.w900)),
-                            const SizedBox(height:10),
-                            Text(_planText(l,'old'), style: const TextStyle(color:_muted,fontSize:12,decoration:TextDecoration.lineThrough)),
-                            const SizedBox(height:2),
-                            Text(_planText(l,'week'), style: const TextStyle(fontSize:16,fontWeight:FontWeight.w900)),
-                          ]),
-                        )),
-
-                      ],
-                    ),
-
-                    const SizedBox(height: 14),
-
-                    Column(
-                      children: _belowButtonLines(l).map((line) {
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 2),
-                          child: Text(
-                            line,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Color(0xFF66666D),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 52,
-                      child: ElevatedButton(
-                        onPressed: _loading ? null : _handlePurchase,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _text,
-                          foregroundColor: Colors.white,
-                          disabledBackgroundColor: _text.withOpacity(0.35),
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(26),
-                          ),
-                        ),
-                        child: _loading
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text(
-                                _ctaLabelDynamic(l),
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                ),
                               ),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
 
-                    const SizedBox(height: 16),
+                      const SizedBox(height: 12),
 
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 14,
-                      runSpacing: 8,
-                      children: [
-                        _link(
-                          _terms(l),
-                          () => _openUrl(
-                            'https://sites.google.com/view/upcrush-terms/p%C3%A1gina-inicial',
+                      // ── Dots ──────────────────────────────────────────
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          _photos.length,
+                          (i) => AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: _currentPhoto == i
+                                  ? Colors.white
+                                  : Colors.white.withOpacity(0.30),
+                              shape: BoxShape.circle,
+                            ),
                           ),
                         ),
-                        _link(
-                          _privacy(l),
-                          () => _openUrl(
-                            'https://sites.google.com/view/upcrush-privacy-policy/p%C3%A1gina-inicial',
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
 
-                    SizedBox(height: bottom + 18),
+                      const SizedBox(height: 26),
+
+                      // ── No commitment ─────────────────────────────────
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            width: 17,
+                            height: 17,
+                            decoration: const BoxDecoration(
+                              color: _green,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              color: Colors.white,
+                              size: 12,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              _noCommitment(l),
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      // ── CTA Button ────────────────────────────────────
+                      SizedBox(
+                        width: double.infinity,
+                        height: 58,
+                        child: ElevatedButton(
+                          onPressed: _loading ? null : _handlePurchase,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _accent,
+                            foregroundColor: Colors.white,
+                            disabledBackgroundColor: _accent.withOpacity(0.4),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(18),
+                            ),
+                            elevation: 0,
+                          ),
+                          child: _loading
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : Text(
+                                  _ctaLabel(l),
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      // ── Trial line ────────────────────────────────────
+                      Text(
+                        _trialLine(l),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+
+                      const SizedBox(height: 18),
+
+                      // ── Terms · Privacy ───────────────────────────────
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _link(
+                            'Terms',
+                            () => _openUrl(
+                              'https://sites.google.com/view/upcrush-terms/p%C3%A1gina-inicial',
+                            ),
+                          ),
+                          _sep(),
+                          _link(
+                            'Privacy',
+                            () => _openUrl(
+                              'https://sites.google.com/view/upcrush-privacy-policy/p%C3%A1gina-inicial',
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      SizedBox(height: bottom + 12),
                     ],
                   ),
                 ),
@@ -580,39 +448,19 @@ class _PaywallFlowState extends State<PaywallFlow> {
     );
   }
 
-  Widget _planCard({
-    required bool selected,
-    required VoidCallback onTap,
-    required Widget child,
-    double topPadding = 15,
-  }) => GestureDetector(
+  Widget _link(String t, VoidCallback onTap) => GestureDetector(
     onTap: onTap,
-    child: Container(
-      width: double.infinity,
-      padding: EdgeInsets.fromLTRB(13, topPadding, 13, 13),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: selected ? const Color(0xFF6C63FF) : const Color(0xFFE3E3E8),
-          width: selected ? 2 : 1.2,
-        ),
+    child: Text(t,
+      style: TextStyle(
+        color: Colors.white.withOpacity(0.5),
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+        decoration: TextDecoration.underline,
+        decorationColor: Colors.white.withOpacity(0.2),
       ),
-      child: child,
     ),
   );
 
-  Widget _link(String t, VoidCallback onTap) => GestureDetector(
-        onTap: onTap,
-        child: Text(
-          t,
-          style: const TextStyle(
-            color: _muted,
-            fontSize: 12.5,
-            fontWeight: FontWeight.w600,
-            decoration: TextDecoration.underline,
-          ),
-        ),
-      );
-
+  Widget _sep() => Text('     ',
+    style: TextStyle(color: Colors.white.withOpacity(0.2), fontSize: 13));
 }
