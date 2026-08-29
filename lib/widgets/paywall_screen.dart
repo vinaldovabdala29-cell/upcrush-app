@@ -152,10 +152,10 @@ class _PaywallFlowState extends State<PaywallFlow> {
 
     if (eligible) {
       switch (l) {
-        case 'de': return '7 Tage kostenlos, danach $price/Woche';
-        case 'es': return '7 días gratis, luego $price/semana';
-        case 'pt': return '7 dias grátis, depois $price/semana';
-        default:   return '7 days free, then $price per week';
+        case 'de': return '3 Tage kostenlos, danach $price/Woche';
+        case 'es': return '3 días gratis, luego $price/semana';
+        case 'pt': return '3 dias grátis, depois $price/semana';
+        default:   return '3 days free, then $price per week';
       }
     } else {
       switch (l) {
