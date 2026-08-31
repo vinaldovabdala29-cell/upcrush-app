@@ -10,7 +10,7 @@ class RevenueCatService {
   // false = RevenueCat / App Store funcionam normalmente
   // IMPORTANTE: colocar false antes de publicar na App Store.
   // ============================================================
-  static const bool testPremiumBypass = true;
+  static const bool testPremiumBypass = false;
 
   static const String _androidKey = "goog_FEoxrNpkLgRjsZTtNJZEYuVDqua";
   static const String _iosKey = "appl_dmwoiqiILydfkRwbGekYzLFWRRb";
@@ -26,17 +26,17 @@ class RevenueCatService {
   static const String _newOfferingId = 'default';
 
   // Novo plano principal do paywall antigo:
-  // assinatura semanal com 7 dias grátis configurados no App Store Connect.
-  static const String _weeklyTrial7ProductId =
-      'upcrush_premium_weekly_trial7';
+  // assinatura semanal com 3 dias grátis configurados no App Store Connect.
+  static const String _weeklyTrial3ProductId =
+      'upcrush_premium_weekly_trial3';
 
   /// Procura especificamente o package que contém o produto
-  /// upcrush_premium_weekly_trial7 dentro do offering "default".
+  /// upcrush_premium_weekly_trial3 dentro do offering "default".
   ///
   /// Fazemos a busca pelo Product ID da App Store em vez de depender
   /// do identifier do package do RevenueCat. Assim o código continua
   /// funcionando mesmo sendo um package Custom.
-  static Future<Package?> _getWeeklyTrial7Package() async {
+  static Future<Package?> _getWeeklyTrial3Package() async {
     try {
       final offerings = await Purchases.getOfferings();
       final offering = offerings.all[_newOfferingId] ?? offerings.current;
@@ -47,18 +47,18 @@ class RevenueCatService {
       }
 
       for (final package in offering.availablePackages) {
-        if (package.storeProduct.identifier == _weeklyTrial7ProductId) {
+        if (package.storeProduct.identifier == _weeklyTrial3ProductId) {
           return package;
         }
       }
 
       debugPrint(
-        'RevenueCat: produto $_weeklyTrial7ProductId não encontrado '
+        'RevenueCat: produto $_weeklyTrial3ProductId não encontrado '
         'no offering "$_newOfferingId".',
       );
       return null;
     } catch (e) {
-      debugPrint('RevenueCat: erro ao buscar weekly trial7: $e');
+      debugPrint('RevenueCat: erro ao buscar weekly trial3: $e');
       return null;
     }
   }
@@ -101,15 +101,15 @@ class RevenueCatService {
     }
   }
 
-  // Retorna o preço real do NOVO plano semanal Trial7 na moeda local
+  // Retorna o preço real do NOVO plano semanal Trial3 na moeda local
   // do utilizador. O paywall antigo continua chamando getPrice(),
-  // mas agora recebe o preço de upcrush_premium_weekly_trial7.
+  // mas agora recebe o preço de upcrush_premium_weekly_trial3.
   static Future<String> getPrice() async {
     try {
-      final package = await _getWeeklyTrial7Package();
+      final package = await _getWeeklyTrial3Package();
       return package?.storeProduct.priceString ?? '';
     } catch (e) {
-      debugPrint('RevenueCat getPrice trial7 error: $e');
+      debugPrint('RevenueCat getPrice trial3 error: $e');
       return '';
     }
   }
@@ -118,12 +118,12 @@ class RevenueCatService {
   // ELEGIBILIDADE PARA O TRIAL DE 7 DIAS (added)
   // ============================================================
   //
-  // A Apple só permite usar o Free Trial de 7 dias UMA VEZ por
+  // A Apple só permite usar o Free Trial de 3 dias UMA VEZ por
   // utilizador/produto. Se ele já usou antes (ex: cancelou e está
   // a voltar), a compra será cobrada diretamente, sem trial.
   //
   // Esta função determina isso ANTES da compra, para mostrarmos o
-  // texto certo no paywall ("7 dias grátis..." vs "Billed 6,99€...").
+  // texto certo no paywall ("3 dias grátis..." vs "Billed 6,99€...").
   //
   // iOS: usa checkTrialOrIntroductoryPriceEligibility (API oficial
   // da RevenueCat para isto).
@@ -145,10 +145,10 @@ class RevenueCatService {
       if (Platform.isIOS) {
         final eligibilityMap =
             await Purchases.checkTrialOrIntroductoryPriceEligibility(
-          [_weeklyTrial7ProductId],
+          [_weeklyTrial3ProductId],
         );
 
-        final eligibility = eligibilityMap[_weeklyTrial7ProductId];
+        final eligibility = eligibilityMap[_weeklyTrial3ProductId];
 
         if (eligibility == null) return true;
 
@@ -177,13 +177,13 @@ class RevenueCatService {
 
   static Future<PurchaseServiceResult> buyWeekly() async {
     try {
-      final package = await _getWeeklyTrial7Package();
+      final package = await _getWeeklyTrial3Package();
 
       if (package == null) {
         return const PurchaseServiceResult(
           success: false,
           error:
-              'Plano semanal com 7 dias grátis não encontrado no RevenueCat.',
+              'Plano semanal com 3 dias grátis não encontrado no RevenueCat.',
         );
       }
 

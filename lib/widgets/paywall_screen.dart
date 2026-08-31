@@ -48,7 +48,7 @@ class _PaywallFlowState extends State<PaywallFlow> {
     RevenueCatService.getPrice().then((p) {
       if (mounted) setState(() => _price = p);
     });
-    // Verifica se o utilizador já usou o trial de 7 dias antes,
+    // Verifica se o utilizador já usou o trial de 3 dias antes,
     // para mostrar o texto certo por baixo do botão.
     RevenueCatService.isEligibleForTrial().then((eligible) {
       if (mounted) setState(() => _eligibleForTrial = eligible);
