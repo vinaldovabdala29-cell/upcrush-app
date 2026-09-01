@@ -10,7 +10,7 @@ class RevenueCatService {
   // false = RevenueCat / App Store funcionam normalmente
   // IMPORTANTE: colocar false antes de publicar na App Store.
   // ============================================================
-  static const bool testPremiumBypass = false;
+  static const bool testPremiumBypass = true;
 
   static const String _androidKey = "goog_FEoxrNpkLgRjsZTtNJZEYuVDqua";
   static const String _iosKey = "appl_dmwoiqiILydfkRwbGekYzLFWRRb";
