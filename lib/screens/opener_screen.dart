@@ -23,6 +23,7 @@ class _OpenerScreenState extends State<OpenerScreen>
   bool _erro = false;
   String _erroMsg = '';
   List<String> _respostas = [];
+  final List<String> _historicoRespostas = [];
   String _estiloAtual = 'picante';
   int? _copiedIndex;
   bool _loadingEstilo = false;
@@ -79,6 +80,19 @@ class _OpenerScreenState extends State<OpenerScreen>
     }
   }
 
+  void _guardarNoHistorico(Iterable<String> respostas) {
+    for (final resposta in respostas) {
+      final limpa = resposta.trim();
+      if (limpa.isNotEmpty && !_historicoRespostas.contains(limpa)) {
+        _historicoRespostas.add(limpa);
+      }
+    }
+    // Mantém contexto suficiente para variar sem deixar o prompt crescer demais.
+    if (_historicoRespostas.length > 12) {
+      _historicoRespostas.removeRange(0, _historicoRespostas.length - 12);
+    }
+  }
+
   Future<void> _processarImagem() async {
     final picker = ImagePicker();
     try {
@@ -87,7 +101,7 @@ class _OpenerScreenState extends State<OpenerScreen>
       final bytes = await File(img.path).readAsBytes();
       final base64 = base64Encode(bytes);
       // ✅ Limpa respostas antigas antes de gerar
-      setState(() { _imagem = File(img.path); _base64Image = base64; _analisando = true; _erro = false; _respostas = []; });
+      setState(() { _imagem = File(img.path); _base64Image = base64; _analisando = true; _erro = false; _respostas = []; _historicoRespostas.clear(); });
       final respostas = await AIService.gerarOpenerDeImagem(base64, _estiloAtual, appLang.languageCode);
       if (!mounted) return;
       setState(() { _respostas = respostas; _analisando = false; });
@@ -98,10 +112,16 @@ class _OpenerScreenState extends State<OpenerScreen>
 
   Future<void> _gerarComEstilo(String estilo) async {
     if (_base64Image == null) return;
-    // ✅ Limpa respostas antigas imediatamente
+    final anteriores = List<String>.from(_respostas);
+    _guardarNoHistorico(anteriores);
     setState(() { _estiloAtual = estilo; _loadingEstilo = true; _respostas = []; });
     try {
-      final respostas = await AIService.gerarOpenerDeImagem(_base64Image!, estilo, appLang.languageCode);
+      final respostas = await AIService.gerarOpenerDeImagem(
+        _base64Image!,
+        estilo,
+        appLang.languageCode,
+        List<String>.from(_historicoRespostas),
+      );
       if (mounted) setState(() { _respostas = respostas; _loadingEstilo = false; });
     } catch (e) {
       if (mounted) setState(() { _loadingEstilo = false; _erro = true; _erroMsg = _erroMsgLocal(appLang.languageCode); });
@@ -110,10 +130,16 @@ class _OpenerScreenState extends State<OpenerScreen>
 
   Future<void> _gerarDiferente() async {
     if (_base64Image == null) return;
-    // ✅ Limpa respostas antigas imediatamente
+    final anteriores = List<String>.from(_respostas);
+    _guardarNoHistorico(anteriores);
     setState(() { _loadingEstilo = true; _respostas = []; });
     try {
-      final respostas = await AIService.gerarOpenerDeImagem(_base64Image!, _estiloAtual, appLang.languageCode);
+      final respostas = await AIService.gerarOpenerDeImagem(
+        _base64Image!,
+        _estiloAtual,
+        appLang.languageCode,
+        List<String>.from(_historicoRespostas),
+      );
       if (mounted) setState(() { _respostas = respostas; _loadingEstilo = false; });
     } catch (e) {
       if (mounted) setState(() { _loadingEstilo = false; _erro = true; _erroMsg = _erroMsgLocal(appLang.languageCode); });
@@ -182,53 +208,166 @@ class _OpenerScreenState extends State<OpenerScreen>
   Widget _buildBody(List<Map<String, dynamic>> estilos) {
     return BackgroundBlobs(
       isDark: _dark,
-      child: Column(children: [
-        if (_imagem != null) _buildImagePreview(),
-        if (_imagem != null && !_analisando && !_loadingEstilo) _buildEstilosBar(estilos),
-        Expanded(child: (_analisando || _loadingEstilo) ? _buildScanOverlay() : _buildRespostas()),
-        if (_respostas.isNotEmpty && !_loadingEstilo)
-          Padding(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, MediaQuery.of(context).padding.bottom + 16),
-            child: SizedBox(width: double.infinity, height: 54,
-              child: ElevatedButton(
-                onPressed: _gerarDiferente,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: _accent, foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 0),
-                child: Text(appLang.resultMoreButton,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
-              )),
-          ),
-      ]),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          if (_imagem == null) {
+            return (_analisando || _loadingEstilo)
+                ? _buildScanOverlay()
+                : _buildRespostas();
+          }
+
+          // Keep exactly the same photo size both while scanning and after the
+          // result is ready. Only the result panel is hidden during analysis.
+          final photoHeight = constraints.maxHeight * 0.62;
+          final isLoading = _analisando || _loadingEstilo;
+
+          return Stack(
+            children: [
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: _buildImagePreview(height: photoHeight),
+              ),
+
+              // During analysis: no message/style panel. Keep the photo at the
+              // same size and show only the scanner in the free area below it.
+              if (isLoading)
+                Positioned(
+                  top: photoHeight,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: _buildScanOverlay(),
+                ),
+
+              // After analysis finishes, reveal the Social-Wizard-inspired
+              // UpCrush panel overlapping the lower part of the photo.
+              if (!isLoading)
+                Positioned(
+                  top: photoHeight * 0.72,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: _dark
+                          ? const Color(0xFF111116).withOpacity(0.98)
+                          : const Color(0xFFF7F7FA).withOpacity(0.98),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(28),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(_dark ? 0.35 : 0.14),
+                          blurRadius: 24,
+                          offset: const Offset(0, -8),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        const SizedBox(height: 10),
+                        Container(
+                          width: 44,
+                          height: 5,
+                          decoration: BoxDecoration(
+                            color: _textSecondary.withOpacity(0.45),
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                        ),
+                        _buildEstilosBar(estilos),
+                        Expanded(child: _buildRespostas()),
+                        if (_respostas.isNotEmpty)
+                          Padding(
+                            padding: EdgeInsets.fromLTRB(
+                              16,
+                              8,
+                              16,
+                              MediaQuery.of(context).padding.bottom + 12,
+                            ),
+                            child: SizedBox(
+                              width: double.infinity,
+                              height: 54,
+                              child: ElevatedButton(
+                                onPressed: _gerarDiferente,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: _accent,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: Text(
+                                  appLang.resultMoreButton,
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+      ),
     );
   }
 
-  Widget _buildImagePreview() {
+  Widget _buildImagePreview({required double height}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Padding(
           padding: EdgeInsets.fromLTRB(16, 8, 16, 6),
-          child: Text('UpCrush AI',
-            style: TextStyle(color: Color(0xFFFF2D55), fontSize: 26,
-              fontWeight: FontWeight.w900, letterSpacing: -0.5))),
+          child: Text(
+            'UpCrush AI',
+            style: TextStyle(
+              color: Color(0xFFFF2D55),
+              fontSize: 26,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.5,
+            ),
+          ),
+        ),
         Container(
-          height: 360, width: double.infinity,
-          margin: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+          height: height - 48,
+          width: double.infinity,
+          margin: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.15), blurRadius: 12, offset: const Offset(0, 4))]),
+            color: _dark ? const Color(0xFF111116) : const Color(0xFFE9E9EE),
+            borderRadius: BorderRadius.circular(22),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Stack(fit: StackFit.expand, children: [
-              Image.file(_imagem!, fit: BoxFit.cover),
-              if (_analisando || _loadingEstilo) Container(color: Colors.black.withOpacity(0.25)),
-              Positioned(top: 8, left: 8, child: _corner(top: true, left: true)),
-              Positioned(top: 8, right: 8, child: _corner(top: true, left: false)),
-              Positioned(bottom: 8, left: 8, child: _corner(top: false, left: true)),
-              Positioned(bottom: 8, right: 8, child: _corner(top: false, left: false)),
-            ]))),
+            borderRadius: BorderRadius.circular(22),
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Never crop the selected photo.
+                Image.file(_imagem!, fit: BoxFit.contain),
+                if (_analisando || _loadingEstilo)
+                  Container(color: Colors.black.withOpacity(0.20)),
+                Positioned(top: 10, left: 10, child: _corner(top: true, left: true)),
+                Positioned(top: 10, right: 10, child: _corner(top: true, left: false)),
+                Positioned(bottom: 10, left: 10, child: _corner(top: false, left: true)),
+                Positioned(bottom: 10, right: 10, child: _corner(top: false, left: false)),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
