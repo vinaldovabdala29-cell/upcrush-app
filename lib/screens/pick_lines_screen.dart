@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/ai_service.dart';
-import '../../../main.dart';
+import '../main.dart';
 import '../services/review_request_service.dart';
 
 class PickLinesScreen extends StatefulWidget {

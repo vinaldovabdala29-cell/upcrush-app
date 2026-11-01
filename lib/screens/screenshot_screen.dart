@@ -1,5 +1,7 @@
+import '../theme/tone_options.dart';
 import 'dart:io';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -7,7 +9,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../services/ai_service.dart';
 import '../widgets/background_blobs.dart';
-import '../../../main.dart';
+import '../main.dart';
 import '../services/review_request_service.dart';
 
 class ScreenshotScreen extends StatefulWidget {
@@ -28,26 +30,50 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
 
   List<String> _respostas = [];
 
-  String _estiloAtual = 'picante';
+  // Novas respostas entram acima; o histórico continua acessível ao rolar.
+  void _adicionarResposta(String resposta) {
+    _respostas.insert(0, resposta);
+  }
 
-  int? _copiedIndex;
+  final GlobalKey _respostasIniciaisKey = GlobalKey();
+
+  void _revelarRespostasIniciais() {
+    if (_respostas.isEmpty || _respostas.length > 2) return;
+    final versao = _versao;
+    final quantidade = _respostas.length;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || versao != _versao || _respostas.length != quantidade)
+        return;
+      final alvo = _respostasIniciaisKey.currentContext;
+      if (alvo == null) return;
+      Scrollable.ensureVisible(
+        alvo,
+        alignment: 1,
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOut,
+        alignmentPolicy: ScrollPositionAlignmentPolicy.explicit,
+      );
+    });
+  }
+
+  final ScrollController _respostasScrollController = ScrollController();
+
+  String _estiloAtual = 'flertar';
 
   bool _loadingEstilo = false;
-
+  String? _stock;
+  Future<void>? _stockEmCurso;
+  int _versao = 0;
+  String _idiomaStock = '';
 
   late AnimationController _scanController;
   late Animation<double> _scanAnim;
 
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnim;
-
   static const _accent = Color(0xFFFF2D55);
-  static const _success = Color(0xFF34C759);
 
   bool get _dark => isDarkModeNotifier.value;
 
-  Color get _bg =>
-      _dark ? const Color(0xFF0A0A10) : const Color(0xFFF2F2F7);
+  Color get _bg => _dark ? const Color(0xFF0A0A10) : const Color(0xFFEDE4F3);
 
   Color get _cardBg =>
       _dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.85);
@@ -55,116 +81,15 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   Color get _cardBorder =>
       _dark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.9);
 
-  Color get _textPrimary =>
-      _dark ? Colors.white : const Color(0xFF1C1C1E);
+  Color get _textPrimary => _dark ? Colors.white : const Color(0xFF1C1C1E);
 
-  Color get _textSecondary =>
-      _dark ? Colors.white38 : Colors.black38;
+  Color get _textSecondary => _dark ? Colors.white38 : Colors.black38;
 
   // ============================================================
   // ESTILOS
   // ============================================================
 
-  List<Map<String, dynamic>> _getEstilos(String lang) {
-    return [
-      {
-        'key': 'engraçado',
-        'label': lang == 'de'
-            ? 'Lustig'
-            : lang == 'es'
-                ? 'Gracioso'
-                : lang == 'fr'
-                    ? 'Drôle'
-                    : lang == 'pt'
-                        ? 'Engraçado'
-                        : lang == 'it'
-                            ? 'Divertente'
-                            : lang == 'tr'
-                                ? 'Komik'
-                                : lang == 'ru'
-                                    ? 'Смешной'
-                                    : 'Funny',
-        'icon': Icons.sentiment_very_satisfied_rounded,
-        'colors': [
-          const Color(0xFFFF9500),
-          const Color(0xFFFFCC02),
-        ],
-        'shadow': const Color(0xFFFF9500),
-      },
-      {
-        'key': 'picante',
-        'label': lang == 'de'
-            ? 'Pikant'
-            : lang == 'es'
-                ? 'Picante'
-                : lang == 'fr'
-                    ? 'Piquant'
-                    : lang == 'pt'
-                        ? 'Picante'
-                        : lang == 'it'
-                            ? 'Piccante'
-                            : lang == 'tr'
-                                ? 'Ateşli'
-                                : lang == 'ru'
-                                    ? 'Пикантный'
-                                    : 'Spicy',
-        'icon': Icons.local_fire_department_rounded,
-        'colors': [
-          const Color(0xFFFF2D55),
-          const Color(0xFFFF6B81),
-        ],
-        'shadow': const Color(0xFFFF2D55),
-      },
-      {
-        'key': 'misterioso',
-        'label': lang == 'de'
-            ? 'Mysteriös'
-            : lang == 'es'
-                ? 'Misterioso'
-                : lang == 'fr'
-                    ? 'Mystérieux'
-                    : lang == 'pt'
-                        ? 'Misterioso'
-                        : lang == 'it'
-                            ? 'Misterioso'
-                            : lang == 'tr'
-                                ? 'Gizemli'
-                                : lang == 'ru'
-                                    ? 'Загадочный'
-                                    : 'Mysterious',
-        'icon': Icons.nightlight_round,
-        'colors': [
-          const Color(0xFF5856D6),
-          const Color(0xFFAF52DE),
-        ],
-        'shadow': const Color(0xFF5856D6),
-      },
-      {
-        'key': 'direto',
-        'label': lang == 'de'
-            ? 'Direkt'
-            : lang == 'es'
-                ? 'Directo'
-                : lang == 'fr'
-                    ? 'Direct'
-                    : lang == 'pt'
-                        ? 'Direto'
-                        : lang == 'it'
-                            ? 'Diretto'
-                            : lang == 'tr'
-                                ? 'Doğrudan'
-                                : lang == 'ru'
-                                    ? 'Прямой'
-                                    : 'Direct',
-        'icon': Icons.bolt_rounded,
-        'colors': [
-          const Color(0xFF007AFF),
-          const Color(0xFF5AC8FA),
-        ],
-        'shadow': const Color(0xFF007AFF),
-      },
-    ];
-  }
+  List<Map<String, dynamic>> _getEstilos(String lang) => toneOptions(lang);
 
   // ============================================================
   // INIT
@@ -174,9 +99,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   void initState() {
     super.initState();
 
-    SystemChrome.setSystemUIOverlayStyle(
-      SystemUiOverlayStyle.dark,
-    );
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.dark);
 
     isDarkModeNotifier.addListener(_onThemeChange);
 
@@ -185,42 +108,19 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
       duration: const Duration(milliseconds: 1800),
     )..repeat();
 
-    _scanAnim = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _scanController,
-        curve: Curves.easeInOut,
-      ),
+    _scanAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _scanController, curve: Curves.easeInOut),
     );
 
-    _pulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 800),
-    )..repeat(reverse: true);
-
-    _pulseAnim = Tween<double>(
-      begin: 0.4,
-      end: 1.0,
-    ).animate(
-      CurvedAnimation(
-        parent: _pulseController,
-        curve: Curves.easeInOut,
-      ),
-    );
-
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _processarImagem(),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) => _processarImagem());
   }
 
   @override
   void dispose() {
     isDarkModeNotifier.removeListener(_onThemeChange);
 
+    _respostasScrollController.dispose();
     _scanController.dispose();
-    _pulseController.dispose();
 
     super.dispose();
   }
@@ -235,55 +135,86 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   // PROCESSAR IMAGEM
   // ============================================================
 
+  void _invalidarStock() {
+    _versao++;
+    _stock = null;
+    _stockEmCurso = null;
+  }
+
+  Future<String?> _pedirUma(String imagem, String estilo, String idioma) async {
+    final lista = await AIService.gerarRespostaDeImagem(
+      imagem,
+      estilo,
+      idioma,
+      quantidade: 1,
+      modoRapido: true,
+      recentResponses: _respostas.take(24).toList().reversed.toList(),
+    );
+    for (final texto in lista) {
+      final limpa = texto.trim();
+      if (limpa.isNotEmpty && !_respostas.contains(limpa)) return limpa;
+    }
+    return null;
+  }
+
+  void _prepararStock() {
+    if (_base64Image == null || _stock != null || _stockEmCurso != null) return;
+    final versao = _versao;
+    final idioma = appLang.languageCode;
+    _idiomaStock = idioma;
+    _stockEmCurso = _pedirUma(_base64Image!, _estiloAtual, idioma)
+        .then((texto) {
+          if (mounted && versao == _versao && idioma == appLang.languageCode)
+            _stock = texto;
+        })
+        .catchError((Object _) {})
+        .whenComplete(() {
+          if (versao == _versao) _stockEmCurso = null;
+        });
+  }
+
   Future<void> _processarImagem() async {
     final picker = ImagePicker();
-
     try {
       final img = await picker.pickImage(
         source: ImageSource.gallery,
         imageQuality: 60,
       );
-
       if (img == null) {
-        if (mounted) {
-          Navigator.pop(context);
-        }
+        if (mounted) Navigator.pop(context);
         return;
       }
-
-      final bytes = await File(img.path).readAsBytes();
-
-      final base64 = base64Encode(bytes);
-
+      final base64 = base64Encode(await File(img.path).readAsBytes());
+      if (!mounted) return;
+      _invalidarStock();
+      final versao = _versao;
       setState(() {
+        _estiloAtual = 'flertar';
+        _loadingEstilo = false;
         _imagem = File(img.path);
         _base64Image = base64;
         _analisando = true;
         _erro = false;
         _respostas = [];
       });
-
-      final respostas = await AIService.gerarRespostaDeImagem(
+      final resposta = await _pedirUma(
         base64,
         _estiloAtual,
         appLang.languageCode,
       );
-
-      if (!mounted) return;
-
+      if (!mounted || versao != _versao) return;
       setState(() {
-        _respostas = respostas;
+        _respostas = resposta == null ? [] : [resposta];
         _analisando = false;
       });
-    } catch (e) {
+      _revelarRespostasIniciais();
+      _prepararStock();
+    } catch (_) {
       if (!mounted) return;
-
       setState(() {
         _analisando = false;
         _erro = true;
-        _erroMsg = _erroMsg2(
-          appLang.languageCode,
-        );
+        _erroMsg = _erroMsg2(appLang.languageCode);
       });
     }
   }
@@ -325,77 +256,56 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   // ============================================================
 
   Future<void> _gerarComEstilo(String estilo) async {
-    if (_base64Image == null) return;
-
-    setState(() {
-      _estiloAtual = estilo;
-      _loadingEstilo = true;
-      _respostas = [];
-      _erro = false;
-    });
-
-    try {
-      final respostas = await AIService.gerarRespostaDeImagem(
-        _base64Image!,
-        estilo,
-        appLang.languageCode,
-      );
-
-      if (!mounted) return;
-
-      setState(() {
-        _respostas = respostas;
-        _loadingEstilo = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _loadingEstilo = false;
-        _erro = true;
-        _erroMsg = _erroMsg2(
-          appLang.languageCode,
-        );
-      });
+    if (_base64Image == null || _analisando || _loadingEstilo) return;
+    if (_estiloAtual != estilo) {
+      _invalidarStock();
+      setState(() => _estiloAtual = estilo);
     }
+    await _gerarDiferente();
   }
 
-  // ============================================================
-  // GERAR NOVAMENTE
-  // ============================================================
-
   Future<void> _gerarDiferente() async {
-    if (_base64Image == null) return;
-
+    if (_base64Image == null || _analisando || _loadingEstilo) return;
+    if (_idiomaStock != appLang.languageCode) _invalidarStock();
+    final versao = _versao;
+    var resposta = _stock;
+    if (resposta != null) {
+      setState(() {
+        _adicionarResposta(resposta!);
+        _stock = null;
+      });
+      _revelarRespostasIniciais();
+      _prepararStock();
+      return;
+    }
     setState(() {
       _loadingEstilo = true;
-      _respostas = [];
       _erro = false;
     });
-
     try {
-      final respostas = await AIService.gerarRespostaDeImagem(
+      if (_stockEmCurso != null) await _stockEmCurso;
+      resposta = _stock;
+      resposta ??= await _pedirUma(
         _base64Image!,
         _estiloAtual,
         appLang.languageCode,
       );
-
-      if (!mounted) return;
-
+      if (!mounted || versao != _versao) return;
+      if (resposta == null) throw Exception('Resposta vazia');
       setState(() {
-        _respostas = respostas;
+        _adicionarResposta(resposta!);
+        _stock = null;
         _loadingEstilo = false;
       });
-    } catch (e) {
-      if (!mounted) return;
-
-      setState(() {
-        _loadingEstilo = false;
-        _erro = true;
-        _erroMsg = _erroMsg2(
-          appLang.languageCode,
-        );
-      });
+      _revelarRespostasIniciais();
+      _prepararStock();
+    } catch (_) {
+      if (mounted)
+        setState(() {
+          _loadingEstilo = false;
+          _erro = true;
+          _erroMsg = _erroMsg2(appLang.languageCode);
+        });
     }
   }
 
@@ -403,87 +313,76 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   // COPIAR
   // ============================================================
 
-  Future<void> _copiar(
-    String texto,
-    int index,
-  ) async {
-    await Clipboard.setData(
-      ClipboardData(text: texto),
-    );
-
+  Future<void> _copiar(String texto, int index) async {
+    await Clipboard.setData(ClipboardData(text: texto));
     HapticFeedback.lightImpact();
-
-    // ✅ Adicionado: notifica o serviço de avaliação que o
-    // utilizador teve uma "vitória" real (copiou uma resposta).
     ReviewRequestService.notifySuccess();
-
-    if (!mounted) return;
-
-    setState(() {
-      _copiedIndex = index;
-    });
-
-    await Future.delayed(
-      const Duration(seconds: 2),
-    );
-
-    if (mounted) {
-      setState(() {
-        _copiedIndex = null;
-      });
-    }
   }
 
   // ============================================================
   // LOADING
   // ============================================================
 
-  String _getFunLoadingMsg(String lang) {
-    switch (lang) {
-      case 'de':
-        return 'Koche deine Flirts... 🌶️';
-
-      case 'es':
-        return 'Cocinando tus flirts... 🌶️';
-
-      case 'fr':
-        return 'On cuisine tes flirts... 🌶️';
-
-      case 'it':
-        return 'Cucinando i tuoi flirt... 🌶️';
-
-      case 'tr':
-        return 'Flörtlerin pişiyor... 🌶️';
-
-      case 'pl':
-        return 'Gotuję twoje flirty... 🌶️';
-
-      case 'ru':
-        return 'Готовлю твой флирт... 🌶️';
-
-      case 'ar':
-        return '...يُطبخ غزلك 🌶️';
-
-      case 'pt':
-        return 'Cozinhando seus flertins... 🌶️';
-
-      default:
-        return 'Cooking your flirts... 🌶️';
-    }
-  }
+  String _getFunLoadingMsg(String lang) => switch (lang) {
+    'pt' => 'Cozinhando seus flertes...',
+    'de' => 'Koche deine Flirts...',
+    'es' => 'Cocinando tus flirts...',
+    'fr' => 'On cuisine tes flirts...',
+    'it' => 'Cucinando i tuoi flirt...',
+    'tr' => 'Flörtlerin pişiyor...',
+    'pl' => 'Gotuję twoje flirty...',
+    'ru' => 'Готовлю твой флирт...',
+    'ar' => 'يُطبخ غزلك...',
+    _ => 'Cooking your flirts...',
+  };
 
   // ============================================================
   // BUILD
   // ============================================================
+
+  Widget _premiumHeaderIcon(IconData icon, VoidCallback? onPressed) {
+    return Center(
+      child: Container(
+        width: 42,
+        height: 42,
+        decoration: BoxDecoration(
+          color: _dark
+              ? Colors.white.withOpacity(0.08)
+              : Colors.white.withOpacity(0.96),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: _dark ? Colors.white24 : const Color(0xFFE8DCEB),
+          ),
+          boxShadow: _dark
+              ? null
+              : [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.045),
+                    blurRadius: 12,
+                    offset: const Offset(0, 3),
+                  ),
+                ],
+        ),
+        child: IconButton(
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          onPressed: onPressed,
+          icon: Icon(
+            icon,
+            size: 21,
+            color: onPressed == null ? _textSecondary : _textPrimary,
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder(
       valueListenable: appLangNotifier,
       builder: (_, lang, __) {
-        final estilos = _getEstilos(
-          lang.languageCode,
-        );
+        final estilos = _getEstilos(lang.languageCode);
 
         return Scaffold(
           backgroundColor: _bg,
@@ -491,60 +390,58 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
           appBar: AppBar(
             backgroundColor: _bg,
             elevation: 0,
-
-            leading: IconButton(
-              icon: Icon(
-                Icons.arrow_back_ios_rounded,
-                color: _textPrimary,
-                size: 20,
-              ),
-              onPressed: () => Navigator.pop(context),
-            ),
-
-            title: Text(
-              appLang.screenshotTitle,
-              style: TextStyle(
-                color: _textPrimary,
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
+            centerTitle: true,
+            toolbarHeight: 72,
+            leadingWidth: 64,
+            leading: Padding(
+              padding: const EdgeInsets.only(left: 14),
+              child: _premiumHeaderIcon(
+                Icons.arrow_back_ios_new_rounded,
+                () => Navigator.pop(context),
               ),
             ),
-
+            title: const FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                'UpCrush AI',
+                style: TextStyle(
+                  color: _accent,
+                  fontSize: 30,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -1.1,
+                ),
+              ),
+            ),
             actions: [
               if (_respostas.isNotEmpty)
-                IconButton(
-                  icon: Icon(
+                Padding(
+                  padding: const EdgeInsets.only(right: 6),
+                  child: _premiumHeaderIcon(
                     Icons.refresh_rounded,
-                    color: _textSecondary,
-                    size: 22,
+                    _loadingEstilo ? null : _gerarDiferente,
                   ),
-                  onPressed:
-                      _loadingEstilo ? null : _gerarDiferente,
                 ),
-
-              IconButton(
-                icon: Icon(
-                  Icons.photo_library_outlined,
-                  color: _textSecondary,
-                  size: 22,
+              Padding(
+                padding: const EdgeInsets.only(right: 14),
+                child: _premiumHeaderIcon(
+                  Icons.photo_library_rounded,
+                  _analisando
+                      ? null
+                      : () {
+                          setState(() {
+                            _imagem = null;
+                            _base64Image = null;
+                            _respostas = [];
+                            _erro = false;
+                          });
+                          _processarImagem();
+                        },
                 ),
-                onPressed: _analisando
-                    ? null
-                    : () {
-                        setState(() {
-                          _imagem = null;
-                          _base64Image = null;
-                          _respostas = [];
-                          _erro = false;
-                        });
-
-                        _processarImagem();
-                      },
               ),
             ],
           ),
 
-          body: _erro
+          body: _erro && _respostas.isEmpty
               ? _buildErro()
               : _buildBody(estilos),
         );
@@ -556,30 +453,27 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   // BODY
   // ============================================================
 
-  Widget _buildBody(
-    List<Map<String, dynamic>> estilos,
-  ) {
+  Widget _buildBody(List<Map<String, dynamic>> estilos) {
     return BackgroundBlobs(
       isDark: _dark,
-
       child: Column(
         children: [
-          if (_imagem != null)
-            _buildImagePreview(),
-
-          if (_imagem != null &&
-              !_analisando &&
-              !_loadingEstilo)
-            _buildEstilosBar(estilos),
-
           Expanded(
-            child: (_analisando || _loadingEstilo)
-                ? _buildScanOverlay()
-                : _buildRespostas(),
+            child: ListView(
+              controller: _respostasScrollController,
+              padding: EdgeInsets.zero,
+              children: [
+                if (_imagem != null)
+                  _buildImagePreview(
+                    height: MediaQuery.sizeOf(context).height * 0.665,
+                  ),
+                if (_analisando) _buildScanOverlay(),
+                if (!_analisando) _buildRespostas(),
+              ],
+            ),
           ),
-
-          if (_respostas.isNotEmpty &&
-              !_loadingEstilo)
+          if (_imagem != null && !_analisando) ...[
+            _buildEstilosBar(estilos),
             Padding(
               padding: EdgeInsets.fromLTRB(
                 16,
@@ -587,80 +481,61 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
                 16,
                 MediaQuery.of(context).padding.bottom + 16,
               ),
-
               child: SizedBox(
                 width: double.infinity,
                 height: 54,
-
                 child: ElevatedButton(
-                  onPressed: _gerarDiferente,
-
+                  onPressed: _loadingEstilo ? null : _gerarDiferente,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: _accent,
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: _accent.withOpacity(0.5),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                     elevation: 0,
                   ),
-
-                  child: Text(
-                    appLang.resultMoreButton,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  child: _loadingEstilo
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          appLang.resultMoreButton,
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
             ),
+          ],
         ],
       ),
     );
   }
 
   // ============================================================
-  // IMAGE PREVIEW — mostra sempre as ÚLTIMAS mensagens da
-  // conversa (parte de baixo da screenshot), como Plug AI e Rizz.
-  //
-  // O corte é feito por PERCENTAGEM da altura da imagem original,
-  // e é puramente visual/estético (privacidade + foco na conversa).
-  // A imagem completa (_base64Image) continua a ser enviada
-  // integralmente para a IA — isto não afeta a análise.
+  // IMAGE PREVIEW — screenshot completo, sem cortar mensagens.
+  // A imagem original continua a ser enviada integralmente à IA.
   // ============================================================
 
-  Widget _buildImagePreview() {
+  Widget _buildImagePreview({required double height}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
-          padding: EdgeInsets.fromLTRB(
-            16,
-            8,
-            16,
-            6,
-          ),
-
-          child: Text(
-            'UpCrush AI',
-            style: TextStyle(
-              color: Color(0xFFFF2D55),
-              fontSize: 26,
-              fontWeight: FontWeight.w900,
-              letterSpacing: -0.5,
-            ),
-          ),
-        ),
-
         Container(
-          height: 360,
+          // Proporcoes da moldura de screenshot na referencia Rizz.
+          height: height,
           width: double.infinity,
 
-          margin: const EdgeInsets.fromLTRB(
-            16,
-            0,
-            16,
-            0,
+          margin: EdgeInsets.symmetric(
+            horizontal: MediaQuery.sizeOf(context).width * 0.15,
           ),
 
           decoration: BoxDecoration(
@@ -683,12 +558,29 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
 
               children: [
                 _buildBottomAnchoredImage(),
-
-                if (_analisando ||
-                    _loadingEstilo)
-                  Container(
-                    color: Colors.black.withOpacity(0.25),
+                if (_analisando)
+                  AnimatedBuilder(
+                    animation: _scanAnim,
+                    builder: (context, _) => Align(
+                      alignment: Alignment(0, -1 + 2 * _scanAnim.value),
+                      child: Container(
+                        height: 3,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF44B5FF),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF1677F2).withOpacity(0.9),
+                              blurRadius: 14,
+                              spreadRadius: 3,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
+
+                if (_analisando || _loadingEstilo)
+                  Container(color: Colors.black.withOpacity(0.25)),
               ],
             ),
           ),
@@ -697,44 +589,16 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
     );
   }
 
-  // Corte por percentagem: esconde uma fatia do TOPO (ex: nome/avatar
-  // do usuário) e uma fatia da BASE (ex: campo de texto/teclado) do
-  // screenshot original, e amplia o que sobra para preencher a moldura.
-  //
-  // Ajusta só estas duas constantes para mudar o enquadramento —
-  // não mexas em mais nada.
+  // Mostrar o screenshot inteiro, sem zoom/corte das mensagens.
   Widget _buildBottomAnchoredImage() {
-    // Fração do TOPO da imagem a esconder (0.0 a 1.0).
-    const double topCutPercent = 0.18;
-    // Fração da BASE da imagem a esconder (0.0 a 1.0).
-    const double bottomCutPercent = 0.40;
-
-    final double visibleFraction =
-        1 - topCutPercent - bottomCutPercent;
-    final double scale = 1 / visibleFraction;
-
-    return ClipRect(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final double frameHeight = constraints.maxHeight;
-          final double scaledHeight = frameHeight * scale;
-          final double offsetY = -topCutPercent * scaledHeight;
-
-          return OverflowBox(
-            maxHeight: scaledHeight,
-            minHeight: scaledHeight,
-            alignment: Alignment.topCenter,
-            child: Transform.translate(
-              offset: Offset(0, offsetY),
-              child: Image.file(
-                _imagem!,
-                width: constraints.maxWidth,
-                height: scaledHeight,
-                fit: BoxFit.cover,
-              ),
-            ),
-          );
-        },
+    return Container(
+      color: _dark ? const Color(0xFF16161D) : Colors.white,
+      alignment: Alignment.center,
+      child: Image.file(
+        _imagem!,
+        width: double.infinity,
+        height: double.infinity,
+        fit: BoxFit.contain,
       ),
     );
   }
@@ -743,143 +607,93 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   // ESTILOS BAR
   // ============================================================
 
-  Widget _buildEstilosBar(
-    List<Map<String, dynamic>> estilos,
-  ) {
-    return SizedBox(
-      height: 72,
-
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-
-        padding: const EdgeInsets.fromLTRB(
-          16,
-          10,
-          16,
-          0,
-        ),
-
-        itemCount: estilos.length,
-
-        separatorBuilder: (_, __) =>
-            const SizedBox(width: 8),
-
-        itemBuilder: (_, i) {
-          final e = estilos[i];
-
-          final ativo =
-              e['key'] == _estiloAtual;
-
-          final colors =
-              e['colors'] as List<Color>;
-
-          return GestureDetector(
-            onTap: () => _gerarComEstilo(
-              e['key'],
-            ),
-
-            child: AnimatedContainer(
-              duration: const Duration(
-                milliseconds: 200,
-              ),
-
-              padding:
-                  const EdgeInsets.symmetric(
-                horizontal: 14,
-                vertical: 8,
-              ),
-
-              decoration: BoxDecoration(
-                color: ativo
-                    ? null
-                    : _cardBg,
-
-                gradient: ativo
-                    ? LinearGradient(
-                        colors: [
-                          colors[0].withOpacity(0.2),
-                          colors[1].withOpacity(0.1),
-                        ],
-                      )
-                    : null,
-
-                borderRadius:
-                    BorderRadius.circular(14),
-
-                border: Border.all(
-                  color: ativo
-                      ? colors[0].withOpacity(0.6)
-                      : _cardBorder,
-
-                  width: ativo ? 1.5 : 1,
-                ),
-              ),
-
-              child: Row(
-                mainAxisSize:
-                    MainAxisSize.min,
-
-                children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-
-                    decoration: BoxDecoration(
-                      gradient:
-                          LinearGradient(
-                        colors: colors,
+  Widget _buildEstilosBar(List<Map<String, dynamic>> estilos) {
+    const rows = [
+      ['flertar', 'romantico', 'picante'],
+      ['engraçado', 'misterioso', 'toxico'],
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var row = 0; row < rows.length; row++) ...[
+            if (row > 0) const SizedBox(height: 6),
+            Row(
+              children: [
+                for (var col = 0; col < rows[row].length; col++) ...[
+                  if (col > 0) const SizedBox(width: 6),
+                  Expanded(
+                    child: _buildToneButton(
+                      estilos.firstWhere(
+                        (tone) => tone['key'] == rows[row][col],
                       ),
-
-                      borderRadius:
-                          BorderRadius.circular(8),
-
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              (e['shadow']
-                                      as Color)
-                                  .withOpacity(
-                            ativo
-                                ? 0.45
-                                : 0.2,
-                          ),
-
-                          blurRadius: 6,
-
-                          offset:
-                              const Offset(
-                            0,
-                            2,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    child: Icon(
-                      e['icon'] as IconData,
-                      color: Colors.white,
-                      size: 15,
-                    ),
-                  ),
-
-                  const SizedBox(width: 8),
-
-                  Text(
-                    e['label'],
-
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: ativo
-                          ? FontWeight.w700
-                          : FontWeight.w500,
-                      color: _textPrimary,
                     ),
                   ),
                 ],
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToneButton(Map<String, dynamic> tone) {
+    final selected = tone['key'] == _estiloAtual;
+    final colors = tone['colors'] as List<Color>;
+    final enabled = !_analisando && !_loadingEstilo;
+    return Semantics(
+      selected: selected,
+      button: true,
+      enabled: enabled,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: enabled ? () => _gerarComEstilo(tone['key'] as String) : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            constraints: const BoxConstraints(minHeight: 44),
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
+            decoration: BoxDecoration(
+              color: selected ? colors.first.withOpacity(0.16) : _cardBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected ? colors.first : _cardBorder,
+                width: selected ? 1.5 : 1,
               ),
             ),
-          );
-        },
+            child: Row(
+              children: [
+                if (tone['key'] == 'flertar')
+                  const Text('❣️', style: TextStyle(fontSize: 16))
+                else if (tone['key'] == 'picante')
+                  const Text('😈', style: TextStyle(fontSize: 16))
+                else
+                  Icon(tone['icon'] as IconData, size: 17, color: colors.first),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      tone['label'] as String,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: _textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -888,270 +702,130 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   // SCAN / LOADING
   // ============================================================
 
+  List<List<String>> _scanMessages(String lang) {
+    const messages = <String, List<List<String>>>{
+      'pt': [["Lendo a conversa", "Cada detalhe pode render um bom flerte"], ["A sentir o clima", "O charme começa com o contexto"], ["Cozinhando seus flertes", "Um pouco de ousadia, uma resposta à altura"]],
+      'en': [["Reading the conversation", "Every detail can inspire a great flirt"], ["Feeling the vibe", "Charm starts with context"], ["Cooking your flirts", "A little boldness, a reply to match"]],
+      'de': [["Wir lesen den Chat", "Jedes Detail kann einen Flirt inspirieren"], ["Wir fühlen den Vibe", "Charme beginnt mit dem richtigen Kontext"], ["Dein Flirt wird zubereitet", "Ein bisschen Mut, eine passende Antwort"]],
+      'es': [["Leyendo la conversación", "Cada detalle puede inspirar un buen coqueteo"], ["Sintiendo la química", "El encanto empieza con el contexto"], ["Cocinando tus coqueteos", "Un poco de atrevimiento, una respuesta a la altura"]],
+      'fr': [["Lecture de la conversation", "Chaque détail peut inspirer un flirt"], ["On capte l’ambiance", "Le charme commence par le contexte"], ["On prépare tes flirts", "Un peu d’audace, une réponse à la hauteur"]],
+      'it': [["Leggiamo la conversazione", "Ogni dettaglio può ispirare un flirt"], ["Sentiamo la sintonia", "Il fascino inizia dal contesto"], ["Prepariamo i tuoi flirt", "Un po’ di audacia, una risposta all’altezza"]],
+    };
+    return messages[lang] ?? messages['en']!;
+  }
+
   Widget _buildScanOverlay() {
-    final lang = appLang.languageCode;
-
-    return Center(
-      child: Column(
-        mainAxisAlignment:
-            MainAxisAlignment.center,
-
-        children: [
-          AnimatedBuilder(
-            animation: _pulseAnim,
-
-            builder: (_, __) {
-              return Transform.scale(
-                scale:
-                    0.9 +
-                    (_pulseAnim.value *
-                        0.1),
-
-                child: const Text(
-                  '🌶️',
-                  style: TextStyle(
-                    fontSize: 52,
+    final messages = _scanMessages(appLang.languageCode);
+    return Semantics(
+      label: _getFunLoadingMsg(appLang.languageCode),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        child: AnimatedBuilder(
+          animation: _scanController,
+          builder: (context, _) {
+            final reduceMotion = MediaQuery.disableAnimationsOf(context);
+            final phase = _scanController.value * 2 * math.pi;
+            final elapsed = _scanController.lastElapsedDuration ?? Duration.zero;
+            final index = (elapsed.inMilliseconds ~/ 3000) % messages.length;
+            final message = messages[index];
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedSwitcher(
+                  duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 300),
+                  child: Semantics(
+                    key: ValueKey(index),
+                    liveRegion: true,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(message[0], textAlign: TextAlign.center,
+                          style: const TextStyle(color: _accent, fontSize: 22,
+                            fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 8),
+                        Text(message[1], textAlign: TextAlign.center,
+                          style: TextStyle(color: _textSecondary, fontSize: 14,
+                            height: 1.35)),
+                      ],
+                    ),
                   ),
                 ),
-              );
-            },
-          ),
-
-          const SizedBox(height: 20),
-
-          AnimatedBuilder(
-            animation: _pulseAnim,
-
-            builder: (_, __) {
-              return Opacity(
-                opacity:
-                    _pulseAnim.value,
-
-                child: Text(
-                  _getFunLoadingMsg(lang),
-
-                  style:
-                      const TextStyle(
-                    color: _accent,
-                    fontSize: 16,
-                    fontWeight:
-                        FontWeight.w700,
-                  ),
-
-                  textAlign:
-                      TextAlign.center,
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(3, (index) {
+                    final pulse = reduceMotion
+                        ? 1.0
+                        : (math.sin(phase - index * 0.8) + 1) / 2;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Opacity(
+                        opacity: 0.35 + 0.65 * pulse,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF1677F2),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
                 ),
-              );
-            },
-          ),
-
-          const SizedBox(height: 12),
-
-          SizedBox(
-            width: 160,
-
-            child: ClipRRect(
-              borderRadius:
-                  BorderRadius.circular(4),
-
-              child: AnimatedBuilder(
-                animation: _scanAnim,
-
-                builder: (_, __) {
-                  return LinearProgressIndicator(
-                    value: _scanAnim.value,
-
-                    backgroundColor:
-                        _accent.withOpacity(
-                      0.12,
-                    ),
-
-                    valueColor:
-                        const AlwaysStoppedAnimation(
-                      _accent,
-                    ),
-
-                    minHeight: 3,
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
+              ],
+            );
+          },
+        ),
       ),
     );
   }
 
-  // ============================================================
-  // RESPOSTAS
-  // ============================================================
-
   Widget _buildRespostas() {
-    if (_respostas.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        8,
-        16,
-        8,
-      ),
-
-      itemCount: _respostas.length,
-
-      itemBuilder: (_, index) {
-        final isCopied =
-            _copiedIndex == index;
-
-        return GestureDetector(
-          onTap: () => _copiar(
-            _respostas[index],
-            index,
-          ),
-
-          child: AnimatedContainer(
-            duration: const Duration(
-              milliseconds: 200,
-            ),
-
-            margin:
-                const EdgeInsets.only(
-              bottom: 10,
-            ),
-
-            padding:
-                const EdgeInsets.all(14),
-
-            decoration: BoxDecoration(
-              color: isCopied
-                  ? _success.withOpacity(
-                      _dark ? 0.12 : 0.08,
-                    )
-                  : _cardBg,
-
-              borderRadius:
-                  BorderRadius.circular(16),
-
-              border: Border.all(
-                color: isCopied
-                    ? _success.withOpacity(
-                        0.4,
-                      )
-                    : _cardBorder,
-
-                width:
-                    isCopied ? 1.5 : 1,
-              ),
-
-              boxShadow: _dark
-                  ? []
-                  : [
-                      BoxShadow(
-                        color: Colors.black
-                            .withOpacity(
-                          0.04,
-                        ),
-
-                        blurRadius: 8,
-
-                        offset:
-                            const Offset(
-                          0,
-                          2,
+    if (_respostas.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      child: Column(
+        key: _respostasIniciaisKey,
+        children: List.generate(_respostas.length, (index) {
+          final text = _respostas[index];
+          return Align(
+            alignment: Alignment.center,
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.sizeOf(context).width * 0.84,
+                ),
+                child: Material(
+                  color: const Color(0xFF1677F2),
+                  borderRadius: BorderRadius.circular(24),
+                  child: InkWell(
+                    onTap: () => _copiar(text, index),
+                    borderRadius: BorderRadius.circular(24),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 14,
+                        vertical: 14,
+                      ),
+                      child: Text(
+                        text,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w400,
+                          height: 1.35,
                         ),
                       ),
-                    ],
-            ),
-
-            child: Row(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-
-              children: [
-                Expanded(
-                  child: Text(
-                    _respostas[index],
-
-                    style: TextStyle(
-                      color:
-                          _textPrimary,
-                      fontSize: 13,
-                      height: 1.4,
                     ),
                   ),
                 ),
-
-                const SizedBox(width: 10),
-
-                AnimatedContainer(
-                  duration:
-                      const Duration(
-                    milliseconds: 200,
-                  ),
-
-                  padding:
-                      const EdgeInsets
-                          .symmetric(
-                    horizontal: 8,
-                    vertical: 5,
-                  ),
-
-                  decoration:
-                      BoxDecoration(
-                    color: isCopied
-                        ? _success
-                            .withOpacity(
-                            0.12,
-                          )
-                        : _accent
-                            .withOpacity(
-                            0.08,
-                          ),
-
-                    borderRadius:
-                        BorderRadius
-                            .circular(
-                      10,
-                    ),
-
-                    border: Border.all(
-                      color: isCopied
-                          ? _success
-                              .withOpacity(
-                              0.4,
-                            )
-                          : _accent
-                              .withOpacity(
-                              0.2,
-                            ),
-                    ),
-                  ),
-
-                  child: Text(
-                    isCopied
-                        ? appLang
-                            .resultCopied
-                        : appLang.resultCopy,
-
-                    style: TextStyle(
-                      color: isCopied
-                          ? _success
-                          : _accent,
-
-                      fontSize: 10,
-
-                      fontWeight:
-                          FontWeight.w600,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
-          ),
-        );
-      },
+          );
+        }),
+      ),
     );
   }
 
@@ -1160,39 +834,26 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   // ============================================================
 
   Widget _buildErro() {
-    final textColor = _dark
-        ? Colors.white70
-        : Colors.black54;
+    final textColor = _dark ? Colors.white70 : Colors.black54;
 
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
 
         child: Column(
-          mainAxisAlignment:
-              MainAxisAlignment.center,
+          mainAxisAlignment: MainAxisAlignment.center,
 
           children: [
-            const Text(
-              '😕',
-              style: TextStyle(
-                fontSize: 52,
-              ),
-            ),
+            const Text('😕', style: TextStyle(fontSize: 52)),
 
             const SizedBox(height: 20),
 
             Text(
               _erroMsg,
 
-              textAlign:
-                  TextAlign.center,
+              textAlign: TextAlign.center,
 
-              style: TextStyle(
-                color: textColor,
-                fontSize: 15,
-                height: 1.5,
-              ),
+              style: TextStyle(color: textColor, fontSize: 15, height: 1.5),
             ),
 
             const SizedBox(height: 32),
@@ -1207,41 +868,28 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
                 _gerarDiferente();
               },
 
-              style:
-                  ElevatedButton.styleFrom(
-                backgroundColor:
-                    _accent,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _accent,
 
-                foregroundColor:
-                    Colors.white,
+                foregroundColor: Colors.white,
 
-                shape:
-                    RoundedRectangleBorder(
-                  borderRadius:
-                      BorderRadius.circular(
-                    14,
-                  ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
                 ),
               ),
 
-              child: Text(
-                appLang.errorRetry,
-              ),
+              child: Text(appLang.errorRetry),
             ),
 
             const SizedBox(height: 12),
 
             TextButton(
-              onPressed: () =>
-                  Navigator.pop(context),
+              onPressed: () => Navigator.pop(context),
 
               child: Text(
                 appLang.errorBack,
 
-                style: TextStyle(
-                  color: textColor
-                      .withOpacity(0.5),
-                ),
+                style: TextStyle(color: textColor.withOpacity(0.5)),
               ),
             ),
           ],

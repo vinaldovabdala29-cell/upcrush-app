@@ -1,7 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
-import '../../../main.dart';
+import '../main.dart';
 import '../widgets/feature_card.dart';
 import '../widgets/settings_sheet.dart';
 

@@ -1,7 +1,9 @@
+import '../services/tones/tone_registry.dart';
+import '../theme/tone_options.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/ai_service.dart';
-import '../../../main.dart';
+import '../main.dart';
 import '../widgets/background_blobs.dart';
 
 class ResultScreen extends StatefulWidget {
@@ -18,7 +20,7 @@ class ResultScreen extends StatefulWidget {
     required this.replies,
     this.originalPrompt = "",
     this.ultimaMensagem = "",
-    this.style = "natural",
+    this.style = "romantico",
     this.isDarkMode = false,
   });
 
@@ -29,8 +31,13 @@ class ResultScreen extends StatefulWidget {
 class _ResultScreenState extends State<ResultScreen> {
   late List<String> replies;
   bool loading = false;
-  String estiloAtual = "natural";
+  String estiloAtual = "romantico";
   int? copiedIndex;
+  String? _stock;
+  Future<void>? _stockEmCurso;
+  int _versao = 0;
+  String _idiomaStock = '';
+
 
   bool get _dark => isDarkModeNotifier.value;
   Color get _bg => _dark ? const Color(0xFF0A0A10) : const Color(0xFFF2F2F7);
@@ -41,18 +48,17 @@ class _ResultScreenState extends State<ResultScreen> {
   static const _accent = Color(0xFFFF2D55);
   static const _success = Color(0xFF34C759);
 
-  List<Map<String, dynamic>> _getEstilos(String lang) => [
-    {"key": "engraçado",  "label": lang=='de'?'Lustig':lang=='es'?'Gracioso':lang=='fr'?'Drôle':lang=='pt'?'Engraçado':lang=='it'?'Divertente':lang=='tr'?'Komik':lang=='ru'?'Смешной':'Funny', "icon": Icons.sentiment_very_satisfied_rounded, "colors": [Color(0xFFFF9500), Color(0xFFFFCC02)], "shadow": Color(0xFFFF9500)},
-    {"key": "picante",    "label": lang=='de'?'Pikant':lang=='es'?'Picante':lang=='fr'?'Piquant':lang=='pt'?'Picante':lang=='it'?'Piccante':lang=='tr'?'Ateşli':lang=='ru'?'Пикантный':'Spicy', "icon": Icons.local_fire_department_rounded, "colors": [Color(0xFFFF2D55), Color(0xFFFF6B81)], "shadow": Color(0xFFFF2D55)},
-    {"key": "misterioso", "label": lang=='de'?'Mysteriös':lang=='es'?'Misterioso':lang=='fr'?'Mystérieux':lang=='pt'?'Misterioso':lang=='it'?'Misterioso':lang=='tr'?'Gizemli':lang=='ru'?'Загадочный':'Mysterious', "icon": Icons.nightlight_round, "colors": [Color(0xFF5856D6), Color(0xFFAF52DE)], "shadow": Color(0xFF5856D6)},
-    {"key": "direto",     "label": lang=='de'?'Direkt':lang=='es'?'Directo':lang=='fr'?'Direct':lang=='pt'?'Direto':lang=='it'?'Diretto':lang=='tr'?'Doğrudan':lang=='ru'?'Прямой':'Direct', "icon": Icons.bolt_rounded, "colors": [Color(0xFF007AFF), Color(0xFF5AC8FA)], "shadow": Color(0xFF007AFF)},
-  ];
+  List<Map<String, dynamic>> _getEstilos(String lang) => toneOptions(lang);
 
   @override
   void initState() {
     super.initState();
-    replies = widget.replies;
-    estiloAtual = (['engraçado','picante','misterioso','direto'].contains(widget.style)) ? widget.style : 'picante';
+    replies = widget.replies.take(1).toList();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _prepararStock());
+    final normalizedStyle = ToneRegistry.normalize(widget.style);
+    estiloAtual = toneOptions('pt').any((tone) => tone['key'] == normalizedStyle)
+        ? normalizedStyle
+        : 'romantico';
   }
 
   Future<void> copy(String text, int index) async {
@@ -63,30 +69,63 @@ class _ResultScreenState extends State<ResultScreen> {
     if (mounted) setState(() => copiedIndex = null);
   }
 
-  Future<void> _gerar(String estilo, {bool diferente = false}) async {
-    setState(() { estiloAtual = estilo; loading = true; });
-    try {
-      List<String> novas;
-      final prompt = diferente
-          ? widget.originalPrompt + "\nGenerate completely different responses."
-          : widget.originalPrompt;
+  Future<String?> _pedirUma(String estilo, String idioma) async {
+    final prompt = widget.originalPrompt;
+    List<String> novas;
+    if (prompt.startsWith('opener:')) {
+      novas = await AIService.gerarOpenerDeImagem(prompt.substring(7), estilo, idioma);
+    } else if (prompt.startsWith('imagem:')) {
+      novas = await AIService.gerarRespostaDeImagem(prompt.substring(7), estilo, idioma, quantidade: 1);
+    } else if (widget.ultimaMensagem.isNotEmpty) {
+      novas = await AIService.gerarRespostaDeOCR(prompt, widget.ultimaMensagem, estilo, idioma);
+    } else {
+      novas = await AIService.gerarResposta(prompt, estilo, idioma, quantidade: 1);
+    }
+    for (final item in novas) {
+      if (item.trim().isNotEmpty && !replies.contains(item.trim())) return item.trim();
+    }
+    return null;
+  }
 
-      if (prompt.startsWith("opener:")) {
-        final base64 = prompt.substring(7);
-        novas = await AIService.gerarOpenerDeImagem(base64, estilo, appLang.languageCode);
-      } else if (prompt.startsWith("imagem:")) {
-        final base64 = prompt.substring(7);
-        novas = await AIService.gerarRespostaDeImagem(base64, estilo, appLang.languageCode);
-      } else if (widget.ultimaMensagem.isNotEmpty) {
-        novas = await AIService.gerarRespostaDeOCR(prompt, widget.ultimaMensagem, estilo, appLang.languageCode);
-      } else {
-        novas = await AIService.gerarResposta(prompt, estilo, appLang.languageCode);
-      }
-      setState(() { replies = novas; loading = false; });
+  void _invalidarStock() { _versao++; _stock = null; _stockEmCurso = null; }
+
+  void _prepararStock() {
+    if (!mounted || replies.isEmpty || _stock != null || _stockEmCurso != null) return;
+    final versao = _versao;
+    final idioma = appLang.languageCode;
+    _idiomaStock = idioma;
+    _stockEmCurso = _pedirUma(estiloAtual, idioma).then((resposta) {
+      if (mounted && versao == _versao && idioma == appLang.languageCode) _stock = resposta;
+    }).catchError((Object _) {}).whenComplete(() {
+      if (versao == _versao) _stockEmCurso = null;
+    });
+  }
+
+  Future<void> _gerar(String estilo, {bool diferente = false}) async {
+    if (loading) return;
+    if (estiloAtual != estilo || _idiomaStock != appLang.languageCode) _invalidarStock();
+    if (estiloAtual != estilo) setState(() => estiloAtual = estilo);
+    final versao = _versao;
+    var resposta = _stock;
+    if (resposta != null) {
+      setState(() { replies.insert(0, resposta!); _stock = null; copiedIndex = null; });
+      _prepararStock();
+      return;
+    }
+    setState(() => loading = true);
+    try {
+      if (_stockEmCurso != null) await _stockEmCurso;
+      resposta = _stock;
+      resposta ??= await _pedirUma(estilo, appLang.languageCode);
+      if (!mounted || versao != _versao) return;
+      if (resposta == null) throw Exception('Resposta vazia');
+      setState(() { replies.insert(0, resposta!); _stock = null; loading = false; });
+      _prepararStock();
     } catch (e) {
+      if (!mounted) return;
       setState(() => loading = false);
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Erro: $e"), backgroundColor: Colors.red));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Erro: $e'), backgroundColor: Colors.red));
     }
   }
 
@@ -125,7 +164,7 @@ class _ResultScreenState extends State<ResultScreen> {
             child: ListView.separated(
               padding: const EdgeInsets.fromLTRB(10, 4, 6, 20),
               itemCount: estilos.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              separatorBuilder: (_, __) => const SizedBox(height: 6),
               itemBuilder: (context, i) {
                 final e = estilos[i];
                 final ativo = e["key"] == estiloAtual;
@@ -134,7 +173,7 @@ class _ResultScreenState extends State<ResultScreen> {
                   onTap: () => _gerar(e["key"]),
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
                     decoration: BoxDecoration(
                       color: ativo ? null : _cardBg,
                       gradient: ativo ? LinearGradient(
@@ -155,13 +194,15 @@ class _ResultScreenState extends State<ResultScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Container(
-                          width: 38, height: 38,
+                          width: 30, height: 30,
                           decoration: BoxDecoration(
                             gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: colors),
                             borderRadius: BorderRadius.circular(12),
                             boxShadow: [BoxShadow(color: (e["shadow"] as Color).withOpacity(ativo ? 0.45 : 0.25), blurRadius: 8, offset: const Offset(0, 3))],
                           ),
-                          child: Icon(e["icon"] as IconData, color: Colors.white, size: 18),
+                          child: e["key"] == 'flertar'
+                      ? const Center(child: Text('❣️', style: TextStyle(fontSize: 17)))
+                      : Icon(e["icon"] as IconData, color: Colors.white, size: 18),
                         ),
                         const SizedBox(height: 6),
                         Text(
@@ -207,7 +248,7 @@ class _ResultScreenState extends State<ResultScreen> {
                           margin: const EdgeInsets.only(bottom: 12),
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
-                            color: isCopied ? _success.withOpacity(_dark ? 0.12 : 0.08) : _cardBg,
+                            color: const Color(0xFF1677F2),
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
                               color: isCopied ? _success.withOpacity(0.4) : _cardBorder,
@@ -222,7 +263,7 @@ class _ResultScreenState extends State<ResultScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(replies[index],
-                                  style: TextStyle(color: _textPrimary, fontSize: 14, height: 1.5, fontWeight: FontWeight.w400)),
+                                  style: TextStyle(color: Colors.white, fontSize: 14, height: 1.5, fontWeight: FontWeight.w400)),
                               const SizedBox(height: 10),
                               Align(
                                 alignment: Alignment.centerRight,

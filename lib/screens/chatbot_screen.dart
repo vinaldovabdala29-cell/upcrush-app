@@ -1,20 +1,30 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
-import '../../../main.dart';
+import '../main.dart';
 import '../services/review_request_service.dart';
 import '../models/coach_models.dart';
 import '../services/dating_coach_service.dart';
 import '../services/coach_history_service.dart';
 
+typedef CoachReply =
+    Future<CoachResponse> Function({
+      required List<CoachMessage> messages,
+      required String lang,
+      required CoachPersonality personality,
+      String? base64Image,
+    });
+
 class ChatbotScreen extends StatefulWidget {
   final bool embedded;
+  final CoachReply? reply;
 
-  const ChatbotScreen({super.key, this.embedded = false});
+  const ChatbotScreen({super.key, this.embedded = false, this.reply});
 
   @override
   State<ChatbotScreen> createState() => _ChatbotScreenState();
@@ -35,22 +45,26 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   List<CoachConversation> _allConversations = [];
 
   bool _loading = false;
+  CoachPersonality _personality = CoachPersonality.neutro;
 
   File? _pendingImage;
   String? _pendingBase64;
 
   static const Color _accent = Color(0xFFFF2D55);
-  static const Color _accentDark = Color(0xFFFF6B81);
 
   bool get _dark => isDarkModeNotifier.value;
 
   // Cores estilo ChatGPT — limpo, poucas camadas
   Color get _bg => _dark ? const Color(0xFF0E0E12) : Colors.white;
-  Color get _bubbleUser => _dark ? const Color(0xFF2A2A32) : const Color(0xFFF0F0F2);
-  Color get _textPrimary => _dark ? const Color(0xFFECECF1) : const Color(0xFF1A1A1E);
+  Color get _bubbleUser =>
+      _dark ? const Color(0xFF2A2A32) : const Color(0xFFF0F0F2);
+  Color get _textPrimary =>
+      _dark ? const Color(0xFFECECF1) : const Color(0xFF1A1A1E);
   Color get _textSecondary => _dark ? Colors.white38 : Colors.black38;
-  Color get _inputBg => _dark ? const Color(0xFF1C1C22) : const Color(0xFFF5F5F7);
-  Color get _sidebarBg => _dark ? const Color(0xFF090909) : const Color(0xFFF9F9FA);
+  Color get _inputBg =>
+      _dark ? const Color(0xFF1C1C22) : const Color(0xFFF5F5F7);
+  Color get _sidebarBg =>
+      _dark ? const Color(0xFF090909) : const Color(0xFFF9F9FA);
 
   @override
   void initState() {
@@ -85,6 +99,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   }
 
   void _startNewConversation() {
+    if (_loading) return;
     final now = DateTime.now();
     _conversation = CoachConversation(
       id: now.microsecondsSinceEpoch.toString(),
@@ -100,19 +115,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   String get _newConversationTitle {
     switch (appLang.languageCode) {
-      case 'pt': return 'Nova conversa';
-      case 'de': return 'Neue Unterhaltung';
-      case 'es': return 'Nueva conversación';
-      default:   return 'New conversation';
-    }
-  }
-
-  String get _emptyStateSubtitle {
-    switch (appLang.languageCode) {
-      case 'pt': return 'Olá, eu sou a Dolla, a tua coach pessoal de dating';
-      case 'de': return 'Hallo, ich bin Dolla, dein persönlicher Dating Coach';
-      case 'es': return 'Hola, soy Dolla, tu coach personal de dating';
-      default:   return 'Hi, I\'m Dolla, your personal dating coach';
+      case 'pt':
+        return 'Nova conversa';
+      case 'de':
+        return 'Neue Unterhaltung';
+      case 'es':
+        return 'Nueva conversación';
+      default:
+        return 'New conversation';
     }
   }
 
@@ -137,86 +147,154 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           child: Column(
             children: [
               const SizedBox(height: 10),
-              Container(width: 40, height: 4,
-                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2))),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
               const SizedBox(height: 16),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: Row(children: [
-                  Text(_historyTitle, style: TextStyle(color: _textPrimary, fontSize: 18, fontWeight: FontWeight.w800)),
-                  const Spacer(),
-                  GestureDetector(
-                    onTap: () {
-                      Navigator.pop(context);
-                      _startFreshChat();
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: _accent.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10)),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Icon(Icons.add_rounded, color: _accent, size: 16),
-                        const SizedBox(width: 4),
-                        Text(_newLabel, style: const TextStyle(color: _accent, fontSize: 13, fontWeight: FontWeight.w700)),
-                      ]),
+                child: Row(
+                  children: [
+                    Text(
+                      _historyTitle,
+                      style: TextStyle(
+                        color: _textPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-                  ),
-                ]),
+                    const Spacer(),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.pop(context);
+                        _startFreshChat();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _accent.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.add_rounded,
+                              color: _accent,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _newLabel,
+                              style: const TextStyle(
+                                color: _accent,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 8),
               Expanded(
                 child: _allConversations.isEmpty
-                  ? Center(child: Text(_noHistoryLabel, style: TextStyle(color: _textSecondary, fontSize: 14)))
-                  : ListView.builder(
-                      controller: scrollCtrl,
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                      itemCount: _allConversations.length,
-                      itemBuilder: (context, index) {
-                        final conv = _allConversations[index];
-                        final isCurrent = conv.id == _conversation?.id;
-                        return Dismissible(
-                          key: ValueKey(conv.id),
-                          direction: DismissDirection.endToStart,
-                          background: Container(
-                            alignment: Alignment.centerRight,
-                            padding: const EdgeInsets.only(right: 20),
-                            decoration: BoxDecoration(color: Colors.red.withOpacity(0.15), borderRadius: BorderRadius.circular(14)),
-                            child: const Icon(Icons.delete_rounded, color: Colors.red),
-                          ),
-                          onDismissed: (_) async {
-                            await CoachHistoryService.delete(conv.id);
-                            _loadAllConversations();
-                          },
-                          child: GestureDetector(
-                            onTap: () {
-                              Navigator.pop(context);
-                              _openConversation(conv);
-                            },
-                            child: Container(
-                              margin: const EdgeInsets.symmetric(vertical: 4),
-                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    ? Center(
+                        child: Text(
+                          _noHistoryLabel,
+                          style: TextStyle(color: _textSecondary, fontSize: 14),
+                        ),
+                      )
+                    : ListView.builder(
+                        controller: scrollCtrl,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 4,
+                        ),
+                        itemCount: _allConversations.length,
+                        itemBuilder: (context, index) {
+                          final conv = _allConversations[index];
+                          final isCurrent = conv.id == _conversation?.id;
+                          return Dismissible(
+                            key: ValueKey(conv.id),
+                            direction: DismissDirection.endToStart,
+                            background: Container(
+                              alignment: Alignment.centerRight,
+                              padding: const EdgeInsets.only(right: 20),
                               decoration: BoxDecoration(
-                                color: isCurrent ? _accent.withOpacity(0.08) : Colors.transparent,
+                                color: Colors.red.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(14),
                               ),
-                              child: Row(children: [
-                                Icon(Icons.chat_bubble_outline_rounded,
-                                  color: isCurrent ? _accent : _textSecondary, size: 17),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(conv.title,
-                                    maxLines: 1, overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: isCurrent ? _accent : _textPrimary,
-                                      fontSize: 14.5, fontWeight: isCurrent ? FontWeight.w700 : FontWeight.w500)),
-                                ),
-                              ]),
+                              child: const Icon(
+                                Icons.delete_rounded,
+                                color: Colors.red,
+                              ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
+                            onDismissed: (_) async {
+                              await CoachHistoryService.delete(conv.id);
+                              _loadAllConversations();
+                            },
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.pop(context);
+                                _openConversation(conv);
+                              },
+                              child: Container(
+                                margin: const EdgeInsets.symmetric(vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isCurrent
+                                      ? _accent.withOpacity(0.08)
+                                      : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(14),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.chat_bubble_outline_rounded,
+                                      color: isCurrent
+                                          ? _accent
+                                          : _textSecondary,
+                                      size: 17,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        conv.title,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          color: isCurrent
+                                              ? _accent
+                                              : _textPrimary,
+                                          fontSize: 14.5,
+                                          fontWeight: isCurrent
+                                              ? FontWeight.w700
+                                              : FontWeight.w500,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
               ),
               SizedBox(height: MediaQuery.of(context).padding.bottom + 12),
             ],
@@ -227,6 +305,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   }
 
   void _openConversation(CoachConversation conv) {
+    if (_loading) return;
     setState(() {
       _conversation = conv;
       _messages.clear();
@@ -240,7 +319,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         if (m.role == 'user') {
           _history.add(CoachMessage.user(m.content));
         } else if (m.role == 'assistant') {
-          _history.add(CoachMessage.assistant(m.content));
+          final data = m.responseData;
+          if (data != null) {
+            final response = CoachResponse.fromJson(data);
+            _responses[m.id] = response;
+            _history.add(CoachMessage.assistant(response.toHistoryText()));
+          } else {
+            _history.add(CoachMessage.assistant(m.content));
+          }
         }
       }
     });
@@ -253,28 +339,40 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   String get _historyTitle {
     switch (appLang.languageCode) {
-      case 'pt': return 'Conversas';
-      case 'de': return 'Unterhaltungen';
-      case 'es': return 'Conversaciones';
-      default:   return 'Conversations';
+      case 'pt':
+        return 'Conversas';
+      case 'de':
+        return 'Unterhaltungen';
+      case 'es':
+        return 'Conversaciones';
+      default:
+        return 'Conversations';
     }
   }
 
   String get _newLabel {
     switch (appLang.languageCode) {
-      case 'pt': return 'Nova';
-      case 'de': return 'Neu';
-      case 'es': return 'Nueva';
-      default:   return 'New';
+      case 'pt':
+        return 'Nova';
+      case 'de':
+        return 'Neu';
+      case 'es':
+        return 'Nueva';
+      default:
+        return 'New';
     }
   }
 
   String get _noHistoryLabel {
     switch (appLang.languageCode) {
-      case 'pt': return 'Ainda não tens conversas';
-      case 'de': return 'Noch keine Unterhaltungen';
-      case 'es': return 'Aún no tienes conversaciones';
-      default:   return 'No conversations yet';
+      case 'pt':
+        return 'Ainda não tens conversas';
+      case 'de':
+        return 'Noch keine Unterhaltungen';
+      case 'es':
+        return 'Aún no tienes conversaciones';
+      default:
+        return 'No conversations yet';
     }
   }
 
@@ -286,17 +384,23 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     await showModalBottomSheet(
       context: context,
       backgroundColor: _bg,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (_) => SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _attachmentOption(Icons.photo_library_outlined, _galleryLabel, () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.gallery);
-              }),
+              _attachmentOption(
+                Icons.photo_library_outlined,
+                _galleryLabel,
+                () {
+                  Navigator.pop(context);
+                  _pickImage(ImageSource.gallery);
+                },
+              ),
               const SizedBox(height: 6),
               _attachmentOption(Icons.camera_alt_outlined, _cameraLabel, () {
                 Navigator.pop(context);
@@ -314,12 +418,18 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       onTap: onTap,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
       leading: Icon(icon, color: _textPrimary),
-      title: Text(title, style: TextStyle(color: _textPrimary, fontWeight: FontWeight.w600)),
+      title: Text(
+        title,
+        style: TextStyle(color: _textPrimary, fontWeight: FontWeight.w600),
+      ),
     );
   }
 
   Future<void> _pickImage(ImageSource source) async {
-    final image = await _imagePicker.pickImage(source: source, imageQuality: 70);
+    final image = await _imagePicker.pickImage(
+      source: source,
+      imageQuality: 70,
+    );
     if (image == null || !mounted) return;
     setState(() => _pendingImage = File(image.path));
     final bytes = await File(image.path).readAsBytes();
@@ -328,7 +438,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   }
 
   void _removePendingImage() {
-    setState(() { _pendingImage = null; _pendingBase64 = null; });
+    setState(() {
+      _pendingImage = null;
+      _pendingBase64 = null;
+    });
   }
 
   // ===============================================================
@@ -337,80 +450,107 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   Future<void> _sendMessage({String? overrideText}) async {
     final text = (overrideText ?? _controller.text).trim();
-    if (_loading) return;
-    if (text.isEmpty && _pendingBase64 == null) return;
-
+    if (_loading || (text.isEmpty && _pendingBase64 == null)) return;
     final image = _pendingImage;
     final base64 = _pendingBase64;
     final visibleText = text.isNotEmpty ? text : _imageOnlyText;
-
-    final savedImagePath = image != null
-        ? await CoachHistoryService.saveImage(image.path, _conversation!.id)
-        : null;
-
-    final userMessage = CoachHistoryMessage(
-      id: DateTime.now().microsecondsSinceEpoch.toString(),
-      role: 'user',
-      content: visibleText,
-      imagePath: savedImagePath,
-      createdAt: DateTime.now(),
-    );
-
-    setState(() {
-      _messages.add(userMessage);
-      _loading = true;
-      _pendingImage = null;
-      _pendingBase64 = null;
-      _controller.clear();
-    });
-
-    _history.add(CoachMessage.user(text.isNotEmpty ? text : 'Analyze the attached image and tell me what you think.'));
-    _updateTitleFromMessage(text);
-    await _saveConversation();
-    _scrollToBottom();
-
+    // Lock immediately: a second tap cannot send the same choice twice.
+    setState(() => _loading = true);
     try {
+      final savedImagePath = image != null
+          ? await CoachHistoryService.saveImage(image.path, _conversation!.id)
+          : null;
+      if (!mounted) return;
+      final userMessage = CoachHistoryMessage(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        role: 'user',
+        content: visibleText,
+        imagePath: savedImagePath,
+        createdAt: DateTime.now(),
+      );
+      setState(() {
+        _messages.add(userMessage);
+        _pendingImage = null;
+        _pendingBase64 = null;
+        _controller.clear();
+      });
+      _history.add(
+        CoachMessage.user(
+          text.isNotEmpty
+              ? text
+              : 'Analyze the attached image and tell me what you think.',
+        ),
+      );
+      _updateTitleFromMessage(text);
+      await _saveConversation();
+      if (!mounted) return;
+      _scrollToBottom();
       final CoachResponse response;
-      if (base64 != null) {
-        response = await DatingCoachService.chatWithImage(messages: _history, base64Image: base64, lang: appLang.languageCode);
+      if (widget.reply != null) {
+        response = await widget.reply!(
+          messages: List.of(_history),
+          base64Image: base64,
+          lang: appLang.languageCode,
+          personality: _personality,
+        );
+      } else if (base64 != null) {
+        response = await DatingCoachService.chatWithImage(
+          messages: _history,
+          base64Image: base64,
+          lang: appLang.languageCode,
+          personality: _personality,
+        );
       } else {
-        response = await DatingCoachService.chat(messages: _history, lang: appLang.languageCode);
+        response = await DatingCoachService.chat(
+          messages: _history,
+          lang: appLang.languageCode,
+          personality: _personality,
+        );
       }
-
-      _history.add(CoachMessage.assistant(response.message));
-
+      if (!mounted) return;
+      _history.add(CoachMessage.assistant(response.toHistoryText()));
       final assistantMessage = CoachHistoryMessage(
         id: DateTime.now().microsecondsSinceEpoch.toString(),
         role: 'assistant',
         content: response.message,
         createdAt: DateTime.now(),
+        responseData: response.toJson(),
       );
-
-      if (!mounted) return;
       setState(() {
         _messages.add(assistantMessage);
         _responses[assistantMessage.id] = response;
-        _loading = false;
       });
-
-      // ✅ Adicionado: notifica o serviço de avaliação que a Dolla
-      // respondeu com sucesso (primeira "vitória" real no Coach).
-      ReviewRequestService.notifySuccess();
-
       await _saveConversation();
-      _scrollToBottom();
+      ReviewRequestService.notifySuccess();
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _messages.add(CoachHistoryMessage(
-          id: DateTime.now().microsecondsSinceEpoch.toString(),
-          role: 'assistant', content: _errorMessage, createdAt: DateTime.now(),
-        ));
-        _loading = false;
+        _messages.add(
+          CoachHistoryMessage(
+            id: DateTime.now().microsecondsSinceEpoch.toString(),
+            role: 'assistant',
+            content: _errorMessage,
+            createdAt: DateTime.now(),
+          ),
+        );
       });
-      await _saveConversation();
-      _scrollToBottom();
+      // Keep the existing messages in memory if local persistence is unavailable.
+      try {
+        await _saveConversation();
+      } catch (_) {}
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+        _scrollToBottom();
+      }
     }
+  }
+
+  Future<void> _selectCoachChoice(String messageId, String choice) async {
+    if (_loading || _messages.isEmpty || _messages.last.id != messageId) return;
+    final response = _responses[messageId];
+    if (response == null || !response.quickReplies.contains(choice)) return;
+    await _sendMessage(overrideText: choice);
   }
 
   Future<void> _saveConversation() async {
@@ -441,15 +581,21 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     }
 
     final words = clean.split(' ');
-    _conversation!.title = words.length > 6 ? '${words.take(6).join(' ')}…' : clean;
+    _conversation!.title = words.length > 6
+        ? '${words.take(6).join(' ')}…'
+        : clean;
   }
 
   String get _imageConversationTitle {
     switch (appLang.languageCode) {
-      case 'pt': return 'Análise de screenshot';
-      case 'de': return 'Screenshot-Analyse';
-      case 'es': return 'Análisis de screenshot';
-      default:   return 'Screenshot analysis';
+      case 'pt':
+        return 'Análise de screenshot';
+      case 'de':
+        return 'Screenshot-Analyse';
+      case 'es':
+        return 'Análisis de screenshot';
+      default:
+        return 'Screenshot analysis';
     }
   }
 
@@ -467,13 +613,15 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   void _copy(String text) {
     Clipboard.setData(ClipboardData(text: text));
     HapticFeedback.lightImpact();
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(appLang.resultCopied),
-      duration: const Duration(seconds: 1),
-      behavior: SnackBarBehavior.floating,
-      backgroundColor: const Color(0xFF34C759),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    ));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(appLang.resultCopied),
+        duration: const Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF34C759),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 
   // ===============================================================
@@ -490,24 +638,25 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           appBar: _buildAppBar(),
           body: Column(
             children: [
+              _buildPersonalitySelector(),
               Expanded(
                 child: _messages.isEmpty
-                  ? _buildEmptyState()
-                  : ListView.builder(
-                      controller: _scrollController,
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-                      itemCount: _messages.length + (_loading ? 1 : 0),
-                      itemBuilder: (context, index) {
-                        if (index == _messages.length) return _buildTyping();
-                        final msg = _messages[index];
-                        if (msg.role == 'assistant') {
-                          final response = _responses[msg.id];
-                          return _buildAssistantBubble(msg, response);
-                        }
-                        return _buildUserBubble(msg);
-                      },
-                    ),
+                    ? _buildEmptyState()
+                    : ListView.builder(
+                        controller: _scrollController,
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+                        itemCount: _messages.length + (_loading ? 1 : 0),
+                        itemBuilder: (context, index) {
+                          if (index == _messages.length) return _buildTyping();
+                          final msg = _messages[index];
+                          if (msg.role == 'assistant') {
+                            final response = _responses[msg.id];
+                            return _buildAssistantBubble(msg, response);
+                          }
+                          return _buildUserBubble(msg);
+                        },
+                      ),
               ),
               _buildInput(),
             ],
@@ -521,39 +670,119 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   // APP BAR — limpo, estilo ChatGPT
   // ===============================================================
 
+  Widget _buildPersonalitySelector() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Row(
+        children: CoachPersonality.values.map((personality) {
+          final label = switch (personality) {
+            CoachPersonality.neutro => 'Neutro',
+            CoachPersonality.alpha => 'Alpha',
+            CoachPersonality.romantico => 'Romântico',
+            CoachPersonality.flerte => 'Flerte',
+          };
+          return Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 2),
+              child: ChoiceChip(
+                key: ValueKey(personality),
+                label: SizedBox(
+                  width: double.infinity,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ),
+                padding: EdgeInsets.zero,
+                labelPadding: const EdgeInsets.symmetric(horizontal: 4),
+                showCheckmark: false,
+                selected: _personality == personality,
+                selectedColor: _accent.withValues(alpha: .15),
+                onSelected: _loading
+                    ? null
+                    : (_) => setState(() => _personality = personality),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
   PreferredSizeWidget _buildAppBar() {
     return AppBar(
       backgroundColor: _bg,
       elevation: 0,
       centerTitle: true,
-      automaticallyImplyLeading: !widget.embedded,
-      leading: widget.embedded
-          ? null
-          : IconButton(
-              icon: Icon(Icons.arrow_back_ios_new_rounded, color: _textPrimary, size: 19),
-              onPressed: () => Navigator.pop(context),
-            ),
-      leadingWidth: widget.embedded ? 56 : null,
+      automaticallyImplyLeading: false,
+      leadingWidth: 76,
+      leading: TextButton(
+        key: const Key('coach-chat-history'),
+        onPressed: _loading ? null : _openHistory,
+        child: Text(
+          'Chat',
+          style: TextStyle(color: _textPrimary, fontWeight: FontWeight.w700),
+        ),
+      ),
       title: GestureDetector(
         onTap: _openHistory,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              Text('Dolla IA', style: TextStyle(color: _textPrimary, fontSize: 16, fontWeight: FontWeight.w700)),
-              const SizedBox(width: 4),
-              Icon(Icons.keyboard_arrow_down_rounded, color: _textSecondary, size: 18),
-            ]),
-            Row(mainAxisSize: MainAxisSize.min, children: [
-              Container(width: 6, height: 6,
-                decoration: const BoxDecoration(color: Color(0xFF34C759), shape: BoxShape.circle)),
-              const SizedBox(width: 4),
-              const Text('Online', style: TextStyle(color: Color(0xFF34C759), fontSize: 11, fontWeight: FontWeight.w600)),
-            ]),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Dolla IA',
+                  style: TextStyle(
+                    color: _textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: _textSecondary,
+                  size: 18,
+                ),
+              ],
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF34C759),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                const Text(
+                  'Online',
+                  style: TextStyle(
+                    color: Color(0xFF34C759),
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
       actions: [
+        if (!widget.embedded)
+          IconButton(
+            onPressed: () => Navigator.maybePop(context),
+            icon: Icon(Icons.arrow_back, color: _textPrimary),
+          ),
         IconButton(
           onPressed: _startFreshChat,
           icon: Icon(Icons.edit_square, color: _textPrimary, size: 21),
@@ -569,17 +798,34 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   Widget _buildEmptyState() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
+        padding: const EdgeInsets.symmetric(horizontal: 22),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (!_inputFocused) const _BouncingHappyFace() else const SizedBox(height: 56),
+            if (!_inputFocused)
+              const _BouncingHappyFace()
+            else
+              const SizedBox(height: 56),
             const SizedBox(height: 16),
-            Text('Dolla', style: TextStyle(color: _textPrimary, fontSize: 20, fontWeight: FontWeight.w800)),
+            Text(
+              'Dolla',
+              style: TextStyle(
+                color: _textPrimary,
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
             const SizedBox(height: 6),
-            Text(_greetingText,
+            Text(
+              _greetingText,
               textAlign: TextAlign.center,
-              style: TextStyle(color: _textSecondary, fontSize: 14, fontWeight: FontWeight.w500, height: 1.4)),
+              style: TextStyle(
+                color: _textSecondary,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                height: 1.4,
+              ),
+            ),
           ],
         ),
       ),
@@ -588,10 +834,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   String get _greetingText {
     switch (appLang.languageCode) {
-      case 'pt': return 'Olá, eu sou a Dolla, a tua coach pessoal de dating.\nComo posso ajudar?';
-      case 'de': return 'Hallo, ich bin Dolla, dein persönlicher Dating Coach.\nWie kann ich dir helfen?';
-      case 'es': return 'Hola, soy Dolla, tu coach personal de dating.\n¿Cómo puedo ayudarte?';
-      default:   return 'Hi, I\'m Dolla, your personal dating coach.\nHow can I help?';
+      case 'pt':
+        return 'Olá, eu sou a Dolla, a tua coach pessoal de dating.\nComo posso ajudar?';
+      case 'de':
+        return 'Hallo, ich bin Dolla, dein persönlicher Dating Coach.\nWie kann ich dir helfen?';
+      case 'es':
+        return 'Hola, soy Dolla, tu coach personal de dating.\n¿Cómo puedo ayudarte?';
+      default:
+        return 'Hi, I\'m Dolla, your personal dating coach.\nHow can I help?';
     }
   }
 
@@ -607,7 +857,9 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         child: GestureDetector(
           onLongPress: () => _copy(message.content),
           child: Container(
-            constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.78),
+            constraints: BoxConstraints(
+              maxWidth: MediaQuery.of(context).size.width * 0.78,
+            ),
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: _bubbleUser,
@@ -616,14 +868,29 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                if (message.imagePath != null && File(message.imagePath!).existsSync())
+                if (message.imagePath != null &&
+                    File(message.imagePath!).existsSync())
                   ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.file(File(message.imagePath!), width: 200, height: 140, fit: BoxFit.cover),
+                    child: Image.file(
+                      File(message.imagePath!),
+                      width: 200,
+                      height: 140,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                if (message.imagePath != null && message.content.isNotEmpty) const SizedBox(height: 8),
-                if (message.content.isNotEmpty && message.content != _imageOnlyText)
-                  Text(message.content, style: TextStyle(color: _textPrimary, fontSize: 15.5, height: 1.4)),
+                if (message.imagePath != null && message.content.isNotEmpty)
+                  const SizedBox(height: 8),
+                if (message.content.isNotEmpty &&
+                    message.content != _imageOnlyText)
+                  Text(
+                    message.content,
+                    style: TextStyle(
+                      color: _textPrimary,
+                      fontSize: 15.5,
+                      height: 1.4,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -638,7 +905,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   // houver dados estruturados relevantes.
   // ===============================================================
 
-  Widget _buildAssistantBubble(CoachHistoryMessage message, CoachResponse? response) {
+  Widget _buildAssistantBubble(
+    CoachHistoryMessage message,
+    CoachResponse? response,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 22),
       child: Align(
@@ -648,31 +918,109 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(message.content,
-                style: TextStyle(color: _textPrimary, fontSize: 15.5, height: 1.55, fontWeight: FontWeight.w400)),
+              Text(
+                message.content,
+                style: TextStyle(
+                  color: _textPrimary,
+                  fontSize: 15.5,
+                  height: 1.55,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
 
-              if (response != null) ...[
+              if (response != null && response.quickReplies.isEmpty) ...[
                 const SizedBox(height: 10),
-                Wrap(spacing: 6, runSpacing: 6, children: [
-                  _chip(_prettyInterest(response.interestLevel), _interestColor(response.interestLevel)),
-                  _chip(_prettyStage(response.datingStage), const Color(0xFF7C3AED)),
-                ]),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [
+                    _chip(
+                      _prettyInterest(response.interestLevel),
+                      _interestColor(response.interestLevel),
+                    ),
+                    _chip(
+                      _prettyStage(response.datingStage),
+                      const Color(0xFF7C3AED),
+                    ),
+                  ],
+                ),
               ],
 
-              if (response != null && response.shouldSendMessage && response.suggestedMessage.trim().isNotEmpty) ...[
+              if (response != null && response.quickReplies.length == 3) ...[
                 const SizedBox(height: 12),
-                _buildSuggestedMessage(response.suggestedMessage.trim()),
+                _buildCoachChoices(message.id, response.quickReplies),
+              ],
+
+              if (response != null &&
+                  response.shouldSendMessage &&
+                  response.suggestedMessage.trim().isNotEmpty) ...[
+                const SizedBox(height: 12),
+                _buildSuggestedMessage(
+                  response.suggestedMessage.trim(),
+                  message.id,
+                ),
               ],
 
               const SizedBox(height: 6),
               GestureDetector(
                 onTap: () => _copy(message.content),
-                child: Icon(Icons.copy_rounded, size: 15, color: _textSecondary),
+                child: Icon(
+                  Icons.copy_rounded,
+                  size: 15,
+                  color: _textSecondary,
+                ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildCoachChoices(String messageId, List<String> choices) {
+    final enabled =
+        !_loading && _messages.isNotEmpty && _messages.last.id == messageId;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var index = 0; index < choices.length; index++)
+          Padding(
+            padding: EdgeInsets.only(
+              bottom: index < choices.length - 1 ? 8 : 0,
+            ),
+            child: OutlinedButton(
+              key: ValueKey('coach-choice-$messageId-$index'),
+              onPressed: enabled
+                  ? () => _selectCoachChoice(messageId, choices[index])
+                  : null,
+              style: OutlinedButton.styleFrom(
+                alignment: Alignment.centerLeft,
+                minimumSize: const Size(double.infinity, 48),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                foregroundColor: _textPrimary,
+                disabledForegroundColor: _textSecondary,
+                backgroundColor: _accent.withOpacity(_dark ? 0.08 : 0.04),
+                side: BorderSide(
+                  color: _accent.withOpacity(enabled ? 0.4 : 0.12),
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Text(
+                choices[index],
+                softWrap: true,
+                style: const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 
@@ -683,11 +1031,18 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         color: color.withOpacity(_dark ? 0.16 : 0.10),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(label, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w700)),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: color,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 
-  Widget _buildSuggestedMessage(String message) {
+  Widget _buildSuggestedMessage(String message, String messageId) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -698,27 +1053,66 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(message, style: TextStyle(color: _textPrimary, fontSize: 14.5, height: 1.4, fontWeight: FontWeight.w600)),
+          Text(
+            message,
+            style: TextStyle(
+              color: _textPrimary,
+              fontSize: 14.5,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 10),
-          Row(children: [
-            GestureDetector(
-              onTap: () => _copy(message),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                const Icon(Icons.copy_rounded, size: 14, color: _accent),
-                const SizedBox(width: 5),
-                Text(_copyLabel, style: const TextStyle(color: _accent, fontSize: 12.5, fontWeight: FontWeight.w700)),
-              ]),
-            ),
-            const SizedBox(width: 18),
-            GestureDetector(
-              onTap: () => _sendMessage(overrideText: 'Give me another natural option.'),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Icon(Icons.refresh_rounded, size: 14, color: _textSecondary),
-                const SizedBox(width: 5),
-                Text(_anotherLabel, style: TextStyle(color: _textSecondary, fontSize: 12.5, fontWeight: FontWeight.w700)),
-              ]),
-            ),
-          ]),
+          Row(
+            children: [
+              GestureDetector(
+                onTap: () => _copy(message),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(Icons.copy_rounded, size: 14, color: _accent),
+                    const SizedBox(width: 5),
+                    Text(
+                      _copyLabel,
+                      style: const TextStyle(
+                        color: _accent,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 18),
+              GestureDetector(
+                onTap:
+                    !_loading &&
+                        _messages.isNotEmpty &&
+                        _messages.last.id == messageId
+                    ? () => _sendMessage(overrideText: _anotherRequest)
+                    : null,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.refresh_rounded,
+                      size: 14,
+                      color: _textSecondary,
+                    ),
+                    const SizedBox(width: 5),
+                    Text(
+                      _anotherLabel,
+                      style: TextStyle(
+                        color: _textSecondary,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -730,23 +1124,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   Widget _buildTyping() {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        _typingDot(0), const SizedBox(width: 4),
-        _typingDot(150), const SizedBox(width: 4),
-        _typingDot(300),
-      ]),
-    );
-  }
-
-  Widget _typingDot(int delay) {
-    return TweenAnimationBuilder<double>(
-      tween: Tween(begin: 0.25, end: 1),
-      duration: Duration(milliseconds: 550 + delay),
-      curve: Curves.easeInOut,
-      builder: (context, value, _) => Container(
-        width: 7, height: 7,
-        decoration: BoxDecoration(color: _textPrimary.withOpacity(value * 0.6), shape: BoxShape.circle)),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 16),
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: _CoachTypingDots(color: _textPrimary),
+      ),
     );
   }
 
@@ -774,7 +1156,11 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                 children: [
                   IconButton(
                     onPressed: _chooseImage,
-                    icon: Icon(Icons.add_rounded, color: _textPrimary, size: 24),
+                    icon: Icon(
+                      Icons.add_rounded,
+                      color: _textPrimary,
+                      size: 24,
+                    ),
                   ),
                   Expanded(
                     child: ConstrainedBox(
@@ -788,9 +1174,14 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                         style: TextStyle(color: _textPrimary, fontSize: 15),
                         decoration: InputDecoration(
                           hintText: _inputHint,
-                          hintStyle: TextStyle(color: _textSecondary, fontSize: 15),
+                          hintStyle: TextStyle(
+                            color: _textSecondary,
+                            fontSize: 15,
+                          ),
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 10,
+                          ),
                         ),
                       ),
                     ),
@@ -799,15 +1190,18 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                   GestureDetector(
                     onTap: () => _sendMessage(),
                     child: Container(
-                      width: 34, height: 34,
+                      width: 34,
+                      height: 34,
                       margin: const EdgeInsets.only(bottom: 4, right: 2),
                       decoration: BoxDecoration(
-                        color: _loading ? _accent.withOpacity(0.4) : _accent,
+                        color: _accent,
                         shape: BoxShape.circle,
                       ),
-                      child: _loading
-                        ? const Padding(padding: EdgeInsets.all(9), child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                        : const Icon(Icons.arrow_upward_rounded, color: Colors.white, size: 18),
+                      child: const Icon(
+                        Icons.arrow_upward_rounded,
+                        color: Colors.white,
+                        size: 18,
+                      ),
                     ),
                   ),
                 ],
@@ -823,21 +1217,39 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       alignment: Alignment.centerLeft,
-      child: Stack(children: [
-        ClipRRect(
-          borderRadius: BorderRadius.circular(13),
-          child: Image.file(_pendingImage!, width: 64, height: 64, fit: BoxFit.cover)),
-        Positioned(
-          right: 3, top: 3,
-          child: GestureDetector(
-            onTap: _removePendingImage,
-            child: Container(
-              width: 19, height: 19,
-              decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
-              child: const Icon(Icons.close_rounded, color: Colors.white, size: 12)),
+      child: Stack(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(13),
+            child: Image.file(
+              _pendingImage!,
+              width: 64,
+              height: 64,
+              fit: BoxFit.cover,
+            ),
           ),
-        ),
-      ]),
+          Positioned(
+            right: 3,
+            top: 3,
+            child: GestureDetector(
+              onTap: _removePendingImage,
+              child: Container(
+                width: 19,
+                height: 19,
+                decoration: const BoxDecoration(
+                  color: Colors.black54,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.close_rounded,
+                  color: Colors.white,
+                  size: 12,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -847,64 +1259,111 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
   String get _inputHint {
     switch (appLang.languageCode) {
-      case 'pt': return 'Mensagem';
-      case 'de': return 'Nachricht';
-      case 'es': return 'Mensaje';
-      default:   return 'Message';
+      case 'pt':
+        return 'Mensagem';
+      case 'de':
+        return 'Nachricht';
+      case 'es':
+        return 'Mensaje';
+      default:
+        return 'Message';
     }
   }
 
   String get _imageOnlyText {
     switch (appLang.languageCode) {
-      case 'pt': return 'Imagem enviada. O que achas?';
-      case 'de': return 'Bild gesendet. Was denkst du?';
-      case 'es': return 'Imagen enviada. ¿Qué opinas?';
-      default:   return 'Image sent. What do you think?';
+      case 'pt':
+        return 'Imagem enviada. O que achas?';
+      case 'de':
+        return 'Bild gesendet. Was denkst du?';
+      case 'es':
+        return 'Imagen enviada. ¿Qué opinas?';
+      default:
+        return 'Image sent. What do you think?';
     }
   }
 
   String get _galleryLabel {
     switch (appLang.languageCode) {
-      case 'pt': return 'Escolher uma foto';
-      case 'de': return 'Foto auswählen';
-      case 'es': return 'Elegir una foto';
-      default:   return 'Choose a photo';
+      case 'pt':
+        return 'Escolher uma foto';
+      case 'de':
+        return 'Foto auswählen';
+      case 'es':
+        return 'Elegir una foto';
+      default:
+        return 'Choose a photo';
     }
   }
 
   String get _cameraLabel {
     switch (appLang.languageCode) {
-      case 'pt': return 'Tirar uma foto';
-      case 'de': return 'Foto aufnehmen';
-      case 'es': return 'Tomar una foto';
-      default:   return 'Take a photo';
+      case 'pt':
+        return 'Tirar uma foto';
+      case 'de':
+        return 'Foto aufnehmen';
+      case 'es':
+        return 'Tomar una foto';
+      default:
+        return 'Take a photo';
     }
   }
 
   String get _errorMessage {
     switch (appLang.languageCode) {
-      case 'pt': return 'Tive um problema de ligação. Tenta novamente.';
-      case 'de': return 'Verbindungsfehler. Bitte versuche es erneut.';
-      case 'es': return 'Hubo un problema de conexión. Inténtalo de nuevo.';
-      default:   return 'I had a connection problem. Please try again.';
+      case 'pt':
+        return 'Tive um problema de ligação. Tenta novamente.';
+      case 'de':
+        return 'Verbindungsfehler. Bitte versuche es erneut.';
+      case 'es':
+        return 'Hubo un problema de conexión. Inténtalo de nuevo.';
+      default:
+        return 'I had a connection problem. Please try again.';
     }
   }
 
   String get _copyLabel {
     switch (appLang.languageCode) {
-      case 'de': return 'Kopieren';
-      case 'es': return 'Copiar';
-      case 'pt': return 'Copiar';
-      default:   return 'Copy';
+      case 'de':
+        return 'Kopieren';
+      case 'es':
+        return 'Copiar';
+      case 'pt':
+        return 'Copiar';
+      default:
+        return 'Copy';
     }
   }
 
+  String get _anotherRequest => switch (appLang.languageCode) {
+    'pt' =>
+      'Quero outra abordagem para a mesma situação, com uma ideia diferente.',
+    'de' =>
+      'Gib mir für dieselbe Situation einen anderen Ansatz mit einer neuen Idee.',
+    'es' =>
+      'Quiero otro enfoque para la misma situación, con una idea diferente.',
+    'fr' =>
+      'Propose une autre approche pour la même situation, avec une idée différente.',
+    'it' =>
+      'Voglio un altro approccio per la stessa situazione, con una nuova idea.',
+    'tr' => 'Aynı durum için farklı bir fikirle başka bir yaklaşım öner.',
+    'pl' =>
+      'Zaproponuj inne podejście do tej samej sytuacji, z nowym pomysłem.',
+    'ru' => 'Предложи другой подход к той же ситуации с новой идеей.',
+    'ar' => 'أريد أسلوبا آخر لنفس الموقف بفكرة مختلفة.',
+    _ => 'Give me a different approach to the same situation, with a new idea.',
+  };
+
   String get _anotherLabel {
     switch (appLang.languageCode) {
-      case 'de': return 'Andere Option';
-      case 'es': return 'Otra opción';
-      case 'pt': return 'Outra opção';
-      default:   return 'Another option';
+      case 'de':
+        return 'Andere Option';
+      case 'es':
+        return 'Otra opción';
+      case 'pt':
+        return 'Outra opção';
+      default:
+        return 'Another option';
     }
   }
 
@@ -913,44 +1372,142 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
     switch (value.toLowerCase()) {
       case 'high':
       case 'strong':
-        return l == 'pt' ? 'Interesse forte' : l == 'de' ? 'Starkes Interesse' : l == 'es' ? 'Interés fuerte' : 'Strong interest';
+        return l == 'pt'
+            ? 'Interesse forte'
+            : l == 'de'
+            ? 'Starkes Interesse'
+            : l == 'es'
+            ? 'Interés fuerte'
+            : 'Strong interest';
       case 'medium':
       case 'moderate':
-        return l == 'pt' ? 'Interesse moderado' : l == 'de' ? 'Mittleres Interesse' : l == 'es' ? 'Interés moderado' : 'Moderate interest';
+        return l == 'pt'
+            ? 'Interesse moderado'
+            : l == 'de'
+            ? 'Mittleres Interesse'
+            : l == 'es'
+            ? 'Interés moderado'
+            : 'Moderate interest';
       case 'low':
-        return l == 'pt' ? 'Interesse baixo' : l == 'de' ? 'Geringes Interesse' : l == 'es' ? 'Interés bajo' : 'Low interest';
+        return l == 'pt'
+            ? 'Interesse baixo'
+            : l == 'de'
+            ? 'Geringes Interesse'
+            : l == 'es'
+            ? 'Interés bajo'
+            : 'Low interest';
       case 'warming_up':
-        return l == 'pt' ? 'A aquecer' : l == 'de' ? 'Aufbauend' : l == 'es' ? 'Creciendo' : 'Warming up';
+        return l == 'pt'
+            ? 'A aquecer'
+            : l == 'de'
+            ? 'Aufbauend'
+            : l == 'es'
+            ? 'Creciendo'
+            : 'Warming up';
       default:
-        return l == 'pt' ? 'Incerto' : l == 'de' ? 'Unklar' : l == 'es' ? 'Incierto' : 'Unclear';
+        return l == 'pt'
+            ? 'Incerto'
+            : l == 'de'
+            ? 'Unklar'
+            : l == 'es'
+            ? 'Incierto'
+            : 'Unclear';
     }
   }
 
   String _prettyStage(String value) {
     final l = appLang.languageCode;
     switch (value.toLowerCase()) {
-      case 'match': return 'Match';
-      case 'opening': return l == 'pt' ? 'Abertura' : l == 'de' ? 'Eröffnung' : l == 'es' ? 'Apertura' : 'Opening';
-      case 'getting_to_know': return l == 'pt' ? 'A conhecer-se' : l == 'de' ? 'Kennenlernen' : l == 'es' ? 'Conociéndose' : 'Getting to know';
-      case 'building_connection': return l == 'pt' ? 'A criar conexão' : l == 'de' ? 'Verbindung aufbauen' : l == 'es' ? 'Creando conexión' : 'Building connection';
-      case 'flirting': return l == 'pt' ? 'A flertar' : l == 'de' ? 'Flirten' : l == 'es' ? 'Coqueteando' : 'Flirting';
-      case 'escalating': return l == 'pt' ? 'A escalar' : l == 'de' ? 'Eskalierend' : l == 'es' ? 'Escalando' : 'Escalating';
-      case 'asking_for_date': return l == 'pt' ? 'A convidar' : l == 'de' ? 'Um Date bitten' : l == 'es' ? 'Pidiendo cita' : 'Asking for date';
-      case 'date_planned': return l == 'pt' ? 'Encontro marcado' : l == 'de' ? 'Date geplant' : l == 'es' ? 'Cita planeada' : 'Date planned';
-      case 'post_date': return l == 'pt' ? 'Pós-encontro' : l == 'de' ? 'Nach dem Date' : l == 'es' ? 'Post cita' : 'Post-date';
-      default: return l == 'pt' ? 'Incerto' : l == 'de' ? 'Unklar' : l == 'es' ? 'Incierto' : 'Unclear';
+      case 'match':
+        return 'Match';
+      case 'opening':
+        return l == 'pt'
+            ? 'Abertura'
+            : l == 'de'
+            ? 'Eröffnung'
+            : l == 'es'
+            ? 'Apertura'
+            : 'Opening';
+      case 'getting_to_know':
+        return l == 'pt'
+            ? 'A conhecer-se'
+            : l == 'de'
+            ? 'Kennenlernen'
+            : l == 'es'
+            ? 'Conociéndose'
+            : 'Getting to know';
+      case 'building_connection':
+        return l == 'pt'
+            ? 'A criar conexão'
+            : l == 'de'
+            ? 'Verbindung aufbauen'
+            : l == 'es'
+            ? 'Creando conexión'
+            : 'Building connection';
+      case 'flirting':
+        return l == 'pt'
+            ? 'A flertar'
+            : l == 'de'
+            ? 'Flirten'
+            : l == 'es'
+            ? 'Coqueteando'
+            : 'Flirting';
+      case 'escalating':
+        return l == 'pt'
+            ? 'A escalar'
+            : l == 'de'
+            ? 'Eskalierend'
+            : l == 'es'
+            ? 'Escalando'
+            : 'Escalating';
+      case 'asking_for_date':
+        return l == 'pt'
+            ? 'A convidar'
+            : l == 'de'
+            ? 'Um Date bitten'
+            : l == 'es'
+            ? 'Pidiendo cita'
+            : 'Asking for date';
+      case 'date_planned':
+        return l == 'pt'
+            ? 'Encontro marcado'
+            : l == 'de'
+            ? 'Date geplant'
+            : l == 'es'
+            ? 'Cita planeada'
+            : 'Date planned';
+      case 'post_date':
+        return l == 'pt'
+            ? 'Pós-encontro'
+            : l == 'de'
+            ? 'Nach dem Date'
+            : l == 'es'
+            ? 'Post cita'
+            : 'Post-date';
+      default:
+        return l == 'pt'
+            ? 'Incerto'
+            : l == 'de'
+            ? 'Unklar'
+            : l == 'es'
+            ? 'Incierto'
+            : 'Unclear';
     }
   }
 
   Color _interestColor(String value) {
     switch (value.toLowerCase()) {
       case 'high':
-      case 'strong': return const Color(0xFF34C759);
+      case 'strong':
+        return const Color(0xFF34C759);
       case 'medium':
       case 'moderate':
-      case 'warming_up': return const Color(0xFFFF9500);
-      case 'low': return const Color(0xFFFF3B30);
-      default: return const Color(0xFF8E8E93);
+      case 'warming_up':
+        return const Color(0xFFFF9500);
+      case 'low':
+        return const Color(0xFFFF3B30);
+      default:
+        return const Color(0xFF8E8E93);
     }
   }
 }
@@ -983,10 +1540,34 @@ class _BouncingHappyFaceState extends State<_BouncingHappyFace>
     // Movimento de aceno suave e profissional — rotação leve em
     // torno da base do pulso, sem exageros.
     _rotateAnim = TweenSequence<double>([
-      TweenSequenceItem(tween: Tween(begin: 0.0, end: 0.22).chain(CurveTween(curve: Curves.easeInOut)), weight: 22),
-      TweenSequenceItem(tween: Tween(begin: 0.22, end: -0.08).chain(CurveTween(curve: Curves.easeInOut)), weight: 22),
-      TweenSequenceItem(tween: Tween(begin: -0.08, end: 0.14).chain(CurveTween(curve: Curves.easeInOut)), weight: 18),
-      TweenSequenceItem(tween: Tween(begin: 0.14, end: 0.0).chain(CurveTween(curve: Curves.easeOut)), weight: 38),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 0.0,
+          end: 0.22,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 22,
+      ),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 0.22,
+          end: -0.08,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 22,
+      ),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: -0.08,
+          end: 0.14,
+        ).chain(CurveTween(curve: Curves.easeInOut)),
+        weight: 18,
+      ),
+      TweenSequenceItem(
+        tween: Tween(
+          begin: 0.14,
+          end: 0.0,
+        ).chain(CurveTween(curve: Curves.easeOut)),
+        weight: 38,
+      ),
     ]).animate(_waveController);
   }
 
@@ -1008,9 +1589,79 @@ class _BouncingHappyFaceState extends State<_BouncingHappyFace>
         );
       },
       child: const SizedBox(
-        width: 56, height: 56,
-        child: Center(
-          child: Text('👋🏻', style: TextStyle(fontSize: 40)),
+        width: 56,
+        height: 56,
+        child: Center(child: Text('👋🏻', style: TextStyle(fontSize: 40))),
+      ),
+    );
+  }
+}
+
+class _CoachTypingDots extends StatefulWidget {
+  final Color color;
+  const _CoachTypingDots({required this.color});
+  @override
+  State<_CoachTypingDots> createState() => _CoachTypingDotsState();
+}
+
+class _CoachTypingDotsState extends State<_CoachTypingDots>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _animation = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  );
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _animation.stop();
+      _animation.value = .5;
+    } else {
+      _animation.repeat();
+    }
+  }
+
+  @override
+  void dispose() {
+    _animation.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduced = MediaQuery.disableAnimationsOf(context);
+    return Semantics(
+      label: appLang.languageCode == 'pt'
+          ? 'A preparar resposta'
+          : 'Preparing response',
+      child: AnimatedBuilder(
+        animation: _animation,
+        builder: (context, _) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(3, (i) {
+            final opacity = reduced
+                ? .65
+                : .3 +
+                      .7 *
+                          (math.sin(_animation.value * 2 * math.pi - i * .8) +
+                              1) /
+                          2;
+            return Padding(
+              padding: const EdgeInsets.only(right: 6),
+              child: Opacity(
+                key: ValueKey('coach-typing-dot-$i'),
+                opacity: opacity,
+                child: Container(
+                  width: 11,
+                  height: 11,
+                  decoration: BoxDecoration(
+                    color: widget.color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            );
+          }),
         ),
       ),
     );

@@ -21,6 +21,7 @@ class CoachHistoryMessage {
   final String content;
   final String? imagePath;
   final DateTime createdAt;
+  final Map<String, dynamic>? responseData;
 
   CoachHistoryMessage({
     required this.id,
@@ -28,6 +29,7 @@ class CoachHistoryMessage {
     required this.content,
     this.imagePath,
     required this.createdAt,
+    this.responseData,
   });
 
   Map<String, dynamic> toJson() {
@@ -36,6 +38,7 @@ class CoachHistoryMessage {
       'role': role,
       'content': content,
       'imagePath': imagePath,
+      if (responseData != null) 'responseData': responseData,
       'createdAt': createdAt.toIso8601String(),
     };
   }
@@ -46,7 +49,12 @@ class CoachHistoryMessage {
       role: json['role']?.toString() ?? 'user',
       content: json['content']?.toString() ?? '',
       imagePath: json['imagePath']?.toString(),
-      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
+      responseData: json['responseData'] is Map
+          ? Map<String, dynamic>.from(json['responseData'] as Map)
+          : null,
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+          DateTime.now(),
     );
   }
 }
@@ -91,11 +99,17 @@ class CoachConversation {
     return CoachConversation(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? 'New conversation',
-      createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
-      updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ?? DateTime.now(),
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+          DateTime.now(),
+      updatedAt:
+          DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+          DateTime.now(),
       messages: (json['messages'] as List? ?? [])
           .whereType<Map>()
-          .map((e) => CoachHistoryMessage.fromJson(Map<String, dynamic>.from(e)))
+          .map(
+            (e) => CoachHistoryMessage.fromJson(Map<String, dynamic>.from(e)),
+          )
           .toList(),
     );
   }
@@ -120,7 +134,10 @@ class CoachHistoryService {
 
       final conversations = decoded
           .whereType<Map>()
-          .map((item) => CoachConversation.fromJson(Map<String, dynamic>.from(item)))
+          .map(
+            (item) =>
+                CoachConversation.fromJson(Map<String, dynamic>.from(item)),
+          )
           .toList();
 
       conversations.sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
@@ -132,7 +149,9 @@ class CoachHistoryService {
 
   static Future<void> save(CoachConversation conversation) async {
     final conversations = await loadAll();
-    final index = conversations.indexWhere((item) => item.id == conversation.id);
+    final index = conversations.indexWhere(
+      (item) => item.id == conversation.id,
+    );
 
     if (index >= 0) {
       conversations[index] = conversation;
@@ -165,17 +184,23 @@ class CoachHistoryService {
     await prefs.remove(_storageKey);
   }
 
-  static Future<String> saveImage(String sourcePath, String conversationId) async {
+  static Future<String> saveImage(
+    String sourcePath,
+    String conversationId,
+  ) async {
     final directory = await getApplicationDocumentsDirectory();
     final imageDirectory = '${directory.path}/upcrush_coach_images';
 
-    final directoryObject = await Directory(imageDirectory).create(recursive: true);
+    final directoryObject = await Directory(
+      imageDirectory,
+    ).create(recursive: true);
 
     final extension = sourcePath.contains('.')
         ? sourcePath.substring(sourcePath.lastIndexOf('.'))
         : '.jpg';
 
-    final fileName = '${conversationId}_${DateTime.now().millisecondsSinceEpoch}$extension';
+    final fileName =
+        '${conversationId}_${DateTime.now().millisecondsSinceEpoch}$extension';
     final targetPath = '${directoryObject.path}/$fileName';
 
     final source = File(sourcePath);

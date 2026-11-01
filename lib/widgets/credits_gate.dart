@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'credits_service.dart';
+import '../services/credits_service.dart';
 import '../widgets/paywall_screen.dart';
 
 /// Chama esta função antes de qualquer ação que consome crédito.

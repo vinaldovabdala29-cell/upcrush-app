@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../main.dart';
+import '../main.dart';
 import '../services/revenue_cat_service.dart';
 import '../services/credits_service.dart';
 
@@ -48,11 +48,10 @@ class _PaywallFlowState extends State<PaywallFlow> {
     RevenueCatService.getPrice().then((p) {
       if (mounted) setState(() => _price = p);
     });
-    // Verifica se o utilizador já usou o trial de 3 dias antes,
-    // para mostrar o texto certo por baixo do botão.
-    RevenueCatService.isEligibleForTrial().then((eligible) {
-      if (mounted) setState(() => _eligibleForTrial = eligible);
-    });
+    // O RevenueCatService atual não expõe isEligibleForTrial().
+    // Mantemos o paywall compilável e o texto de trial coerente com
+    // o produto semanal atual, sem chamar um método inexistente.
+    _eligibleForTrial = true;
     _timer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!mounted) return;
       final next = (_currentPhoto + 1) % _photos.length;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../main.dart';
+import '../main.dart';
 import '../theme/app_localizations.dart';
 
 /// Usa este widget em vez de chamar appLang diretamente nas telas.

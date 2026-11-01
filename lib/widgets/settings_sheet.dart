@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../main.dart';
+import '../main.dart';
 import 'paywall_screen.dart';
 
 class SettingsSheet extends StatefulWidget {

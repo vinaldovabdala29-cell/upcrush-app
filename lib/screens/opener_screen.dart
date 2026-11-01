@@ -1,11 +1,13 @@
+import '../theme/tone_options.dart';
 import 'dart:io';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
-import '../services/ai_service.dart';
+import '../services/romantic_image_opener_service.dart';
 import '../widgets/background_blobs.dart';
-import '../../../main.dart';
+import '../main.dart';
 import '../services/review_request_service.dart';
 
 class OpenerScreen extends StatefulWidget {
@@ -16,48 +18,57 @@ class OpenerScreen extends StatefulWidget {
 
 class _OpenerScreenState extends State<OpenerScreen>
     with TickerProviderStateMixin {
-
   File? _imagem;
   String? _base64Image;
   bool _analisando = false;
   bool _erro = false;
   String _erroMsg = '';
   List<String> _respostas = [];
+
+  // Cada nova mensagem aparece acima, preservando as anteriores.
+  void _adicionarResposta(String resposta) {
+    _respostas.insert(0, resposta);
+  }
+
+  Duration _scanStartedAt = Duration.zero;
+
   final List<String> _historicoRespostas = [];
-  String _estiloAtual = 'picante';
-  int? _copiedIndex;
+  final ScrollController _respostasScrollController = ScrollController();
+  String _estiloAtual = 'flertar';
   bool _loadingEstilo = false;
+  String? _stock;
+  Future<void>? _stockEmCurso;
+  int _versao = 0;
+  bool _consumindo = false;
+  String _idiomaStock = '';
 
   late AnimationController _scanController;
   late Animation<double> _scanAnim;
-  late AnimationController _pulseController;
-  late Animation<double> _pulseAnim;
 
   static const _accent = Color(0xFFFF2D55);
-  static const _success = Color(0xFF34C759);
 
   bool get _dark => isDarkModeNotifier.value;
   Color get _bg => _dark ? const Color(0xFF0A0A10) : const Color(0xFFF2F2F7);
-  Color get _cardBg => _dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.85);
-  Color get _cardBorder => _dark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.9);
+  Color get _cardBg =>
+      _dark ? Colors.white.withOpacity(0.06) : Colors.white.withOpacity(0.85);
+  Color get _cardBorder =>
+      _dark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.9);
   Color get _textPrimary => _dark ? Colors.white : const Color(0xFF1C1C1E);
   Color get _textSecondary => _dark ? Colors.white38 : Colors.black38;
 
-  List<Map<String, dynamic>> _getEstilos(String lang) => [
-    {'key': 'engraçado', 'label': lang=='de'?'Lustig':lang=='es'?'Gracioso':lang=='fr'?'Drôle':lang=='pt'?'Engraçado':lang=='it'?'Divertente':lang=='tr'?'Komik':lang=='ru'?'Смешной':'Funny', 'icon': Icons.sentiment_very_satisfied_rounded, 'colors': [const Color(0xFFFF9500), const Color(0xFFFFCC02)], 'shadow': const Color(0xFFFF9500)},
-    {'key': 'picante',   'label': lang=='de'?'Pikant':lang=='es'?'Picante':lang=='fr'?'Piquant':lang=='pt'?'Picante':lang=='it'?'Piccante':lang=='tr'?'Ateşli':lang=='ru'?'Пикантный':'Spicy', 'icon': Icons.local_fire_department_rounded, 'colors': [const Color(0xFFFF2D55), const Color(0xFFFF6B81)], 'shadow': const Color(0xFFFF2D55)},
-    {'key': 'misterioso','label': lang=='de'?'Mysteriös':lang=='es'?'Misterioso':lang=='fr'?'Mystérieux':lang=='pt'?'Misterioso':lang=='it'?'Misterioso':lang=='tr'?'Gizemli':lang=='ru'?'Загадочный':'Mysterious', 'icon': Icons.nightlight_round, 'colors': [const Color(0xFF5856D6), const Color(0xFFAF52DE)], 'shadow': const Color(0xFF5856D6)},
-    {'key': 'direto',    'label': lang=='de'?'Direkt':lang=='es'?'Directo':lang=='fr'?'Direct':lang=='pt'?'Direto':lang=='it'?'Diretto':lang=='tr'?'Doğrudan':lang=='ru'?'Прямой':'Direct', 'icon': Icons.bolt_rounded, 'colors': [const Color(0xFF007AFF), const Color(0xFF5AC8FA)], 'shadow': const Color(0xFF007AFF)},
-  ];
+  List<Map<String, dynamic>> _getEstilos(String lang) => toneOptions(lang);
 
   @override
   void initState() {
     super.initState();
     isDarkModeNotifier.addListener(_onThemeChange);
-    _scanController = AnimationController(vsync: this, duration: const Duration(milliseconds: 1800))..repeat();
-    _scanAnim = Tween<double>(begin: 0.0, end: 1.0).animate(CurvedAnimation(parent: _scanController, curve: Curves.easeInOut));
-    _pulseController = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))..repeat(reverse: true);
-    _pulseAnim = Tween<double>(begin: 0.4, end: 1.0).animate(CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut));
+    _scanController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat();
+    _scanAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _scanController, curve: Curves.easeInOut),
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) => _processarImagem());
   }
 
@@ -65,18 +76,24 @@ class _OpenerScreenState extends State<OpenerScreen>
   void dispose() {
     isDarkModeNotifier.removeListener(_onThemeChange);
     _scanController.dispose();
-    _pulseController.dispose();
+    _respostasScrollController.dispose();
     super.dispose();
   }
 
-  void _onThemeChange() { if (mounted) setState(() {}); }
+  void _onThemeChange() {
+    if (mounted) setState(() {});
+  }
 
   String _erroMsgLocal(String lang) {
     switch (lang) {
-      case 'de': return 'Verbindungsfehler.\nPrüfe deine Verbindung und versuche es erneut.';
-      case 'es': return 'Error de conexión.\nVerifica tu conexión e inténtalo de nuevo.';
-      case 'pt': return 'Algo deu errado.\nVerifica a conexão e tenta novamente.';
-      default:   return 'Something went wrong.\nCheck your connection and try again.';
+      case 'de':
+        return 'Verbindungsfehler.\nPrüfe deine Verbindung und versuche es erneut.';
+      case 'es':
+        return 'Error de conexión.\nVerifica tu conexión e inténtalo de nuevo.';
+      case 'pt':
+        return 'Algo deu errado.\nVerifica a conexão e tenta novamente.';
+      default:
+        return 'Something went wrong.\nCheck your connection and try again.';
     }
   }
 
@@ -93,82 +110,175 @@ class _OpenerScreenState extends State<OpenerScreen>
     }
   }
 
+  void _invalidarStock() {
+    _versao++;
+    _stock = null;
+    _stockEmCurso = null;
+  }
+
+  Future<List<String>> _pedirUma(
+    String imagem,
+    String estilo,
+    String idioma,
+  ) async {
+    final evitar = <String>[..._historicoRespostas, ..._respostas];
+    return RomanticImageOpenerService.gerarOpenerDeImagem(
+      imagem,
+      estilo,
+      idioma,
+      evitar.toSet().toList(),
+    );
+  }
+
+  void _prepararStock() {
+    if (_base64Image == null || _stock != null || _stockEmCurso != null) return;
+    final versao = _versao;
+    final imagem = _base64Image!;
+    final estilo = _estiloAtual;
+    final idioma = appLang.languageCode;
+    _idiomaStock = idioma;
+    final tarefa = _pedirUma(imagem, estilo, idioma)
+        .then((lista) {
+          if (!mounted || versao != _versao || idioma != appLang.languageCode)
+            return;
+          final nova = lista
+              .where(
+                (e) =>
+                    e.trim().isNotEmpty &&
+                    !_respostas.contains(e.trim()) &&
+                    !_historicoRespostas.contains(e.trim()),
+              )
+              .toList();
+          if (nova.isNotEmpty) _stock = nova.first.trim();
+        })
+        .catchError((Object _) {
+          // Falha silenciosa do prefetch: a geração normal continua disponível.
+        })
+        .whenComplete(() {
+          if (versao == _versao) _stockEmCurso = null;
+        });
+    _stockEmCurso = tarefa;
+  }
+
   Future<void> _processarImagem() async {
     final picker = ImagePicker();
     try {
-      final img = await picker.pickImage(source: ImageSource.gallery, imageQuality: 25);
-      if (img == null) { if (mounted) Navigator.pop(context); return; }
-      final bytes = await File(img.path).readAsBytes();
-      final base64 = base64Encode(bytes);
-      // ✅ Limpa respostas antigas antes de gerar
-      setState(() { _imagem = File(img.path); _base64Image = base64; _analisando = true; _erro = false; _respostas = []; _historicoRespostas.clear(); });
-      final respostas = await AIService.gerarOpenerDeImagem(base64, _estiloAtual, appLang.languageCode);
+      final img = await picker.pickImage(
+        source: ImageSource.gallery,
+        imageQuality: 25,
+      );
+      if (img == null) {
+        if (mounted) Navigator.pop(context);
+        return;
+      }
+      final base64 = base64Encode(await File(img.path).readAsBytes());
       if (!mounted) return;
-      setState(() { _respostas = respostas; _analisando = false; });
-    } catch (e) {
-      if (mounted) setState(() { _analisando = false; _erro = true; _erroMsg = _erroMsgLocal(appLang.languageCode); });
+      _invalidarStock();
+      final versao = _versao;
+      setState(() {
+        _estiloAtual = 'flertar';
+        _loadingEstilo = false;
+        _imagem = File(img.path);
+        _base64Image = base64;
+        _scanStartedAt = _scanController.lastElapsedDuration ?? Duration.zero;
+        _analisando = true;
+        _erro = false;
+        _respostas = [];
+        _historicoRespostas.clear();
+      });
+      final respostas = await _pedirUma(
+        base64,
+        _estiloAtual,
+        appLang.languageCode,
+      );
+      if (!mounted || versao != _versao) return;
+      setState(() {
+        _respostas = respostas.take(1).toList();
+        _analisando = false;
+      });
+      _prepararStock();
+    } catch (_) {
+      if (mounted)
+        setState(() {
+          _analisando = false;
+          _erro = true;
+          _erroMsg = _erroMsgLocal(appLang.languageCode);
+        });
     }
   }
 
   Future<void> _gerarComEstilo(String estilo) async {
-    if (_base64Image == null) return;
-    final anteriores = List<String>.from(_respostas);
-    _guardarNoHistorico(anteriores);
-    setState(() { _estiloAtual = estilo; _loadingEstilo = true; _respostas = []; });
-    try {
-      final respostas = await AIService.gerarOpenerDeImagem(
-        _base64Image!,
-        estilo,
-        appLang.languageCode,
-        List<String>.from(_historicoRespostas),
-      );
-      if (mounted) setState(() { _respostas = respostas; _loadingEstilo = false; });
-    } catch (e) {
-      if (mounted) setState(() { _loadingEstilo = false; _erro = true; _erroMsg = _erroMsgLocal(appLang.languageCode); });
+    if (_base64Image == null || _analisando || _consumindo) return;
+    if (estilo != _estiloAtual) {
+      _invalidarStock();
+      setState(() => _estiloAtual = estilo);
     }
+    await _gerarDiferente();
   }
 
   Future<void> _gerarDiferente() async {
-    if (_base64Image == null) return;
-    final anteriores = List<String>.from(_respostas);
-    _guardarNoHistorico(anteriores);
-    setState(() { _loadingEstilo = true; _respostas = []; });
+    if (_base64Image == null || _analisando || _consumindo) return;
+    _consumindo = true;
     try {
-      final respostas = await AIService.gerarOpenerDeImagem(
-        _base64Image!,
-        _estiloAtual,
-        appLang.languageCode,
-        List<String>.from(_historicoRespostas),
-      );
-      if (mounted) setState(() { _respostas = respostas; _loadingEstilo = false; });
-    } catch (e) {
-      if (mounted) setState(() { _loadingEstilo = false; _erro = true; _erroMsg = _erroMsgLocal(appLang.languageCode); });
+      if (_idiomaStock != appLang.languageCode) _invalidarStock();
+      final atual = _versao;
+      var proxima = _stock;
+      if (proxima == null && _stockEmCurso != null) {
+        setState(() => _loadingEstilo = true);
+        await _stockEmCurso;
+        proxima = _stock;
+      }
+      if (proxima == null) {
+        if (mounted) setState(() => _loadingEstilo = true);
+        final lista = await _pedirUma(
+          _base64Image!,
+          _estiloAtual,
+          appLang.languageCode,
+        );
+        proxima = lista.isNotEmpty ? lista.first.trim() : null;
+      }
+      if (!mounted || atual != _versao) return;
+      if (proxima == null || proxima.isEmpty) throw Exception('Resposta vazia');
+      _guardarNoHistorico(_respostas);
+      setState(() {
+        _adicionarResposta(proxima!);
+        _stock = null;
+        _loadingEstilo = false;
+        _erro = false;
+      });
+      _prepararStock();
+    } catch (_) {
+      if (mounted)
+        setState(() {
+          _loadingEstilo = false;
+          _erro = true;
+          _erroMsg = _erroMsgLocal(appLang.languageCode);
+        });
+    } finally {
+      _consumindo = false;
     }
   }
 
   Future<void> _copiar(String texto, int index) async {
     await Clipboard.setData(ClipboardData(text: texto));
     HapticFeedback.lightImpact();
-    // ✅ Adicionado: notifica o serviço de avaliação.
     ReviewRequestService.notifySuccess();
-    setState(() => _copiedIndex = index);
-    await Future.delayed(const Duration(seconds: 2));
-    if (mounted) setState(() => _copiedIndex = null);
   }
 
-  String _getFunLoadingMsg(String lang) {
-    switch (lang) {
-      case 'de': return 'Koche deine Flirts... 🌶️';
-      case 'es': return 'Cocinando tus flirts... 🌶️';
-      case 'fr': return 'On cuisine tes flirts... 🌶️';
-      case 'it': return 'Cucinando i tuoi flirt... 🌶️';
-      case 'tr': return 'Flörtlerin pişiyor... 🌶️';
-      case 'pl': return 'Gotuję twoje flirty... 🌶️';
-      case 'ru': return 'Готовлю твой флирт... 🌶️';
-      case 'ar': return '...يُطبخ غزلك 🌶️';
-      case 'pt': return 'Cozinhando seus flertins... 🌶️';
-      default:   return 'Cooking your flirts... 🌶️';
-    }
+  List<List<String>> _scanMessages(String lang) {
+    const messages = <String, List<List<String>>>{
+      'pt': [["Lendo a vibe", "Detalhes que fazem a diferença"], ["A sentir o clima", "Um pouco de charme, uma resposta à altura"], ["Cozinhando os teus flertes", "Quase lá"]],
+      'en': [["Discovering the details", "A good conversation starts with something that stands out"], ["Preparing a first impression", "A touch of charm beyond a simple hello"], ["Crafting your opener", "The first move deserves a great line"]],
+      'de': [["Wir entdecken die Details", "Ein gutes Gespräch beginnt mit etwas Besonderem"], ["Der erste Eindruck zählt", "Ein Hauch Charme statt einem einfachen Hallo"], ["Dein Einstieg entsteht", "Der erste Schritt verdient einen guten Spruch"]],
+      'es': [["Descubriendo los detalles", "Una buena conversación empieza con algo que llama la atención"], ["Preparando la primera impresión", "Un toque de encanto más allá de un simple hola"], ["Cocinando tu primera frase", "El primer paso merece una buena frase"]],
+      'fr': [["À la découverte des détails", "Une belle conversation commence par un détail qui attire"], ["Préparons la première impression", "Un peu de charme pour dépasser le simple salut"], ["On prépare ton approche", "Le premier pas mérite une belle phrase"]],
+      'it': [["Scopriamo i dettagli", "Una bella conversazione inizia con qualcosa che colpisce"], ["Prepariamo la prima impressione", "Un tocco di fascino oltre un semplice ciao"], ["Prepariamo il tuo approccio", "Il primo passo merita una bella frase"]],
+      'tr': [["Detayları keşfediyoruz", "Güzel bir sohbet dikkat çeken bir şeyle başlar"], ["İlk izlenimi hazırlıyoruz", "Basit bir merhabanın ötesine geç"], ["İlk mesajın hazırlanıyor", "İlk adım güzel bir cümleyi hak eder"]],
+      'pl': [["Odkrywamy szczegóły", "Dobra rozmowa zaczyna się od czegoś ciekawego"], ["Tworzymy pierwsze wrażenie", "Odrobina uroku zamiast zwykłego cześć"], ["Przygotowujemy pierwszą wiadomość", "Pierwszy krok zasługuje na dobre zdanie"]],
+      'ru': [["Замечаем детали", "Хороший разговор начинается с чего-то интересного"], ["Готовим первое впечатление", "Немного обаяния вместо обычного привет"], ["Готовим первое сообщение", "Первый шаг заслуживает хорошей фразы"]],
+      'ar': [["نكتشف التفاصيل", "تبدأ المحادثة الجميلة بشيء يلفت الانتباه"], ["نجهز الانطباع الأول", "لمسة من الجاذبية تتجاوز التحية المعتادة"], ["نصوغ رسالتك الأولى", "الخطوة الأولى تستحق عبارة مميزة"]],
+    };
+    return messages[lang] ?? messages['en']!;
   }
 
   @override
@@ -180,23 +290,54 @@ class _OpenerScreenState extends State<OpenerScreen>
         return Scaffold(
           backgroundColor: _bg,
           appBar: AppBar(
-            backgroundColor: _bg, elevation: 0,
+            backgroundColor: _bg,
+            elevation: 0,
             leading: IconButton(
-              icon: Icon(Icons.arrow_back_ios_rounded, color: _textPrimary, size: 20),
-              onPressed: () => Navigator.pop(context)),
-            title: Text(lang.openerTitle,
-              style: TextStyle(color: _textPrimary, fontSize: 17, fontWeight: FontWeight.w700)),
+              icon: Icon(
+                Icons.arrow_back_ios_rounded,
+                color: _textPrimary,
+                size: 20,
+              ),
+              onPressed: () => Navigator.pop(context),
+            ),
+            title: Text(
+              lang.openerTitle,
+              style: TextStyle(
+                color: _textPrimary,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
             actions: [
               if (_respostas.isNotEmpty)
                 IconButton(
-                  icon: Icon(Icons.refresh_rounded, color: _textSecondary, size: 22),
-                  onPressed: _loadingEstilo ? null : _gerarDiferente),
+                  icon: Icon(
+                    Icons.refresh_rounded,
+                    color: _textSecondary,
+                    size: 22,
+                  ),
+                  onPressed: _consumindo ? null : _gerarDiferente,
+                ),
               IconButton(
-                icon: Icon(Icons.photo_library_outlined, color: _textSecondary, size: 22),
-                onPressed: _analisando ? null : () {
-                  setState(() { _imagem = null; _base64Image = null; _respostas = []; _erro = false; });
-                  _processarImagem();
-                }),
+                icon: Icon(
+                  Icons.photo_library_outlined,
+                  color: _textSecondary,
+                  size: 22,
+                ),
+                onPressed: _analisando
+                    ? null
+                    : () {
+                        _invalidarStock();
+                        setState(() {
+                          _imagem = null;
+                          _base64Image = null;
+                          _respostas = [];
+                          _historicoRespostas.clear();
+                          _erro = false;
+                        });
+                        _processarImagem();
+                      },
+              ),
             ],
           ),
           body: _erro ? _buildErro(lang) : _buildBody(estilos),
@@ -218,8 +359,8 @@ class _OpenerScreenState extends State<OpenerScreen>
 
           // Keep exactly the same photo size both while scanning and after the
           // result is ready. Only the result panel is hidden during analysis.
-          final photoHeight = constraints.maxHeight * 0.62;
-          final isLoading = _analisando || _loadingEstilo;
+          final photoHeight = constraints.maxHeight * 0.70;
+          final isLoading = _analisando;
 
           return Stack(
             children: [
@@ -358,12 +499,54 @@ class _OpenerScreenState extends State<OpenerScreen>
               children: [
                 // Never crop the selected photo.
                 Image.file(_imagem!, fit: BoxFit.contain),
-                if (_analisando || _loadingEstilo)
-                  Container(color: Colors.black.withOpacity(0.20)),
-                Positioned(top: 10, left: 10, child: _corner(top: true, left: true)),
-                Positioned(top: 10, right: 10, child: _corner(top: true, left: false)),
-                Positioned(bottom: 10, left: 10, child: _corner(top: false, left: true)),
-                Positioned(bottom: 10, right: 10, child: _corner(top: false, left: false)),
+                if (_analisando)
+                  Container(color: Colors.black.withOpacity(0.18)),
+                if (_analisando)
+                  AnimatedBuilder(
+                    animation: _scanAnim,
+                    builder: (context, _) => Align(
+                      alignment: Alignment(0, -1 + 2 * _scanAnim.value),
+                      child: Container(
+                        height: 5,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF1677F2),
+                              Color(0xFF8DDEFF),
+                              Color(0xFF1677F2),
+                            ],
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF44B5FF).withOpacity(0.95),
+                              blurRadius: 24,
+                              spreadRadius: 6,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                Positioned(
+                  top: 10,
+                  left: 10,
+                  child: _corner(top: true, left: true),
+                ),
+                Positioned(
+                  top: 10,
+                  right: 10,
+                  child: _corner(top: true, left: false),
+                ),
+                Positioned(
+                  bottom: 10,
+                  left: 10,
+                  child: _corner(top: false, left: true),
+                ),
+                Positioned(
+                  bottom: 10,
+                  right: 10,
+                  child: _corner(top: false, left: false),
+                ),
               ],
             ),
           ),
@@ -373,143 +556,263 @@ class _OpenerScreenState extends State<OpenerScreen>
   }
 
   Widget _buildEstilosBar(List<Map<String, dynamic>> estilos) {
-    return SizedBox(
-      height: 72,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 0),
-        itemCount: estilos.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final e = estilos[i];
-          final ativo = e['key'] == _estiloAtual;
-          final colors = e['colors'] as List<Color>;
-          return GestureDetector(
-            onTap: () => _gerarComEstilo(e['key']),
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                color: ativo ? null : _cardBg,
-                gradient: ativo ? LinearGradient(colors: [colors[0].withOpacity(0.2), colors[1].withOpacity(0.1)]) : null,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: ativo ? colors[0].withOpacity(0.6) : _cardBorder, width: ativo ? 1.5 : 1)),
-              child: Row(mainAxisSize: MainAxisSize.min, children: [
-                Container(width: 28, height: 28,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(colors: colors),
-                    borderRadius: BorderRadius.circular(8),
-                    boxShadow: [BoxShadow(color: (e['shadow'] as Color).withOpacity(ativo ? 0.45 : 0.2), blurRadius: 6, offset: const Offset(0, 2))]),
-                  child: Icon(e['icon'] as IconData, color: Colors.white, size: 15)),
-                const SizedBox(width: 8),
-                Text(e['label'], style: TextStyle(
-                  fontSize: 13, fontWeight: ativo ? FontWeight.w700 : FontWeight.w500,
-                  color: _textPrimary)),
-              ]),
+    const rows = [
+      ['flertar', 'romantico', 'picante'],
+      ['engraçado', 'misterioso', 'toxico'],
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (var row = 0; row < rows.length; row++) ...[
+            if (row > 0) const SizedBox(height: 6),
+            Row(
+              children: [
+                for (var col = 0; col < rows[row].length; col++) ...[
+                  if (col > 0) const SizedBox(width: 6),
+                  Expanded(
+                    child: _buildToneButton(
+                      estilos.firstWhere(
+                        (tone) => tone['key'] == rows[row][col],
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
-          );
-        },
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildToneButton(Map<String, dynamic> tone) {
+    final selected = tone['key'] == _estiloAtual;
+    final colors = tone['colors'] as List<Color>;
+    final enabled = !_analisando && !_loadingEstilo;
+    return Semantics(
+      selected: selected,
+      button: true,
+      enabled: enabled,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: enabled ? () => _gerarComEstilo(tone['key'] as String) : null,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            constraints: const BoxConstraints(minHeight: 44),
+            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 7),
+            decoration: BoxDecoration(
+              color: selected ? colors.first.withOpacity(0.16) : _cardBg,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: selected ? colors.first : _cardBorder,
+                width: selected ? 1.5 : 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                if (tone['key'] == 'flertar')
+                  const Text('❣️', style: TextStyle(fontSize: 16))
+                else if (tone['key'] == 'picante')
+                  const Text('😈', style: TextStyle(fontSize: 16))
+                else
+                  Icon(tone['icon'] as IconData, size: 17, color: colors.first),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      tone['label'] as String,
+                      maxLines: 1,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w500,
+                        color: _textPrimary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildScanOverlay() {
-    final lang = appLang.languageCode;
-    return Center(
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        AnimatedBuilder(
-          animation: _pulseAnim,
-          builder: (_, __) => Transform.scale(
-            scale: 0.9 + (_pulseAnim.value * 0.1),
-            child: const Text('🌶️', style: TextStyle(fontSize: 52)))),
-        const SizedBox(height: 20),
-        AnimatedBuilder(
-          animation: _pulseAnim,
-          builder: (_, __) => Opacity(
-            opacity: _pulseAnim.value,
-            child: Text(_getFunLoadingMsg(lang),
-              style: const TextStyle(color: _accent, fontSize: 16, fontWeight: FontWeight.w700),
-              textAlign: TextAlign.center))),
-        const SizedBox(height: 12),
-        SizedBox(width: 160, child: ClipRRect(
-          borderRadius: BorderRadius.circular(4),
-          child: AnimatedBuilder(
-            animation: _scanAnim,
-            builder: (_, __) => LinearProgressIndicator(
-              value: _scanAnim.value,
-              backgroundColor: _accent.withOpacity(0.12),
-              valueColor: const AlwaysStoppedAnimation(_accent),
-              minHeight: 3)))),
-      ]),
+    final messages = _scanMessages(appLang.languageCode);
+    return Semantics(
+      label: messages.first.first,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+        child: AnimatedBuilder(
+          animation: _scanController,
+          builder: (context, _) {
+            final reduceMotion = MediaQuery.disableAnimationsOf(context);
+            final phase = _scanController.value * 2 * math.pi;
+            final elapsed = (_scanController.lastElapsedDuration ?? Duration.zero) - _scanStartedAt;
+            final index = (elapsed.inMilliseconds ~/ 3000) % messages.length;
+            final message = messages[index];
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                AnimatedSwitcher(
+                  duration: reduceMotion ? Duration.zero : const Duration(milliseconds: 300),
+                  child: Semantics(
+                    key: ValueKey(index),
+                    liveRegion: true,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(message[0], textAlign: TextAlign.center,
+                          style: const TextStyle(color: _accent, fontSize: 22,
+                            fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 8),
+                        Text(message[1], textAlign: TextAlign.center,
+                          style: TextStyle(color: _textSecondary, fontSize: 14,
+                            height: 1.35)),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: List.generate(3, (index) {
+                    final pulse = reduceMotion
+                        ? 1.0
+                        : (math.sin(phase - index * 0.8) + 1) / 2;
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 4),
+                      child: Opacity(
+                        opacity: 0.35 + 0.65 * pulse,
+                        child: Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF1677F2),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    );
+                  }),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 
   Widget _buildRespostas() {
     if (_respostas.isEmpty) return const SizedBox.shrink();
-    return ListView.builder(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      itemCount: _respostas.length,
-      itemBuilder: (_, index) {
-        final isCopied = _copiedIndex == index;
-        return GestureDetector(
-          onTap: () => _copiar(_respostas[index], index),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            margin: const EdgeInsets.only(bottom: 10),
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: isCopied ? _success.withOpacity(_dark ? 0.12 : 0.08) : _cardBg,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: isCopied ? _success.withOpacity(0.4) : _cardBorder,
-                width: isCopied ? 1.5 : 1),
-              boxShadow: _dark ? [] : [
-                BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 8, offset: const Offset(0, 2))]),
-            child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Expanded(child: Text(_respostas[index],
-                style: TextStyle(color: _textPrimary, fontSize: 13, height: 1.4))),
-              const SizedBox(width: 10),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                decoration: BoxDecoration(
-                  color: isCopied ? _success.withOpacity(0.12) : _accent.withOpacity(0.08),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: isCopied ? _success.withOpacity(0.4) : _accent.withOpacity(0.2))),
-                child: Text(
-                  isCopied ? appLang.resultCopied : appLang.resultCopy,
-                  style: TextStyle(color: isCopied ? _success : _accent, fontSize: 10, fontWeight: FontWeight.w600))),
-            ]),
-          ),
-        );
-      },
+    return SingleChildScrollView(
+      controller: _respostasScrollController,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+        child: Column(
+          children: List.generate(_respostas.length, (index) {
+            final text = _respostas[index];
+            return Align(
+              alignment: Alignment.center,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.sizeOf(context).width * 0.84,
+                  ),
+                  child: Material(
+                    color: const Color(0xFF1677F2),
+                    borderRadius: BorderRadius.circular(24),
+                    child: InkWell(
+                      onTap: () => _copiar(text, index),
+                      borderRadius: BorderRadius.circular(24),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 14,
+                        ),
+                        child: Text(
+                          text,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w400,
+                            height: 1.35,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ),
     );
   }
 
-  Widget _corner({required bool top, required bool left}) =>
-    SizedBox(width: 14, height: 14, child: CustomPaint(painter: _CornerPainter(top: top, left: left)));
+  Widget _corner({required bool top, required bool left}) => SizedBox(
+    width: 14,
+    height: 14,
+    child: CustomPaint(
+      painter: _CornerPainter(top: top, left: left),
+    ),
+  );
 
   Widget _buildErro(lang) {
     final textColor = _dark ? Colors.white70 : Colors.black54;
-    return Center(child: Padding(
-      padding: const EdgeInsets.all(32),
-      child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-        const Text('😕', style: TextStyle(fontSize: 52)),
-        const SizedBox(height: 20),
-        Text(_erroMsg, textAlign: TextAlign.center,
-          style: TextStyle(color: textColor, fontSize: 15, height: 1.5)),
-        const SizedBox(height: 32),
-        ElevatedButton(
-          onPressed: () { setState(() { _erro = false; _respostas = []; }); _gerarDiferente(); },
-          style: ElevatedButton.styleFrom(backgroundColor: _accent, foregroundColor: Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14))),
-          child: Text(lang.errorRetry)),
-        const SizedBox(height: 12),
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: Text(lang.errorBack, style: TextStyle(color: textColor.withOpacity(0.5)))),
-      ]),
-    ));
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('😕', style: TextStyle(fontSize: 52)),
+            const SizedBox(height: 20),
+            Text(
+              _erroMsg,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: textColor, fontSize: 15, height: 1.5),
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton(
+              onPressed: () {
+                setState(() => _erro = false);
+                _gerarDiferente();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _accent,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              child: Text(lang.errorRetry),
+            ),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                lang.errorBack,
+                style: TextStyle(color: textColor.withOpacity(0.5)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -524,12 +827,26 @@ class _CornerPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
     final path = Path();
-    if (top && left) { path.moveTo(0, size.height); path.lineTo(0, 0); path.lineTo(size.width, 0); }
-    else if (top && !left) { path.moveTo(0, 0); path.lineTo(size.width, 0); path.lineTo(size.width, size.height); }
-    else if (!top && left) { path.moveTo(0, 0); path.lineTo(0, size.height); path.lineTo(size.width, size.height); }
-    else { path.moveTo(0, size.height); path.lineTo(size.width, size.height); path.lineTo(size.width, 0); }
+    if (top && left) {
+      path.moveTo(0, size.height);
+      path.lineTo(0, 0);
+      path.lineTo(size.width, 0);
+    } else if (top && !left) {
+      path.moveTo(0, 0);
+      path.lineTo(size.width, 0);
+      path.lineTo(size.width, size.height);
+    } else if (!top && left) {
+      path.moveTo(0, 0);
+      path.lineTo(0, size.height);
+      path.lineTo(size.width, size.height);
+    } else {
+      path.moveTo(0, size.height);
+      path.lineTo(size.width, size.height);
+      path.lineTo(size.width, 0);
+    }
     canvas.drawPath(path, paint);
   }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

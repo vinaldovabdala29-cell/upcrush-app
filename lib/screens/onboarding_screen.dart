@@ -4,7 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../../../main.dart';
+import '../main.dart';
 import '../widgets/paywall_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {

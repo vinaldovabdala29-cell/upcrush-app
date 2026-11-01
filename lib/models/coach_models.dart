@@ -1,3 +1,5 @@
+enum CoachPersonality { neutro, alpha, romantico, flerte }
+
 // ===============================================================
 // COACH MODELS — usados na comunicação com o DatingCoachService
 // ===============================================================
@@ -14,10 +16,7 @@ class CoachMessage {
   final String role;
   final String content;
 
-  const CoachMessage({
-    required this.role,
-    required this.content,
-  });
+  const CoachMessage({required this.role, required this.content});
 
   factory CoachMessage.user(String content) {
     return CoachMessage(role: 'user', content: content);
@@ -38,6 +37,7 @@ class CoachResponse {
   final bool shouldSendMessage;
   final String suggestedMessage;
   final String dateReadiness;
+  final List<String> quickReplies;
 
   const CoachResponse({
     required this.message,
@@ -49,7 +49,28 @@ class CoachResponse {
     required this.shouldSendMessage,
     required this.suggestedMessage,
     required this.dateReadiness,
+    this.quickReplies = const [],
   });
+
+  Map<String, dynamic> toJson() => {
+    'message': message,
+    'mode': mode,
+    'dating_stage': datingStage,
+    'interest_level': interestLevel,
+    'goal': goal,
+    'next_step': nextStep,
+    'should_send_message': shouldSendMessage,
+    'suggested_message': suggestedMessage,
+    'date_readiness': dateReadiness,
+    'quick_replies': quickReplies,
+  };
+
+  // Includes unsent suggestions and choices, so a later selection has context.
+  String toHistoryText() => [
+    message,
+    if (quickReplies.isNotEmpty) 'Choices offered: ${quickReplies.join(' | ')}',
+    if (suggestedMessage.isNotEmpty) 'Unsent suggested line: $suggestedMessage',
+  ].join('\n');
 
   factory CoachResponse.fromJson(Map<String, dynamic> json) {
     return CoachResponse(
@@ -62,6 +83,13 @@ class CoachResponse {
       shouldSendMessage: json['should_send_message'] == true,
       suggestedMessage: json['suggested_message']?.toString() ?? '',
       dateReadiness: json['date_readiness']?.toString() ?? 'unclear',
+      quickReplies: (json['quick_replies'] as List? ?? const [])
+          .whereType<String>()
+          .map((item) => item.trim())
+          .where((item) => item.isNotEmpty)
+          .toSet()
+          .take(3)
+          .toList(),
     );
   }
 }
