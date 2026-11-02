@@ -4,17 +4,6 @@ import 'dart:io';
 import 'credits_service.dart';
 
 class RevenueCatService {
-  // ============================================================
-  // 🔧 DEBUG ONLY — desbloqueia o paywall para testares a app
-  // livremente, sem pagamento real.
-  //
-  // ⚠️ IMPORTANTE: muda para `false` antes de fazeres qualquer
-  // build para a App Store / Play Store / TestFlight público.
-  // Deixar `true` em produção dá acesso premium GRÁTIS a todos
-  // os utilizadores.
-  // ============================================================
-  static const bool _debugUnlockPremium = true;
-
   static const String _androidKey = "goog_FEoxrNpkLgRjsZTtNJZEYuVDqua";
   static const String _iosKey = "appl_dmwoiqiILydfkRwbGekYzLFWRRb";
 
@@ -22,12 +11,11 @@ class RevenueCatService {
   // NOVO OFFERING (added) — identifier configurado no RevenueCat
   // para o novo paywall (planos Annual + Weekly sem trial).
   //
-  // Confirmado no RevenueCat: o Offering Identifier ficou gravado
-  // como "Annual" (não "new_paywall" nem "new paywall"), contendo
-  // os packages $rc_weekly (upcrush_premium_weekly_no_trial) e
-  // $rc_annual (upcrush_premium_yearly_trial).
+  // Novo paywall usa o Offering "default", que agora contém
+  // os packages $rc_weekly e $rc_annual associados aos produtos
+  // novos _v2 configurados no App Store Connect / RevenueCat.
   // ============================================================
-  static const String _newOfferingId = 'Annual';
+  static const String _newOfferingId = 'default';
 
   static Future<void> init() async {
     await Purchases.setLogLevel(LogLevel.debug);
@@ -38,10 +26,6 @@ class RevenueCatService {
   }
 
   static Future<void> _syncPremiumStatus() async {
-    if (_debugUnlockPremium) {
-      await CreditsService.setPremium(true); // 🔧 DEBUG — remover/desativar antes de produção
-      return;
-    }
     try {
       final info = await Purchases.getCustomerInfo();
       final isPremium = info.entitlements.active.containsKey("premium");
@@ -52,7 +36,6 @@ class RevenueCatService {
   }
 
   static Future<bool> isPremium() async {
-    if (_debugUnlockPremium) return true; // 🔧 DEBUG — remover/desativar antes de produção
     try {
       final info = await Purchases.getCustomerInfo();
       return info.entitlements.active.containsKey("premium");
@@ -130,12 +113,10 @@ class RevenueCatService {
   // NOVO OFFERING — FUNÇÕES ADICIONADAS (added)
   // ============================================================
   //
-  // Tudo o que vem a seguir e completamente independente do que
-  // ja existe acima. Busca o offering pelo NOME especifico
-  // (_newOfferingId), nunca por "current" — assim o produto antigo
-  // (upcrush_premium_weekly, usado por buyWeekly() e getPrice())
-  // nunca e afetado, mesmo que decidas mais tarde tornar o novo
-  // offering o "Current Offering" no RevenueCat.
+  // Tudo o que vem a seguir usa explicitamente o Offering "default".
+  // Esse offering contém os novos packages Weekly e Annual.
+  // As funções antigas buyWeekly() e getPrice() continuam preservadas
+  // para compatibilidade com qualquer fluxo legado do app.
   // ============================================================
 
   /// Busca o novo Offering pelo identifier configurado.
@@ -152,14 +133,14 @@ class RevenueCatService {
   }
 
   /// Devolve o package do plano ANUAL do novo offering
-  /// (upcrush_premium_yearly_trial, com trial).
+  /// (upcrush_premium_yearly_trial_v2, com trial).
   static Future<Package?> _getAnnualPackage() async {
     final offering = await _getNewOffering();
     return offering?.annual;
   }
 
   /// Devolve o package do plano SEMANAL sem trial do novo offering
-  /// (upcrush_premium_weekly_no_trial).
+  /// (UpCrush_Premium_Weekly_No_Trial_v2).
   static Future<Package?> _getWeeklyNoTrialPackage() async {
     final offering = await _getNewOffering();
     return offering?.weekly;
@@ -187,7 +168,7 @@ class RevenueCatService {
     }
   }
 
-  /// Compra o plano ANUAL (upcrush_premium_yearly_trial, com trial).
+  /// Compra o plano ANUAL (upcrush_premium_yearly_trial_v2, com trial).
   static Future<PurchaseServiceResult> buyAnnual() async {
     try {
       final package = await _getAnnualPackage();
@@ -220,7 +201,7 @@ class RevenueCatService {
   }
 
   /// Compra o plano SEMANAL sem trial
-  /// (upcrush_premium_weekly_no_trial).
+  /// (UpCrush_Premium_Weekly_No_Trial_v2).
   static Future<PurchaseServiceResult> buyWeeklyNoTrial() async {
     try {
       final package = await _getWeeklyNoTrialPackage();

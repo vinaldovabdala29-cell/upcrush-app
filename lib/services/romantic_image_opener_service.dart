@@ -10,7 +10,7 @@ class RomanticImageOpenerService {
   // Mantém o cliente durante a sessão para reutilizar ligações HTTP.
   static final http.Client _httpClient = http.Client();
 
-  static const String _model = 'gpt-4o-mini';
+  static const String _model = 'gpt-4.1';
   static const int _openerMaxWords = 18;
   // Direção exclusiva de Inicie uma conversa; não altera os prompts dos tons.
   static const String _openerCreativeDirection = '''
