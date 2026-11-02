@@ -1,3 +1,4 @@
+import '../services/response_paywall_gate.dart';
 import '../services/tones/tone_registry.dart';
 import '../theme/tone_options.dart';
 import 'package:flutter/material.dart';
@@ -121,6 +122,8 @@ class _ResultScreenState extends State<ResultScreen> {
     final versao = _versao;
     var resposta = _stock;
     if (resposta != null) {
+      if (!await ResponsePaywallGate.allow(context)) return;
+      if (!mounted || versao != _versao) return;
       setState(() { replies.insert(0, resposta!); _stock = null; copiedIndex = null; });
       _saveChat();
       _prepararStock();
@@ -133,6 +136,11 @@ class _ResultScreenState extends State<ResultScreen> {
       resposta ??= await _pedirUma(estilo, appLang.languageCode);
       if (!mounted || versao != _versao) return;
       if (resposta == null) throw Exception('Resposta vazia');
+      if (!await ResponsePaywallGate.allow(context)) {
+        if (mounted) setState(() => loading = false);
+        return;
+      }
+      if (!mounted || versao != _versao) return;
       setState(() { replies.insert(0, resposta!); _stock = null; loading = false; });
       _saveChat();
       _prepararStock();

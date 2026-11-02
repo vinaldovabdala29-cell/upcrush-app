@@ -1,3 +1,5 @@
+import 'locked_reply_preview_screen.dart';
+import '../services/response_paywall_gate.dart';
 import '../theme/tone_options.dart';
 import 'dart:io';
 import 'dart:convert';
@@ -141,13 +143,14 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
     _stockEmCurso = null;
   }
 
-  Future<String?> _pedirUma(String imagem, String estilo, String idioma) async {
+  Future<String?> _pedirUma(String imagem, String estilo, String idioma, {String orientacao = ''}) async {
     final lista = await AIService.gerarRespostaDeImagem(
       imagem,
       estilo,
       idioma,
       quantidade: 1,
       modoRapido: true,
+      orientacao: orientacao,
       recentResponses: _respostas.take(24).toList().reversed.toList(),
     );
     for (final texto in lista) {
@@ -203,8 +206,21 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
         appLang.languageCode,
       );
       if (!mounted || versao != _versao) return;
+      var respostaFinal = resposta;
+      if (resposta != null && !await ResponsePaywallGate.allow(context, returnOnDismiss: false)) {
+        if (!mounted) return;
+        final direction = await Navigator.of(context).push<String>(
+          MaterialPageRoute(builder: (_) => LockedReplyPreviewScreen(image: _imagem)));
+        if (!mounted || versao != _versao) return;
+        if (direction == null) { Navigator.of(context).maybePop(); return; }
+        if (direction.isNotEmpty) {
+          respostaFinal = await _pedirUma(base64, _estiloAtual, appLang.languageCode,
+            orientacao: direction);
+        }
+      }
+      if (!mounted || versao != _versao) return;
       setState(() {
-        _respostas = resposta == null ? [] : [resposta];
+        _respostas = respostaFinal == null ? [] : [respostaFinal];
         _analisando = false;
       });
       _revelarRespostasIniciais();
@@ -270,6 +286,8 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
     final versao = _versao;
     var resposta = _stock;
     if (resposta != null) {
+      if (!await ResponsePaywallGate.allow(context)) return;
+      if (!mounted || versao != _versao) return;
       setState(() {
         _adicionarResposta(resposta!);
         _stock = null;
@@ -292,6 +310,11 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
       );
       if (!mounted || versao != _versao) return;
       if (resposta == null) throw Exception('Resposta vazia');
+      if (!await ResponsePaywallGate.allow(context)) {
+        if (mounted) setState(() => _loadingEstilo = false);
+        return;
+      }
+      if (!mounted || versao != _versao) return;
       setState(() {
         _adicionarResposta(resposta!);
         _stock = null;

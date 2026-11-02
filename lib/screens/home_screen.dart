@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 
 import '../main.dart';
 import '../services/revenue_cat_service.dart';
+import '../services/response_paywall_gate.dart';
 import '../widgets/paywall_screen.dart';
 import '../widgets/feature_card.dart';
 import '../widgets/settings_sheet.dart';
@@ -23,10 +24,12 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  void _selectTab(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
+  Future<void> _selectTab(int index) async {
+    if (index == 2 && _selectedIndex != 2) {
+      final allowed = await ResponsePaywallGate.allow(context, returnOnDismiss: false);
+      if (!mounted || !allowed) return;
+    }
+    if (mounted) setState(() => _selectedIndex = index);
   }
 
   @override
@@ -77,17 +80,7 @@ class _HomeContent extends StatelessWidget {
   const _HomeContent({super.key});
 
   Future<void> _openPremiumFeature(BuildContext context, Widget screen) async {
-    final isPremium = await RevenueCatService.isPremium();
-    if (!context.mounted) return;
-    if (!isPremium) {
-      final purchased = await Navigator.of(context).push<bool>(
-        MaterialPageRoute(fullscreenDialog: true, builder: (_) => const PaywallFlow()),
-      );
-      if (!context.mounted || purchased != true) return;
-    }
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => screen),
-    );
+    await Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
   }
 
   bool get _dark => isDarkModeNotifier.value;

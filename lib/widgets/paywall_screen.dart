@@ -15,6 +15,7 @@ class PaywallFlow extends StatefulWidget {
 class _PaywallFlowState extends State<PaywallFlow> {
   bool _loading = false;
   String _price = '';
+  bool _showTrial = false;
 
   static const _strings = <String, List<String>>{
     // en, pt, de, es, fr, it, tr, pl, ru, ar
@@ -30,6 +31,9 @@ class _PaywallFlowState extends State<PaywallFlow> {
     'terms': ['Terms','Termos','AGB','Términos','Conditions','Termini','Koşullar','Warunki','Условия','الشروط'],
     'privacy': ['Privacy','Privacidade','Datenschutz','Privacidad','Confidentialité','Privacy','Gizlilik','Prywatność','Конфиденциальность','الخصوصية'],
     'error': ['Purchase unavailable','Compra indisponível','Kauf nicht verfügbar','Compra no disponible','Achat indisponible','Acquisto non disponibile','Satın alma kullanılamıyor','Zakup niedostępny','Покупка недоступна','الشراء غير متاح'],
+    'trial': ['3 days free','3 dias grátis','3 Tage kostenlos','3 días gratis','3 jours gratuits','3 giorni gratis','3 gün ücretsiz','3 dni za darmo','3 дня бесплатно','3 أيام مجانًا'],
+    'afterTrial': ['Then {price}/week','Depois {price}/semana','Danach {price}/Woche','Después {price}/semana','Puis {price}/semaine','Poi {price}/settimana','Sonra {price}/hafta','Potem {price}/tydzień','Затем {price}/неделю','ثم {price} أسبوعيًا'],
+    'startTrial': ['Start free trial','Começar teste grátis','Kostenlos testen','Empezar prueba gratis','Commencer l’essai gratuit','Inizia la prova gratuita','Ücretsiz denemeyi başlat','Rozpocznij darmowy okres','Начать бесплатный период','ابدأ التجربة المجانية'],
     'day': ['/day','/dia','/Tag','/día','/jour','/giorno','/gün','/dzień','/день','/يوم'],
   };
   static const _langs = ['en','pt','de','es','fr','it','tr','pl','ru','ar'];
@@ -41,10 +45,13 @@ class _PaywallFlowState extends State<PaywallFlow> {
   @override
   void initState() {
     super.initState();
-    RevenueCatService.getPrice().then((value) {
-      if (mounted) setState(() => _price = value);
+    RevenueCatService.getWeeklyPaywallOffer().then((offer) {
+      if (mounted) setState(() {
+        _price = offer.price;
+        _showTrial = offer.showTrial;
+      });
     }).catchError((Object _) {
-      if (mounted) setState(() => _price = '');
+      if (mounted) setState(() { _price = ''; _showTrial = false; });
     });
   }
 
@@ -188,14 +195,14 @@ class _PaywallFlowState extends State<PaywallFlow> {
                                   const SizedBox(width: 11),
                                   Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
                                     SizedBox(width: double.infinity, child: Row(children: [
-                                      Expanded(child: Text(_t(language, 'weekly'),
+                                      Expanded(child: Text(_showTrial ? _t(language, 'trial') : _t(language, 'weekly'),
                                         style: const TextStyle(color: Colors.white, fontSize: 21, fontWeight: FontWeight.w800))),
-                                      if (daily != null) Text(daily, textAlign: TextAlign.right,
+                                      if (!_showTrial && daily != null) Text(daily, textAlign: TextAlign.right,
                                         style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w800)),
                                     ])),
                                     const SizedBox(height: 5),
                                     Text(_price.isEmpty ? _t(language, 'loading') :
-                                      _t(language, 'billed').replaceAll('{price}', _price),
+                                      (_showTrial ? _t(language, 'afterTrial') : _t(language, 'billed')).replaceAll('{price}', _price),
                                       style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)),
                                   ])),
                                 ])),
@@ -208,7 +215,7 @@ class _PaywallFlowState extends State<PaywallFlow> {
                               foregroundColor: Colors.black, disabledBackgroundColor: Colors.white70,
                               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24))),
                             child: _loading ? const CircularProgressIndicator(color: Colors.black)
-                              : Text(_t(language, 'buy'), textAlign: TextAlign.center,
+                              : Text(_t(language, _showTrial ? 'startTrial' : 'buy'), textAlign: TextAlign.center,
                                 style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900)),
                           )),
                           const SizedBox(height: 10),

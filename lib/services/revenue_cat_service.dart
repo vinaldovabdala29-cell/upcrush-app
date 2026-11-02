@@ -76,6 +76,42 @@ class RevenueCatService {
     }
   }
 
+  /// Dados da oferta semanal atual. O preço é sempre o da loja.
+  /// A apresentação do trial é conservadora: só aparece quando a loja
+  /// devolve um período introdutório de 3 dias e não há compras conhecidas.
+  /// A elegibilidade definitiva é determinada pela App Store/Google Play.
+  static Future<WeeklyPaywallOffer> getWeeklyPaywallOffer() async {
+    try {
+      final offerings = await Purchases.getOfferings();
+      final package = offerings.current?.weekly ??
+          offerings.current?.availablePackages.firstOrNull;
+      if (package == null) return const WeeklyPaywallOffer();
+      final product = package.storeProduct;
+      bool showTrial = false;
+      try {
+        final dynamic intro = (product as dynamic).introductoryPrice;
+        if (intro != null) {
+          final dynamic period = intro.period;
+          final String unit = '${period.unit}'.toLowerCase();
+          final String value = '${period.value}';
+          final dynamic price = intro.price;
+          final isThreeDays = value == '3' && unit.contains('day');
+          final isFree = price is num && price == 0;
+          if (isThreeDays && isFree) {
+            final info = await Purchases.getCustomerInfo();
+            showTrial = info.allPurchasedProductIdentifiers.isEmpty;
+          }
+        }
+      } catch (e) {
+        debugPrint('RevenueCat: não foi possível confirmar trial: $e');
+      }
+      return WeeklyPaywallOffer(price: product.priceString, showTrial: showTrial);
+    } catch (e) {
+      debugPrint('RevenueCat: erro ao carregar oferta semanal: $e');
+      return const WeeklyPaywallOffer();
+    }
+  }
+
   static Future<PurchaseServiceResult> buyWeekly() async {
     try {
       final offerings = await Purchases.getOfferings();
@@ -276,4 +312,9 @@ class PurchaseServiceResult {
     this.restored = false,
     this.error,
   });
+}
+class WeeklyPaywallOffer {
+  final String price;
+  final bool showTrial;
+  const WeeklyPaywallOffer({this.price = '', this.showTrial = false});
 }

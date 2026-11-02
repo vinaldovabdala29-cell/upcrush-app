@@ -1,3 +1,5 @@
+import 'locked_reply_preview_screen.dart';
+import '../services/response_paywall_gate.dart';
 import '../theme/tone_options.dart';
 import 'dart:io';
 import 'dart:convert';
@@ -119,14 +121,16 @@ class _OpenerScreenState extends State<OpenerScreen>
   Future<List<String>> _pedirUma(
     String imagem,
     String estilo,
-    String idioma,
-  ) async {
+    String idioma, {
+    String orientacao = '',
+  }) async {
     final evitar = <String>[..._historicoRespostas, ..._respostas];
     return RomanticImageOpenerService.gerarOpenerDeImagem(
       imagem,
       estilo,
       idioma,
       evitar.toSet().toList(),
+      orientacao,
     );
   }
 
@@ -192,8 +196,21 @@ class _OpenerScreenState extends State<OpenerScreen>
         appLang.languageCode,
       );
       if (!mounted || versao != _versao) return;
+      var respostasFinais = respostas;
+      if (respostas.isNotEmpty && !await ResponsePaywallGate.allow(context, returnOnDismiss: false)) {
+        if (!mounted) return;
+        final direction = await Navigator.of(context).push<String>(
+          MaterialPageRoute(builder: (_) => LockedReplyPreviewScreen(image: _imagem)));
+        if (!mounted || versao != _versao) return;
+        if (direction == null) { Navigator.of(context).maybePop(); return; }
+        if (direction.isNotEmpty) {
+          respostasFinais = await _pedirUma(base64, _estiloAtual, appLang.languageCode,
+            orientacao: direction);
+        }
+      }
+      if (!mounted || versao != _versao) return;
       setState(() {
-        _respostas = respostas.take(1).toList();
+        _respostas = respostasFinais.take(1).toList();
         _analisando = false;
       });
       _prepararStock();
@@ -239,6 +256,11 @@ class _OpenerScreenState extends State<OpenerScreen>
       }
       if (!mounted || atual != _versao) return;
       if (proxima == null || proxima.isEmpty) throw Exception('Resposta vazia');
+      if (!await ResponsePaywallGate.allow(context)) {
+        if (mounted) setState(() => _loadingEstilo = false);
+        return;
+      }
+      if (!mounted || atual != _versao) return;
       _guardarNoHistorico(_respostas);
       setState(() {
         _adicionarResposta(proxima!);

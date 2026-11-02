@@ -147,10 +147,12 @@ class AIService {
     List<String> recentResponses = const [],
     String? conversationId,
     String contexto = '',
+    String orientacao = '',
   }) {
     _checkedQuantity(quantidade);
     return _generate(
       task: 'screenshot', context: contexto, estilo: estilo, lang: lang,
+      extraData: orientacao.trim().isEmpty ? const {} : {'user_direction_untrusted': orientacao.trim()},
       quantity: modoRapido ? 1 : quantidade,
       recentResponses: recentResponses, conversationId: conversationId,
       base64Image: base64Image, includeChatContext: true, fastMode: modoRapido,

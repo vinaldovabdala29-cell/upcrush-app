@@ -287,6 +287,7 @@ Até 18 palavras é um máximo, não uma meta. Reescreva para caber; nunca corte
     String estilo,
     String lang, [
     List<String> evitarRespostas = const [],
+    String orientacao = '',
   ]) async {
     final payload = _cleanBase64(base64Image);
     final mime = _mime(payload);
@@ -330,6 +331,7 @@ Até 18 palavras é um máximo, não uma meta. Reescreva para caber; nunca corte
               {'type': 'input_text', 'text': jsonEncode({
                 'language': language,
                 'selected_style': estilo,
+                if (orientacao.trim().isNotEmpty) 'user_direction_untrusted': orientacao.trim(),
                 if (selectedTone.key == 'flertar' || selectedTone.key == 'romantico')
                   'opening_approach': openingApproach,
                 'recent_messages_to_avoid': _recent(historyKey, recent),

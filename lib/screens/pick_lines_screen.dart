@@ -1,3 +1,4 @@
+import '../services/response_paywall_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/ai_service.dart';
@@ -163,6 +164,11 @@ class _PickLinesScreenState extends State<PickLinesScreen>
 
       if (!mounted) return;
 
+      if (!await ResponsePaywallGate.allow(context)) {
+        if (mounted) setState(() => _loading = false);
+        return;
+      }
+      if (!mounted) return;
       setState(() {
         _currentCategoryKey = categoryKey;
         _currentLine = line;

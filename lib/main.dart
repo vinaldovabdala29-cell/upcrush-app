@@ -122,7 +122,7 @@ class _AppEntry extends StatelessWidget {
 
 
         // 1. Onboarding primeiro
-        if (!onboardingDone) return const OnboardingScreen();
+        // No onboarding: launch directly into the app.
         // Acesso livre à navegação; paywall apenas nas ações premium.
         return const HomeScreen();
       },
