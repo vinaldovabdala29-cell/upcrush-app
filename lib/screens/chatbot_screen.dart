@@ -676,10 +676,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
       child: Row(
         children: CoachPersonality.values.map((personality) {
           final label = switch (personality) {
-            CoachPersonality.neutro => 'Neutro',
+            CoachPersonality.neutro => appLang.ui(const {'en': 'Neutral', 'pt': 'Neutro', 'de': 'Neutral', 'es': 'Neutro', 'fr': 'Neutre', 'it': 'Neutro', 'tr': 'Nötr', 'pl': 'Neutralny', 'ru': 'Нейтральный', 'ar': 'محايد'}),
             CoachPersonality.alpha => 'Alpha',
-            CoachPersonality.romantico => 'Romântico',
-            CoachPersonality.flerte => 'Flerte',
+            CoachPersonality.romantico => appLang.ui(const {'en': 'Romantic', 'pt': 'Romântico', 'de': 'Romantisch', 'es': 'Romántico', 'fr': 'Romantique', 'it': 'Romantico', 'tr': 'Romantik', 'pl': 'Romantyczny', 'ru': 'Романтичный', 'ar': 'رومانسي'}),
+            CoachPersonality.flerte => appLang.ui(const {'en': 'Flirt', 'pt': 'Flerte', 'de': 'Flirt', 'es': 'Coqueteo', 'fr': 'Flirt', 'it': 'Flirt', 'tr': 'Flört', 'pl': 'Flirt', 'ru': 'Флирт', 'ar': 'غزل'}),
           };
           return Expanded(
             child: Padding(
@@ -764,8 +764,8 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                   ),
                 ),
                 const SizedBox(width: 4),
-                const Text(
-                  'Online',
+                Text(
+                  appLang.ui(const {'en': 'Online', 'pt': 'Online', 'de': 'Online', 'es': 'En línea', 'fr': 'En ligne', 'it': 'Online', 'tr': 'Çevrimiçi', 'pl': 'Online', 'ru': 'В сети', 'ar': 'متصل'}),
                   style: TextStyle(
                     color: Color(0xFF34C759),
                     fontSize: 11,
@@ -1631,9 +1631,7 @@ class _CoachTypingDotsState extends State<_CoachTypingDots>
   Widget build(BuildContext context) {
     final reduced = MediaQuery.disableAnimationsOf(context);
     return Semantics(
-      label: appLang.languageCode == 'pt'
-          ? 'A preparar resposta'
-          : 'Preparing response',
+      label: appLang.ui(const {'en': 'Preparing response', 'pt': 'A preparar resposta', 'de': 'Antwort wird vorbereitet', 'es': 'Preparando respuesta', 'fr': 'Préparation de la réponse', 'it': 'Preparazione della risposta', 'tr': 'Yanıt hazırlanıyor', 'pl': 'Przygotowywanie odpowiedzi', 'ru': 'Подготовка ответа', 'ar': 'جارٍ إعداد الرد'}),
       child: AnimatedBuilder(
         animation: _animation,
         builder: (context, _) => Row(

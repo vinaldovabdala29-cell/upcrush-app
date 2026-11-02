@@ -36,6 +36,9 @@ class AppLocalizations {
   String _t(Map<String, String> map) =>
       map[languageCode] ?? map['en'] ?? '';
 
+  // UI labels shared by Chat and Coach (fallback to English).
+  String ui(Map<String, String> translations) => _t(translations);
+
   // ─── HOME SCREEN ──────────────────────────────────────────────────────────
   String get appTagline => _t(const {
     'de': 'Dein digitaler Wingman',

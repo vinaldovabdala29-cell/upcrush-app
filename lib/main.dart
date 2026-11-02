@@ -119,13 +119,11 @@ class _AppEntry extends StatelessWidget {
               child: CircularProgressIndicator(color: Color(0xFFFF2D55))));
         }
         final onboardingDone = snap.data!['onboarding']!;
-        final isPremium = snap.data!['premium']!;
+
 
         // 1. Onboarding primeiro
         if (!onboardingDone) return const OnboardingScreen();
-        // 2. Se já fez onboarding mas não é premium, bloqueia com o paywall
-        if (!isPremium) return const _PaywallGate();
-        // 3. Premium confirmado — acesso à app
+        // Acesso livre à navegação; paywall apenas nas ações premium.
         return const HomeScreen();
       },
     );

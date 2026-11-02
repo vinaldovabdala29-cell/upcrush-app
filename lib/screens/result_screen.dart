@@ -3,6 +3,7 @@ import '../theme/tone_options.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../services/ai_service.dart';
+import '../services/chat_history_service.dart';
 import '../main.dart';
 import '../widgets/background_blobs.dart';
 
@@ -13,6 +14,7 @@ class ResultScreen extends StatefulWidget {
   final String ultimaMensagem;
   final String style;
   final bool isDarkMode;
+  final String? savedChatId;
 
   const ResultScreen({
     super.key,
@@ -22,6 +24,7 @@ class ResultScreen extends StatefulWidget {
     this.ultimaMensagem = "",
     this.style = "romantico",
     this.isDarkMode = false,
+    this.savedChatId,
   });
 
   @override
@@ -31,6 +34,14 @@ class ResultScreen extends StatefulWidget {
 class _ResultScreenState extends State<ResultScreen> {
   late List<String> replies;
   bool loading = false;
+  late final String _chatId;
+  Future<void> _saveChat() async {
+    if (replies.isEmpty) return;
+    await ChatHistoryService.save(SavedChat(
+      id: _chatId, kind: 'reply', title: widget.title,
+      prompt: widget.originalPrompt, lastMessage: widget.ultimaMensagem,
+      style: estiloAtual, replies: List.of(replies), updatedAt: DateTime.now()));
+  }
   String estiloAtual = "romantico";
   int? copiedIndex;
   String? _stock;
@@ -53,12 +64,14 @@ class _ResultScreenState extends State<ResultScreen> {
   @override
   void initState() {
     super.initState();
-    replies = widget.replies.take(1).toList();
+    _chatId = widget.savedChatId ?? DateTime.now().microsecondsSinceEpoch.toString();
+    replies = widget.savedChatId == null ? widget.replies.take(1).toList() : List.of(widget.replies);
     WidgetsBinding.instance.addPostFrameCallback((_) => _prepararStock());
     final normalizedStyle = ToneRegistry.normalize(widget.style);
     estiloAtual = toneOptions('pt').any((tone) => tone['key'] == normalizedStyle)
         ? normalizedStyle
         : 'romantico';
+    if (widget.savedChatId == null) _saveChat();
   }
 
   Future<void> copy(String text, int index) async {
@@ -109,6 +122,7 @@ class _ResultScreenState extends State<ResultScreen> {
     var resposta = _stock;
     if (resposta != null) {
       setState(() { replies.insert(0, resposta!); _stock = null; copiedIndex = null; });
+      _saveChat();
       _prepararStock();
       return;
     }
@@ -120,6 +134,7 @@ class _ResultScreenState extends State<ResultScreen> {
       if (!mounted || versao != _versao) return;
       if (resposta == null) throw Exception('Resposta vazia');
       setState(() { replies.insert(0, resposta!); _stock = null; loading = false; });
+      _saveChat();
       _prepararStock();
     } catch (e) {
       if (!mounted) return;

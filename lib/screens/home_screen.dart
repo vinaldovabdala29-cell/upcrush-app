@@ -2,6 +2,8 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
+import '../services/revenue_cat_service.dart';
+import '../widgets/paywall_screen.dart';
 import '../widgets/feature_card.dart';
 import '../widgets/settings_sheet.dart';
 
@@ -9,6 +11,7 @@ import 'screenshot_screen.dart';
 import 'opener_screen.dart';
 import 'pick_lines_screen.dart';
 import 'chatbot_screen.dart';
+import 'saved_chats_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -43,6 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       index: _selectedIndex,
                       children: [
                         _HomeContent(key: ValueKey(lang.languageCode)),
+                        SavedChatsScreen(key: ValueKey('saved-chats-${lang.languageCode}')),
                         const ChatbotScreen(embedded: true),
                       ],
                     ),
@@ -71,6 +75,20 @@ class _HomeScreenState extends State<HomeScreen> {
 
 class _HomeContent extends StatelessWidget {
   const _HomeContent({super.key});
+
+  Future<void> _openPremiumFeature(BuildContext context, Widget screen) async {
+    final isPremium = await RevenueCatService.isPremium();
+    if (!context.mounted) return;
+    if (!isPremium) {
+      final purchased = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(fullscreenDialog: true, builder: (_) => const PaywallFlow()),
+      );
+      if (!context.mounted || purchased != true) return;
+    }
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => screen),
+    );
+  }
 
   bool get _dark => isDarkModeNotifier.value;
 
@@ -230,7 +248,7 @@ class _HomeContent extends StatelessWidget {
                             iconShadowColor: const Color(0xFFFF2D55),
                             isDarkMode: _dark,
                             subtitleColor: _dark ? Colors.white70 : const Color(0xFF444444),
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ScreenshotScreen())),
+                            onTap: () => _openPremiumFeature(context, const ScreenshotScreen()),
                           ),
                           const SizedBox(height: 14),
 
@@ -255,7 +273,7 @@ class _HomeContent extends StatelessWidget {
                             iconShadowColor: const Color(0xFFFF9500),
                             isDarkMode: _dark,
                             subtitleColor: _dark ? Colors.white70 : const Color(0xFF444444),
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PickLinesScreen())),
+                            onTap: () => _openPremiumFeature(context, const PickLinesScreen()),
                           ),
                           const SizedBox(height: 14),
 
@@ -280,7 +298,7 @@ class _HomeContent extends StatelessWidget {
                             iconShadowColor: const Color(0xFF007AFF),
                             isDarkMode: _dark,
                             subtitleColor: _dark ? Colors.white70 : const Color(0xFF444444),
-                            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const OpenerScreen())),
+                            onTap: () => _openPremiumFeature(context, const OpenerScreen()),
                           ),
                           const SizedBox(height: 20),
                         ],
@@ -338,7 +356,8 @@ class _BottomNavigation extends StatelessWidget {
               child: Row(
                 children: [
                   _item(index: 0, label: _homeLabel()),
-                  _item(index: 1, label: 'Coach'),
+                  _item(index: 1, label: appLang.ui(const {'en': 'Chats', 'pt': 'Conversas', 'de': 'Chats', 'es': 'Chats', 'fr': 'Conversations', 'it': 'Chat', 'tr': 'Sohbetler', 'pl': 'Czaty', 'ru': 'Чаты', 'ar': 'المحادثات'})),
+                  _item(index: 2, label: 'Coach'),
                 ],
               ),
             ),
