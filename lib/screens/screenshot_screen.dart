@@ -13,9 +13,11 @@ import '../services/ai_service.dart';
 import '../widgets/background_blobs.dart';
 import '../main.dart';
 import '../services/review_request_service.dart';
+import '../services/chat_history_service.dart';
 
 class ScreenshotScreen extends StatefulWidget {
-  const ScreenshotScreen({super.key});
+  final SavedChat? savedChat;
+  const ScreenshotScreen({super.key, this.savedChat});
 
   @override
   State<ScreenshotScreen> createState() => _ScreenshotScreenState();
@@ -31,6 +33,24 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   String _erroMsg = '';
 
   List<String> _respostas = [];
+  String _savedChatId = DateTime.now().microsecondsSinceEpoch.toString();
+
+  Future<void> _saveGeneratedChat() async {
+    if (_respostas.isEmpty) return;
+    final imagePath = await ChatHistoryService.persistImage(_imagem, _savedChatId) ?? widget.savedChat?.imagePath;
+    await ChatHistoryService.save(SavedChat(
+      id: _savedChatId,
+      kind: 'reply',
+      title: ChatHistoryService.automaticTitle(_respostas.last, 'Responder conversa'),
+      imagePath: imagePath,
+      prompt: '',
+      lastMessage: '',
+      style: _estiloAtual,
+      replies: List<String>.from(_respostas),
+      updatedAt: DateTime.now(),
+    ));
+  }
+
 
   // Novas respostas entram acima; o histórico continua acessível ao rolar.
   void _adicionarResposta(String resposta) {
@@ -114,7 +134,32 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
       CurvedAnimation(parent: _scanController, curve: Curves.easeInOut),
     );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) => _processarImagem());
+    if (widget.savedChat != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _restoreSavedChat());
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _processarImagem());
+    }
+  }
+
+  Future<void> _restoreSavedChat() async {
+    final chat = widget.savedChat;
+    if (chat == null || !mounted) return;
+    final path = chat.imagePath;
+    final image = path == null ? null : File(path);
+    String? base64;
+    if (image != null && await image.exists()) {
+      base64 = base64Encode(await image.readAsBytes());
+    }
+    if (!mounted) return;
+    setState(() {
+      _savedChatId = chat.id;
+      _imagem = base64 == null ? null : image;
+      _base64Image = base64;
+      _respostas = List<String>.from(chat.replies);
+      _estiloAtual = chat.style;
+      _analisando = false;
+      _erro = false;
+    });
   }
 
   @override
@@ -194,6 +239,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
       setState(() {
         _estiloAtual = 'flertar';
         _loadingEstilo = false;
+        _savedChatId = DateTime.now().microsecondsSinceEpoch.toString();
         _imagem = File(img.path);
         _base64Image = base64;
         _analisando = true;
@@ -224,6 +270,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
         _analisando = false;
       });
       _revelarRespostasIniciais();
+      _saveGeneratedChat();
       ReviewRequestService.onMessageDisplayed();
       _prepararStock();
     } catch (_) {
@@ -294,6 +341,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
         _stock = null;
       });
       _revelarRespostasIniciais();
+      _saveGeneratedChat();
       ReviewRequestService.onMessageDisplayed();
       _prepararStock();
       return;
@@ -323,6 +371,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
         _loadingEstilo = false;
       });
       _revelarRespostasIniciais();
+      _saveGeneratedChat();
       ReviewRequestService.onMessageDisplayed();
       _prepararStock();
     } catch (_) {

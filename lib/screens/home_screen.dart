@@ -23,13 +23,17 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  int _chatsRefreshToken = 0;
 
   Future<void> _selectTab(int index) async {
     if (index == 2 && _selectedIndex != 2) {
       final allowed = await ResponsePaywallGate.allow(context, returnOnDismiss: false);
       if (!mounted || !allowed) return;
     }
-    if (mounted) setState(() => _selectedIndex = index);
+    if (mounted) setState(() {
+      _selectedIndex = index;
+      if (index == 1) _chatsRefreshToken++;
+    });
   }
 
   @override
@@ -49,7 +53,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       index: _selectedIndex,
                       children: [
                         _HomeContent(key: ValueKey(lang.languageCode)),
-                        SavedChatsScreen(key: ValueKey('saved-chats-${lang.languageCode}')),
+                        SavedChatsScreen(
+                          key: ValueKey('saved-chats-${lang.languageCode}'),
+                          refreshToken: _chatsRefreshToken,
+                        ),
                         const ChatbotScreen(embedded: true),
                       ],
                     ),

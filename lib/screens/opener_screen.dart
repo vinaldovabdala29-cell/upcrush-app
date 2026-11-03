@@ -11,9 +11,11 @@ import '../services/romantic_image_opener_service.dart';
 import '../widgets/background_blobs.dart';
 import '../main.dart';
 import '../services/review_request_service.dart';
+import '../services/chat_history_service.dart';
 
 class OpenerScreen extends StatefulWidget {
-  const OpenerScreen({super.key});
+  final SavedChat? savedChat;
+  const OpenerScreen({super.key, this.savedChat});
   @override
   State<OpenerScreen> createState() => _OpenerScreenState();
 }
@@ -26,6 +28,24 @@ class _OpenerScreenState extends State<OpenerScreen>
   bool _erro = false;
   String _erroMsg = '';
   List<String> _respostas = [];
+  String _savedChatId = DateTime.now().microsecondsSinceEpoch.toString();
+
+  Future<void> _saveGeneratedChat() async {
+    if (_respostas.isEmpty) return;
+    final imagePath = await ChatHistoryService.persistImage(_imagem, _savedChatId) ?? widget.savedChat?.imagePath;
+    await ChatHistoryService.save(SavedChat(
+      id: _savedChatId,
+      kind: 'opener',
+      title: ChatHistoryService.automaticTitle(_respostas.last, 'Iniciar conversa'),
+      imagePath: imagePath,
+      prompt: '',
+      lastMessage: '',
+      style: _estiloAtual,
+      replies: List<String>.from(_respostas),
+      updatedAt: DateTime.now(),
+    ));
+  }
+
 
   // Cada nova mensagem aparece acima, preservando as anteriores.
   void _adicionarResposta(String resposta) {
@@ -71,7 +91,32 @@ class _OpenerScreenState extends State<OpenerScreen>
     _scanAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _scanController, curve: Curves.easeInOut),
     );
-    WidgetsBinding.instance.addPostFrameCallback((_) => _processarImagem());
+    if (widget.savedChat != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _restoreSavedChat());
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _processarImagem());
+    }
+  }
+
+  Future<void> _restoreSavedChat() async {
+    final chat = widget.savedChat;
+    if (chat == null || !mounted) return;
+    final path = chat.imagePath;
+    final image = path == null ? null : File(path);
+    String? base64;
+    if (image != null && await image.exists()) {
+      base64 = base64Encode(await image.readAsBytes());
+    }
+    if (!mounted) return;
+    setState(() {
+      _savedChatId = chat.id;
+      _imagem = base64 == null ? null : image;
+      _base64Image = base64;
+      _respostas = List<String>.from(chat.replies);
+      _estiloAtual = chat.style;
+      _analisando = false;
+      _erro = false;
+    });
   }
 
   @override
@@ -182,6 +227,7 @@ class _OpenerScreenState extends State<OpenerScreen>
       setState(() {
         _estiloAtual = 'flertar';
         _loadingEstilo = false;
+        _savedChatId = DateTime.now().microsecondsSinceEpoch.toString();
         _imagem = File(img.path);
         _base64Image = base64;
         _scanStartedAt = _scanController.lastElapsedDuration ?? Duration.zero;
@@ -213,6 +259,7 @@ class _OpenerScreenState extends State<OpenerScreen>
         _respostas = respostasFinais.take(1).toList();
         _analisando = false;
       });
+      _saveGeneratedChat();
       ReviewRequestService.onMessageDisplayed();
       _prepararStock();
     } catch (_) {
@@ -269,6 +316,7 @@ class _OpenerScreenState extends State<OpenerScreen>
         _loadingEstilo = false;
         _erro = false;
       });
+      _saveGeneratedChat();
       ReviewRequestService.onMessageDisplayed();
       _prepararStock();
     } catch (_) {

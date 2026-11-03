@@ -1,3 +1,4 @@
+import '../services/favorite_lines_service.dart';
 import '../services/response_paywall_gate.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -30,6 +31,13 @@ class _PickLinesScreenState extends State<PickLinesScreen>
 
   bool _loading = false;
   bool _copied = false;
+  bool _isFavorite = false;
+
+  Future<void> _toggleFavorite() async {
+    if (_currentLine.isEmpty) return;
+    final saved = await FavoriteLinesService.toggle(_currentLine);
+    if (mounted) setState(() => _isFavorite = saved);
+  }
 
   // ============================================================
   // ANIMATIONS
@@ -172,10 +180,13 @@ class _PickLinesScreenState extends State<PickLinesScreen>
       setState(() {
         _currentCategoryKey = categoryKey;
         _currentLine = line;
+        _isFavorite = false;
         _loading = false;
       });
 
       _rememberLine(line);
+      final favorites = await FavoriteLinesService.load();
+      if (mounted) setState(() => _isFavorite = favorites.contains(line));
       ReviewRequestService.onMessageDisplayed();
     } catch (_) {
       if (!mounted) return;
@@ -388,7 +399,15 @@ class _PickLinesScreenState extends State<PickLinesScreen>
                 textAlign: TextAlign.center,
                 style: TextStyle(color: _textPrimary, fontSize: 20, fontWeight: FontWeight.w600, height: 1.5),
               ),
-              const SizedBox(height: 22),
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: _toggleFavorite,
+                icon: Icon(_isFavorite ? Icons.favorite : Icons.favorite_border, color: _accent),
+                label: Text(_isFavorite
+                    ? appLang.ui(const {'pt':'Guardada nos favoritos','en':'Saved to favorites','de':'In Favoriten gespeichert','es':'Guardada en favoritos','fr':'Ajoutée aux favoris','it':'Salvata nei preferiti','tr':'Favorilere kaydedildi','pl':'Zapisano w ulubionych','ru':'Сохранено в избранном','ar':'تم الحفظ في المفضلة'})
+                    : appLang.ui(const {'pt':'Adicionar aos favoritos','en':'Add to favorites','de':'Zu Favoriten hinzufügen','es':'Añadir a favoritos','fr':'Ajouter aux favoris','it':'Aggiungi ai preferiti','tr':'Favorilere ekle','pl':'Dodaj do ulubionych','ru':'Добавить в избранное','ar':'أضف إلى المفضلة'})),
+              ),
+              const SizedBox(height: 12),
               AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
