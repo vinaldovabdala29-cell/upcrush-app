@@ -224,6 +224,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
         _analisando = false;
       });
       _revelarRespostasIniciais();
+      ReviewRequestService.onMessageDisplayed();
       _prepararStock();
     } catch (_) {
       if (!mounted) return;
@@ -293,6 +294,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
         _stock = null;
       });
       _revelarRespostasIniciais();
+      ReviewRequestService.onMessageDisplayed();
       _prepararStock();
       return;
     }
@@ -321,6 +323,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
         _loadingEstilo = false;
       });
       _revelarRespostasIniciais();
+      ReviewRequestService.onMessageDisplayed();
       _prepararStock();
     } catch (_) {
       if (mounted)
@@ -339,7 +342,6 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   Future<void> _copiar(String texto, int index) async {
     await Clipboard.setData(ClipboardData(text: texto));
     HapticFeedback.lightImpact();
-    ReviewRequestService.notifySuccess();
   }
 
   // ============================================================

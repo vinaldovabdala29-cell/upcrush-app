@@ -262,7 +262,7 @@ class _OpenerScreenState extends State<OpenerScreen>
   Future<void> _copiar(String texto, int index) async {
     await Clipboard.setData(ClipboardData(text: texto));
     HapticFeedback.lightImpact();
-    ReviewRequestService.notifySuccess();
+    ReviewRequestService.onMessageDisplayed();
   }
 
   List<List<String>> _scanMessages(String lang) {

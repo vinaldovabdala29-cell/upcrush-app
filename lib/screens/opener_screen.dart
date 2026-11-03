@@ -213,6 +213,7 @@ class _OpenerScreenState extends State<OpenerScreen>
         _respostas = respostasFinais.take(1).toList();
         _analisando = false;
       });
+      ReviewRequestService.onMessageDisplayed();
       _prepararStock();
     } catch (_) {
       if (mounted)
@@ -268,6 +269,7 @@ class _OpenerScreenState extends State<OpenerScreen>
         _loadingEstilo = false;
         _erro = false;
       });
+      ReviewRequestService.onMessageDisplayed();
       _prepararStock();
     } catch (_) {
       if (mounted)
@@ -284,7 +286,6 @@ class _OpenerScreenState extends State<OpenerScreen>
   Future<void> _copiar(String texto, int index) async {
     await Clipboard.setData(ClipboardData(text: texto));
     HapticFeedback.lightImpact();
-    ReviewRequestService.notifySuccess();
   }
 
   List<List<String>> _scanMessages(String lang) {

@@ -521,7 +521,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
         _responses[assistantMessage.id] = response;
       });
       await _saveConversation();
-      ReviewRequestService.notifySuccess();
+      ReviewRequestService.onMessageDisplayed();
     } catch (_) {
       if (!mounted) return;
       setState(() {

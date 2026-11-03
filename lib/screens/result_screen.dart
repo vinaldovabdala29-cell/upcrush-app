@@ -1,3 +1,4 @@
+import '../services/review_request_service.dart';
 import '../services/response_paywall_gate.dart';
 import '../services/tones/tone_registry.dart';
 import '../theme/tone_options.dart';
@@ -72,7 +73,10 @@ class _ResultScreenState extends State<ResultScreen> {
     estiloAtual = toneOptions('pt').any((tone) => tone['key'] == normalizedStyle)
         ? normalizedStyle
         : 'romantico';
-    if (widget.savedChatId == null) _saveChat();
+    if (widget.savedChatId == null) {
+      _saveChat();
+      if (replies.isNotEmpty) ReviewRequestService.onMessageDisplayed();
+    }
   }
 
   Future<void> copy(String text, int index) async {
@@ -126,6 +130,7 @@ class _ResultScreenState extends State<ResultScreen> {
       if (!mounted || versao != _versao) return;
       setState(() { replies.insert(0, resposta!); _stock = null; copiedIndex = null; });
       _saveChat();
+      ReviewRequestService.onMessageDisplayed();
       _prepararStock();
       return;
     }
@@ -143,6 +148,7 @@ class _ResultScreenState extends State<ResultScreen> {
       if (!mounted || versao != _versao) return;
       setState(() { replies.insert(0, resposta!); _stock = null; loading = false; });
       _saveChat();
+      ReviewRequestService.onMessageDisplayed();
       _prepararStock();
     } catch (e) {
       if (!mounted) return;

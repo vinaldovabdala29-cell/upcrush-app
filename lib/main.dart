@@ -7,6 +7,7 @@ import 'theme/app_localizations.dart';
 import 'services/credits_service.dart';
 import 'services/revenue_cat_service.dart';
 import 'widgets/paywall_screen.dart';
+import 'services/review_request_service.dart';
 
 final ValueNotifier<AppLocalizations> appLangNotifier =
     ValueNotifier(AppLocalizations.fromDevice());
@@ -97,8 +98,25 @@ class UpCrushApp extends StatelessWidget {
   }
 }
 
-class _AppEntry extends StatelessWidget {
+class _AppEntry extends StatefulWidget {
   const _AppEntry();
+
+  @override
+  State<_AppEntry> createState() => _AppEntryState();
+}
+
+class _AppEntryState extends State<_AppEntry> {
+  late final Future<Map<String, bool>> _entryCheck;
+
+  @override
+  void initState() {
+    super.initState();
+    _entryCheck = _check();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(const Duration(seconds: 3));
+      if (mounted) await ReviewRequestService.onAppOpened();
+    });
+  }
 
   static Future<Map<String, bool>> _check() async {
     final prefs = await SharedPreferences.getInstance();
@@ -110,7 +128,7 @@ class _AppEntry extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, bool>>(
-      future: _check(),
+      future: _entryCheck,
       builder: (context, snap) {
         if (!snap.hasData) {
           return const Scaffold(

@@ -176,6 +176,7 @@ class _PickLinesScreenState extends State<PickLinesScreen>
       });
 
       _rememberLine(line);
+      ReviewRequestService.onMessageDisplayed();
     } catch (_) {
       if (!mounted) return;
       setState(() => _loading = false);
@@ -276,7 +277,6 @@ class _PickLinesScreenState extends State<PickLinesScreen>
     await Clipboard.setData(ClipboardData(text: _currentLine));
     HapticFeedback.lightImpact();
     // ✅ Adicionado: notifica o serviço de avaliação.
-    ReviewRequestService.notifySuccess();
 
     if (!mounted) return;
     setState(() => _copied = true);
