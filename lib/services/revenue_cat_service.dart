@@ -8,12 +8,10 @@ class RevenueCatService {
   // 🔧 DEBUG ONLY — desbloqueia o paywall para testares a app
   // livremente, sem pagamento real.
   //
-  // ⚠️ IMPORTANTE: muda para `false` antes de fazeres qualquer
-  // build para a App Store / Play Store / TestFlight público.
-  // Deixar `true` em produção dá acesso premium GRÁTIS a todos
-  // os utilizadores.
+  // Apenas builds Debug recebem acesso gratuito.
+  // Builds Profile e Release continuam a verificar o RevenueCat.
   // ============================================================
-  static const bool _debugUnlockPremium = false;
+  static const bool _debugUnlockPremium = kDebugMode;
 
   static const String _androidKey = "goog_FEoxrNpkLgRjsZTtNJZEYuVDqua";
   static const String _iosKey = "appl_dmwoiqiILydfkRwbGekYzLFWRRb";
