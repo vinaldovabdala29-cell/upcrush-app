@@ -31,12 +31,6 @@ workflows:
         issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
         submit_to_app_store: false
-        whats_new:
-          default: "Bug fixes and performance improvements."
-          de-DE: "Verbesserungen und Fehlerbehebungen."
-          en-US: "Bug fixes and performance improvements."
-          pt-BR: "Correções de bugs e melhorias de desempenho."
-          es-ES: "Correcciones de errores y mejoras de rendimiento."
   ios-workflow:
     name: UpCrush Producao - RevenueCat
     environment:
@@ -69,9 +63,3 @@ workflows:
         submit_to_testflight: true
         submit_to_app_store: true
         release_type: AFTER_APPROVAL
-        whats_new:
-          default: "Bug fixes and performance improvements."
-          de-DE: "Verbesserungen und Fehlerbehebungen."
-          en-US: "Bug fixes and performance improvements."
-          pt-BR: "Correções de bugs e melhorias de desempenho."
-          es-ES: "Correcciones de errores y mejoras de rendimiento."
