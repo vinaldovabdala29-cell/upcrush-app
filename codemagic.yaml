@@ -5,7 +5,7 @@ workflows:
       vars:
         BUNDLE_ID: "com.upcrush.app"
       xcode: latest
-      flutter: latest
+      flutter: stable
     scripts:
       - name: Create config.dart
         script: |
@@ -37,7 +37,7 @@ workflows:
       vars:
         BUNDLE_ID: "com.upcrush.app"
       xcode: latest
-      flutter: latest
+      flutter: stable
     scripts:
       - name: Create config.dart
         script: |
