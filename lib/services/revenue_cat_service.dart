@@ -4,14 +4,14 @@ import 'dart:io';
 import 'credits_service.dart';
 
 class RevenueCatService {
-  // ============================================================
-  // 🔧 DEBUG ONLY — desbloqueia o paywall para testares a app
-  // livremente, sem pagamento real.
-  //
-  // Apenas builds Debug recebem acesso gratuito.
-  // Builds Profile e Release continuam a verificar o RevenueCat.
-  // ============================================================
-  static const bool _debugUnlockPremium = kDebugMode;
+  // Testes: Debug sempre desbloqueado. Para uma build EXCLUSIVA do
+  // TestFlight, compilar com --dart-define=UPCRUSH_TEST_PREMIUM=true.
+  // IMPORTANTE: nao distribuir essa build na App Store publica.
+  // Em producao, omitir a flag (padrao false).
+  static const bool _testFlightPremiumUnlock =
+      bool.fromEnvironment('UPCRUSH_TEST_PREMIUM', defaultValue: false);
+  static const bool _testUnlockPremium =
+      kDebugMode || _testFlightPremiumUnlock;
 
   static const String _androidKey = "goog_FEoxrNpkLgRjsZTtNJZEYuVDqua";
   static const String _iosKey = "appl_dmwoiqiILydfkRwbGekYzLFWRRb";
@@ -36,8 +36,8 @@ class RevenueCatService {
   }
 
   static Future<void> _syncPremiumStatus() async {
-    if (_debugUnlockPremium) {
-      await CreditsService.setPremium(true); // 🔧 DEBUG — remover/desativar antes de produção
+    if (_testUnlockPremium) {
+      await CreditsService.setPremium(true); // Acesso de teste (Debug ou build TestFlight dedicada)
       return;
     }
     try {
@@ -50,7 +50,7 @@ class RevenueCatService {
   }
 
   static Future<bool> isPremium() async {
-    if (_debugUnlockPremium) return true; // 🔧 DEBUG — remover/desativar antes de produção
+    if (_testUnlockPremium) return true; // Acesso de teste (Debug ou build TestFlight dedicada)
     try {
       final info = await Purchases.getCustomerInfo();
       return info.entitlements.active.containsKey("premium");
