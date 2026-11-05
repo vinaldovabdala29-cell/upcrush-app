@@ -7,7 +7,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../services/chat_history_service.dart';
-import '../services/response_paywall_gate.dart';
 import 'result_screen.dart';
 
 class SavedChatsScreen extends StatefulWidget {
@@ -53,8 +52,6 @@ class _SavedChatsScreenState extends State<SavedChatsScreen> {
     if (ok == true) { await ChatHistoryService.delete(chat.id); await _refresh(); }
   }
   Future<void> _open(SavedChat chat) async {
-    final allowed = await ResponsePaywallGate.allow(context, returnOnDismiss: false);
-    if (!mounted || !allowed) return;
     if (chat.kind == 'opener') {
       await Navigator.push(context, MaterialPageRoute(builder: (_) => OpenerScreen(savedChat: chat)));
     } else if (chat.imagePath != null) {
@@ -67,27 +64,6 @@ class _SavedChatsScreenState extends State<SavedChatsScreen> {
     }
     await _refresh();
   }
-  Future<void> _openFavorites() async {
-    // Acesso aos dados guardados exige trial ou assinatura Premium ativa.
-    final allowed = await ResponsePaywallGate.allow(context, returnOnDismiss: false);
-    if (!mounted || !allowed) return;
-    await _refresh();
-    if (mounted) setState(() => _showFavorites = true);
-  }
-
-  Future<void> _copyFavorite(String line) async {
-    final allowed = await ResponsePaywallGate.allow(context, returnOnDismiss: false);
-    if (!mounted || !allowed) return;
-    await Clipboard.setData(ClipboardData(text: line));
-  }
-
-  Future<void> _removeFavorite(String line) async {
-    final allowed = await ResponsePaywallGate.allow(context, returnOnDismiss: false);
-    if (!mounted || !allowed) return;
-    await FavoriteLinesService.toggle(line);
-    await _refresh();
-  }
-
   Widget _favoriteCard(String line, Color fg, bool dark) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -135,13 +111,16 @@ class _SavedChatsScreenState extends State<SavedChatsScreen> {
                     IconButton(
                       tooltip: 'Copy',
                       icon: Icon(Icons.copy_rounded, color: fg.withOpacity(.72)),
-                      onPressed: () => _copyFavorite(line),
+                      onPressed: () => Clipboard.setData(ClipboardData(text: line)),
                     ),
                     IconButton(
                       tooltip: 'Remove',
                       icon: const Icon(Icons.favorite_rounded),
                       color: const Color(0xFFFF2D55),
-                      onPressed: () => _removeFavorite(line),
+                      onPressed: () async {
+                        await FavoriteLinesService.toggle(line);
+                        await _refresh();
+                      },
                     ),
                   ],
                 ),
@@ -169,7 +148,7 @@ class _SavedChatsScreenState extends State<SavedChatsScreen> {
             selected: !_showFavorites, onSelected: (_) => setState(() => _showFavorites = false))),
           const SizedBox(width: 12),
           Expanded(child: ChoiceChip(label: Text(appLang.ui(const {'pt':'❤️ Favoritos','en':'❤️ Favorites','de':'❤️ Favoriten','es':'❤️ Favoritos','fr':'❤️ Favoris','it':'❤️ Preferiti','tr':'❤️ Favoriler','pl':'❤️ Ulubione','ru':'❤️ Избранное','ar':'❤️ المفضلة'})),
-            selected: _showFavorites, onSelected: (_) => _openFavorites())),
+            selected: _showFavorites, onSelected: (_) async { await _refresh(); if (mounted) setState(() => _showFavorites = true); })),
         ]),
       ),
       const SizedBox(height: 12),
