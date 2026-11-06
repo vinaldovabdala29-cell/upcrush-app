@@ -228,8 +228,6 @@ class _SettingsSheetState extends State<SettingsSheet> {
 
               _buildItem("🔗", _shareLabel(lang.languageCode), onTap: _shareApp),
               _buildItem("📧", _supportLabel(lang.languageCode), onTap: _openEmail),
-              _buildItem("💎", _premiumLabel(lang.languageCode),
-                  onTap: _openPaywall, isAccent: true),
 
               const SizedBox(height: 20),
 

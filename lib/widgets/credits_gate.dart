@@ -9,22 +9,9 @@ Future<void> checkCreditsAndProceed({
   required BuildContext context,
   required Future<void> Function() onAllowed,
 }) async {
-  final canProceed = await CreditsService.useCredit();
-
   if (!context.mounted) return;
+  await onAllowed(); // Sem limites nem paywall.
 
-  if (canProceed) {
-    await onAllowed();
-  } else {
-    // Sem créditos → mostra paywall
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        fullscreenDialog: true,
-        builder: (_) => const PaywallFlow(),
-      ),
-    );
-  }
 }
 
 /// Badge de créditos — mostra quantos usos restam

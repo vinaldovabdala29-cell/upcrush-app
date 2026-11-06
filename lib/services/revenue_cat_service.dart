@@ -8,10 +8,12 @@ class RevenueCatService {
   // 🔧 DEBUG ONLY — desbloqueia o paywall para testares a app
   // livremente, sem pagamento real.
   //
-  // Seguro: apenas builds Flutter DEBUG ficam desbloqueadas.
-  // Builds PROFILE/RELEASE usam a assinatura real do RevenueCat.
+  // ⚠️ IMPORTANTE: muda para `false` antes de fazeres qualquer
+  // build para a App Store / Play Store / TestFlight público.
+  // Deixar `true` em produção dá acesso premium GRÁTIS a todos
+  // os utilizadores.
   // ============================================================
-  static const bool _debugUnlockPremium = kDebugMode;
+  static const bool _debugUnlockPremium = false;
 
   static const String _androidKey = "goog_FEoxrNpkLgRjsZTtNJZEYuVDqua";
   static const String _iosKey = "appl_dmwoiqiILydfkRwbGekYzLFWRRb";

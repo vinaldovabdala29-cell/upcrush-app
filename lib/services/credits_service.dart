@@ -13,15 +13,12 @@ class CreditsService {
   }
 
   static Future<bool> shouldShowPaywallAfterScan() async {
-    final premium = await isPremium();
-    return !premium; // mostra paywall se NAO eh premium
+    return false; // Versão gratuita: nunca mostrar paywall
   }
 
   // CHATBOT — 3 mensagens grátis
   static Future<bool> canUseChat() async {
-    if (await isPremium()) return true;
-    final used = await getChatUsesUsed();
-    return used < _freeChatMessages;
+    return true;
   }
 
   static Future<int> getChatUsesUsed() async {
@@ -30,23 +27,16 @@ class CreditsService {
   }
 
   static Future<int> getChatUsesRemaining() async {
-    if (await isPremium()) return 999;
-    final used = await getChatUsesUsed();
-    final remaining = _freeChatMessages - used;
-    return remaining < 0 ? 0 : remaining;
+    return 999999;
   }
 
   static Future<void> useChatCredit() async {
-    if (await isPremium()) return;
-    final prefs = await SharedPreferences.getInstance();
-    final used = prefs.getInt(_keyChatUses) ?? 0;
-    await prefs.setInt(_keyChatUses, used + 1);
+    return; // Sem limite de mensagens
   }
 
   // Premium
   static Future<bool> isPremium() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_keyIsPremium) ?? false;
+    return true; // Acesso ilimitado local, sem cobrança
   }
 
   static Future<void> setPremium(bool value) async {

@@ -121,7 +121,7 @@ class _AppEntryState extends State<_AppEntry> {
   static Future<Map<String, bool>> _check() async {
     final prefs = await SharedPreferences.getInstance();
     final onboardingDone = prefs.getBool('onboarding_done') ?? false;
-    final isPremium = await RevenueCatService.isPremium();
+    const isPremium = true; // Free edition: skip subscription check on launch
     return {'onboarding': onboardingDone, 'premium': isPremium};
   }
 
