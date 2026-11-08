@@ -146,7 +146,8 @@ class _PaywallFlowState extends State<PaywallFlow> {
     // Preço fixo visual — não usa o valor devolvido pela API do
     // RevenueCat, para evitar mostrar moeda errada (ex: dólar em
     // vez de euro) consoante a região da conta do dispositivo.
-    const price = '6,99 €';
+    final country = WidgetsBinding.instance.platformDispatcher.locale.countryCode?.toUpperCase();
+    final price = country == 'BR' ? 'R\$ 29,90' : '7,99 €';
     final eligible = _eligibleForTrial ?? true;
 
     if (eligible) {
