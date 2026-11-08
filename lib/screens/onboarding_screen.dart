@@ -4,8 +4,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../main.dart';
-import 'home_screen.dart';
+import '../../../main.dart';
+import '../widgets/paywall_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -46,9 +46,13 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     await prefs.setBool('onboarding_done', true);
     if (!context.mounted) return;
     HapticFeedback.mediumImpact();
-    Navigator.of(context).pushAndRemoveUntil(
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-      (route) => false,
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => PaywallFlow(
+        onSuccess: () {
+          Navigator.pushReplacementNamed(context, '/home');
+        },
+      )),
     );
   }
 
