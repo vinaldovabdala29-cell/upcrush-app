@@ -7,6 +7,7 @@ import 'theme/app_localizations.dart';
 import 'services/credits_service.dart';
 import 'services/revenue_cat_service.dart';
 import 'widgets/paywall_screen.dart';
+import 'services/review_request_service.dart';
 
 final ValueNotifier<AppLocalizations> appLangNotifier =
     ValueNotifier(AppLocalizations.fromDevice());
@@ -97,20 +98,37 @@ class UpCrushApp extends StatelessWidget {
   }
 }
 
-class _AppEntry extends StatelessWidget {
+class _AppEntry extends StatefulWidget {
   const _AppEntry();
+
+  @override
+  State<_AppEntry> createState() => _AppEntryState();
+}
+
+class _AppEntryState extends State<_AppEntry> {
+  late final Future<Map<String, bool>> _entryCheck;
+
+  @override
+  void initState() {
+    super.initState();
+    _entryCheck = _check();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await Future<void>.delayed(const Duration(seconds: 3));
+      if (mounted) await ReviewRequestService.onAppOpened();
+    });
+  }
 
   static Future<Map<String, bool>> _check() async {
     final prefs = await SharedPreferences.getInstance();
     final onboardingDone = prefs.getBool('onboarding_done') ?? false;
-    final isPremium = await RevenueCatService.isPremium();
+    const isPremium = true; // Free edition: skip subscription check on launch
     return {'onboarding': onboardingDone, 'premium': isPremium};
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, bool>>(
-      future: _check(),
+      future: _entryCheck,
       builder: (context, snap) {
         if (!snap.hasData) {
           return const Scaffold(
@@ -119,13 +137,11 @@ class _AppEntry extends StatelessWidget {
               child: CircularProgressIndicator(color: Color(0xFFFF2D55))));
         }
         final onboardingDone = snap.data!['onboarding']!;
-        final isPremium = snap.data!['premium']!;
+
 
         // 1. Onboarding primeiro
-        if (!onboardingDone) return const OnboardingScreen();
-        // 2. Se já fez onboarding mas não é premium, bloqueia com o paywall
-        if (!isPremium) return const _PaywallGate();
-        // 3. Premium confirmado — acesso à app
+        // No onboarding: launch directly into the app.
+        // Acesso livre à navegação; paywall apenas nas ações premium.
         return const HomeScreen();
       },
     );

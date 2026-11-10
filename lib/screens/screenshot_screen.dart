@@ -11,6 +11,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../services/ai_service.dart';
 import '../widgets/background_blobs.dart';
+import '../widgets/processing_screenshot_preview.dart';
 import '../main.dart';
 import '../services/review_request_service.dart';
 import '../services/chat_history_service.dart';
@@ -26,6 +27,7 @@ class ScreenshotScreen extends StatefulWidget {
 class _ScreenshotScreenState extends State<ScreenshotScreen>
     with TickerProviderStateMixin {
   File? _imagem;
+  double _previewAlignmentY = 0.18;
   String? _base64Image;
 
   bool _analisando = false;
@@ -33,6 +35,8 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   String _erroMsg = '';
 
   List<String> _respostas = [];
+  final TextEditingController _replyController = TextEditingController();
+  final FocusNode _replyFocus = FocusNode();
   String _savedChatId = DateTime.now().microsecondsSinceEpoch.toString();
 
   Future<void> _saveGeneratedChat() async {
@@ -54,7 +58,9 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
 
   // Novas respostas entram acima; o histórico continua acessível ao rolar.
   void _adicionarResposta(String resposta) {
+    _replyFocus.unfocus();
     _respostas.insert(0, resposta);
+    _replyController.text = resposta;
   }
 
   final GlobalKey _respostasIniciaisKey = GlobalKey();
@@ -156,6 +162,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
       _imagem = base64 == null ? null : image;
       _base64Image = base64;
       _respostas = List<String>.from(chat.replies);
+      _replyController.text = _respostas.isEmpty ? '' : _respostas.first;
       _estiloAtual = chat.style;
       _analisando = false;
       _erro = false;
@@ -167,6 +174,8 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
     isDarkModeNotifier.removeListener(_onThemeChange);
 
     _respostasScrollController.dispose();
+    _replyController.dispose();
+    _replyFocus.dispose();
     _scanController.dispose();
 
     super.dispose();
@@ -241,10 +250,12 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
         _loadingEstilo = false;
         _savedChatId = DateTime.now().microsecondsSinceEpoch.toString();
         _imagem = File(img.path);
+        _previewAlignmentY = 0.18;
         _base64Image = base64;
         _analisando = true;
         _erro = false;
         _respostas = [];
+        _replyController.clear();
       });
       final resposta = await _pedirUma(
         base64,
@@ -267,6 +278,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
       if (!mounted || versao != _versao) return;
       setState(() {
         _respostas = respostaFinal == null ? [] : [respostaFinal];
+        _replyController.text = respostaFinal ?? '';
         _analisando = false;
       });
       _revelarRespostasIniciais();
@@ -465,38 +477,33 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
             backgroundColor: _bg,
             elevation: 0,
             centerTitle: true,
-            toolbarHeight: 72,
+            toolbarHeight: 150,
             leadingWidth: 64,
             leading: Padding(
-              padding: const EdgeInsets.only(left: 14),
+              padding: const EdgeInsets.only(left: 14, top: 76),
               child: _premiumHeaderIcon(
                 Icons.arrow_back_ios_new_rounded,
                 () => Navigator.pop(context),
               ),
             ),
-            title: const FittedBox(
+            title: const Padding(
+              padding: EdgeInsets.only(top: 84),
+              child: FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
                 'UpCrush AI',
                 style: TextStyle(
                   color: _accent,
-                  fontSize: 30,
+                  fontSize: 35,
                   fontWeight: FontWeight.w900,
                   letterSpacing: -1.1,
                 ),
               ),
+              ),
             ),
             actions: [
-              if (_respostas.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: _premiumHeaderIcon(
-                    Icons.refresh_rounded,
-                    _loadingEstilo ? null : _gerarDiferente,
-                  ),
-                ),
               Padding(
-                padding: const EdgeInsets.only(right: 14),
+                padding: const EdgeInsets.only(right: 14, top: 76),
                 child: _premiumHeaderIcon(
                   Icons.photo_library_rounded,
                   _analisando
@@ -506,6 +513,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
                             _imagem = null;
                             _base64Image = null;
                             _respostas = [];
+                            _replyController.clear();
                             _erro = false;
                           });
                           _processarImagem();
@@ -537,9 +545,16 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
               controller: _respostasScrollController,
               padding: EdgeInsets.zero,
               children: [
-                if (_imagem != null)
+                if (_imagem != null) const SizedBox(height: 24),
+                if (_imagem != null && _analisando)
+                  ProcessingScreenshotPreview(
+                    image: _imagem!,
+                    scanAnimation: _scanAnim,
+                    dark: _dark,
+                  ),
+                if (_imagem != null && !_analisando)
                   _buildImagePreview(
-                    height: MediaQuery.sizeOf(context).height * 0.665,
+                    height: math.min(220.0, MediaQuery.sizeOf(context).height * 0.29),
                   ),
                 if (_analisando) _buildScanOverlay(),
                 if (!_analisando) _buildRespostas(),
@@ -595,7 +610,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
   }
 
   // ============================================================
-  // IMAGE PREVIEW — screenshot completo, sem cortar mensagens.
+  // IMAGE PREVIEW — janela compacta focada na parte inferior da conversa.
   // A imagem original continua a ser enviada integralmente à IA.
   // ============================================================
 
@@ -609,7 +624,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
           width: double.infinity,
 
           margin: EdgeInsets.symmetric(
-            horizontal: MediaQuery.sizeOf(context).width * 0.15,
+            horizontal: 16,
           ),
 
           decoration: BoxDecoration(
@@ -631,7 +646,16 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
               fit: StackFit.expand,
 
               children: [
-                _buildBottomAnchoredImage(),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onVerticalDragUpdate: (details) {
+                    setState(() {
+                      _previewAlignmentY = (_previewAlignmentY -
+                          details.delta.dy / 115).clamp(-1.0, 1.0);
+                    });
+                  },
+                  child: _buildBottomAnchoredImage(),
+                ),
                 if (_analisando)
                   AnimatedBuilder(
                     animation: _scanAnim,
@@ -663,7 +687,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
     );
   }
 
-  // Mostrar o screenshot inteiro, sem zoom/corte das mensagens.
+  // Recorte visual inferior, sem deformar o screenshot original.
   Widget _buildBottomAnchoredImage() {
     return Container(
       color: _dark ? const Color(0xFF16161D) : Colors.white,
@@ -672,7 +696,10 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
         _imagem!,
         width: double.infinity,
         height: double.infinity,
-        fit: BoxFit.contain,
+        fit: BoxFit.cover,
+        // Desloca o recorte para cima, evitando enquadrar o teclado
+        // e privilegiando as ultimas mensagens acima da caixa de escrita.
+        alignment: Alignment(0, _previewAlignmentY),
       ),
     );
   }
@@ -856,49 +883,101 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
     );
   }
 
+  // Uma unica area de resposta, editavel, sem baloes de chat.
+  // As respostas anteriores permanecem apenas no historico interno
+  // para evitar repeticoes e preservar a compatibilidade com os chats salvos.
   Widget _buildRespostas() {
     if (_respostas.isEmpty) return const SizedBox.shrink();
+    const copyHints = <String, String>{
+      'pt': 'Toque para copiar',
+      'en': 'Tap to copy',
+      'de': 'Zum Kopieren tippen',
+      'es': 'Toca para copiar',
+      'fr': 'Appuyez pour copier',
+      'it': 'Tocca per copiare',
+      'tr': 'Kopyalamak için dokun',
+      'pl': 'Dotknij, aby skopiować',
+      'ru': 'Нажмите, чтобы скопировать',
+      'ar': 'اضغط للنسخ',
+    };
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
       child: Column(
-        key: _respostasIniciaisKey,
-        children: List.generate(_respostas.length, (index) {
-          final text = _respostas[index];
-          return Align(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Center(child: TextButton(
+            onPressed: () async {
+              _respostas[0] = _replyController.text;
+              await _copiar(_replyController.text, 0);
+              await _saveGeneratedChat();
+            },
+            child: Text(copyHints[appLang.languageCode] ?? copyHints['en']!,
+              style: TextStyle(color: _dark ? Colors.white60 : Colors.black45, fontSize: 13)),
+          )),
+          Align(
             alignment: Alignment.center,
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.sizeOf(context).width * 0.84,
-                ),
-                child: Material(
-                  color: const Color(0xFF1677F2),
-                  borderRadius: BorderRadius.circular(24),
-                  child: InkWell(
-                    onTap: () => _copiar(text, index),
-                    borderRadius: BorderRadius.circular(24),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
-                        vertical: 14,
-                      ),
-                      child: Text(
-                        text,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w400,
-                          height: 1.35,
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * 0.78),
+              child: Container(
+        key: _respostasIniciaisKey,
+        padding: const EdgeInsets.fromLTRB(16, 10, 10, 4),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1688F7),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFF1688F7)),
+          boxShadow: [BoxShadow(
+            color: Colors.black.withOpacity(_dark ? 0.08 : 0.05),
+            blurRadius: 16,
+            offset: const Offset(0, 5),
+          )],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            TextField(
+              controller: _replyController,
+              focusNode: _replyFocus,
+              maxLines: null,
+              minLines: 1,
+              keyboardType: TextInputType.multiline,
+              textCapitalization: TextCapitalization.sentences,
+              style: TextStyle(color: Colors.white, fontSize: 16, height: 1.4),
+              decoration: const InputDecoration(
+                border: InputBorder.none,
+                isDense: true,
+                contentPadding: EdgeInsets.symmetric(vertical: 2),
+              ),
+              onChanged: (value) {
+                if (_respostas.isNotEmpty) _respostas[0] = value;
+              },
+              onEditingComplete: () { _saveGeneratedChat(); },
+              onTapOutside: (_) {
+                _replyFocus.unfocus();
+                _saveGeneratedChat();
+              },
+            ),
+            SizedBox(
+              height: 34,
+              child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
+              tooltip: appLang.languageCode == 'pt' ? 'Copiar resposta' : 'Copy reply',
+              onPressed: () async {
+                if (_respostas.isNotEmpty) {
+                  _respostas[0] = _replyController.text;
+                  await _copiar(_replyController.text, 0);
+                  await _saveGeneratedChat();
+                }
+              },
+              icon: const Icon(Icons.copy_rounded, color: Colors.white, size: 21),
               ),
             ),
-          );
-        }),
+          ],
+        ),
+            ),
+          ),
+          ),
+        ],
       ),
     );
   }
@@ -937,6 +1016,7 @@ class _ScreenshotScreenState extends State<ScreenshotScreen>
                 setState(() {
                   _erro = false;
                   _respostas = [];
+                  _replyController.clear();
                 });
 
                 _gerarDiferente();
