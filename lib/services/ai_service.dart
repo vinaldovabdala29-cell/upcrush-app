@@ -8,7 +8,7 @@ import 'tones/tone_registry.dart';
 class AIService {
   static final http.Client _client = http.Client();
   static const String _openAiKey = Config.openAiKey;
-  static const String _openAiModel = 'gpt-4.1';
+  static const String _openAiModel = 'gpt-5.6-luna';
   static const String _openAiModelPickLine = 'gpt-5.6-luna';
   static const List<String> cantadaCategoriaKeys = _CantadaCategories.cantadaCategoriaKeys;
   static String cantadaCategoriaNome(String key, String lang) =>

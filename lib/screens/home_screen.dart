@@ -233,8 +233,8 @@ class _HomeContent extends StatelessWidget {
                         alignment: Alignment.center,
                         child: SizedBox(
                           width: constraints.maxWidth,
-                          height: 650,
                           child: Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           // Ilustração integrada entre o cabeçalho e os cartões.
                           const HomeHeroImage(),
@@ -328,7 +328,6 @@ class _HomeContent extends StatelessWidget {
                               ),
                             ],
                           ),
-                          const SizedBox(height: 12),
                         ],
                       ),
                         ),

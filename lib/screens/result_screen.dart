@@ -24,7 +24,7 @@ class ResultScreen extends StatefulWidget {
     required this.replies,
     this.originalPrompt = "",
     this.ultimaMensagem = "",
-    this.style = "romantico",
+    this.style = "natural",
     this.isDarkMode = false,
     this.savedChatId,
   });
@@ -44,7 +44,7 @@ class _ResultScreenState extends State<ResultScreen> {
       prompt: widget.originalPrompt, lastMessage: widget.ultimaMensagem,
       style: estiloAtual, replies: List.of(replies), updatedAt: DateTime.now()));
   }
-  String estiloAtual = "romantico";
+  String estiloAtual = "natural";
   int? copiedIndex;
   String? _stock;
   Future<void>? _stockEmCurso;
@@ -72,7 +72,7 @@ class _ResultScreenState extends State<ResultScreen> {
     final normalizedStyle = ToneRegistry.normalize(widget.style);
     estiloAtual = toneOptions('pt').any((tone) => tone['key'] == normalizedStyle)
         ? normalizedStyle
-        : 'romantico';
+        : 'natural';
     if (widget.savedChatId == null) {
       _saveChat();
       if (replies.isNotEmpty) ReviewRequestService.onMessageDisplayed();

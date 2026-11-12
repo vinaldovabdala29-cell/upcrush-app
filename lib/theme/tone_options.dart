@@ -3,6 +3,13 @@ import 'package:flutter/material.dart';
 /// Ordem e rótulos partilhados pelos seletores de tom.
 List<Map<String, dynamic>> toneOptions(String lang) => [
       {
+        'key': 'natural',
+        'label': lang == 'de' ? 'Natürlich 💬' : lang == 'fr' ? 'Naturel 💬' : lang == 'it' ? 'Naturale 💬' : lang == 'tr' ? 'Doğal 💬' : lang == 'ru' ? 'Естественный 💬' : lang == 'pl' ? 'Naturalny 💬' : lang == 'ar' ? 'طبيعي 💬' : 'Natural 💬',
+        'icon': Icons.chat_bubble_outline_rounded,
+        'colors': [const Color(0xFF34C759), const Color(0xFF70D78D)],
+        'shadow': const Color(0xFF34C759),
+      },
+      {
         'key': 'romantico',
         'label': lang == 'de' ? 'Romantisch 💕' : lang == 'es' ? 'Romántico 💕' : lang == 'fr' ? 'Romantique 💕' : lang == 'pt' ? 'Romântico 💕' : lang == 'it' ? 'Romantico 💕' : lang == 'tr' ? 'Romantik 💕' : lang == 'ru' ? 'Романтичный 💕' : lang == 'pl' ? 'Romantyczny 💕' : lang == 'ar' ? 'رومانسي 💕' : 'Romantic 💕',
         'icon': Icons.favorite_rounded,
