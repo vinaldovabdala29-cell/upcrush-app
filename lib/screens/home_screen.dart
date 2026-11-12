@@ -1,4 +1,5 @@
 import 'dart:ui';
+import '../widgets/home_hero_image.dart';
 import 'package:flutter/material.dart';
 
 import '../main.dart';
@@ -151,82 +152,93 @@ class _HomeContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        onTap: () => _openSettings(context),
-                        child: Container(
-                          width: 40, height: 40,
-                          decoration: BoxDecoration(
-                            color: _dark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.7),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: _dark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06))),
-                          child: Icon(Icons.menu_rounded, color: _textPrimary, size: 20)),
-                      ),
-                      const Text("🌶️", style: TextStyle(fontSize: 28)),
-                    ],
+                  const SizedBox(height: 6),
+                  // Cabeçalho: título centrado na mesma linha dos controlos.
+                  SizedBox(
+                    height: 52,
+                    child: Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        Center(
+                          child: RichText(
+                            text: TextSpan(children: [
+                              TextSpan(text: 'Up', style: TextStyle(
+                                fontSize: 35, fontWeight: FontWeight.w900,
+                                color: _dark ? Colors.white : const Color(0xFF1C1C1E),
+                                letterSpacing: -1.4)),
+                              const TextSpan(text: 'Crush AI', style: TextStyle(
+                                fontSize: 35, fontWeight: FontWeight.w900,
+                                color: Color(0xFFFF2D55), letterSpacing: -1.4)),
+                            ]),
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: GestureDetector(
+                            onTap: () => _openSettings(context),
+                            child: Container(
+                              width: 40, height: 40,
+                              decoration: BoxDecoration(
+                                color: _dark ? Colors.white.withOpacity(0.08) : Colors.white.withOpacity(0.7),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: _dark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06))),
+                              child: Icon(Icons.menu_rounded, color: _textPrimary, size: 20),
+                            ),
+                          ),
+                        ),
+                        const Align(
+                          alignment: Alignment.centerRight,
+                          child: Text('🌶️', style: TextStyle(fontSize: 28)),
+                        ),
+                      ],
+                    ),
                   ),
-                  const SizedBox(height: 28),
-
-                  // ── Nome ──────────────────────────────────────────────
-                  RichText(
-                    text: TextSpan(children: [
-                      TextSpan(text: "Up",
-                        style: TextStyle(
-                          fontSize: 42, fontWeight: FontWeight.w900,
-                          color: _dark ? Colors.white : const Color(0xFF1C1C1E),
-                          letterSpacing: -1.5, height: 1.0)),
-                      const TextSpan(text: "Crush",
-                        style: TextStyle(
-                          fontSize: 42, fontWeight: FontWeight.w900,
-                          color: Color(0xFFFF2D55),
-                          letterSpacing: -1.5, height: 1.0)),
-                    ]),
-                  ),
-
                   const SizedBox(height: 10),
 
-                  // ── Badge — "Melhore a tua vida social" ───────────────
-                  Row(children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFF2D55), Color(0xFFFF6B81)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [BoxShadow(
-                          color: const Color(0xFFFF2D55).withOpacity(0.35),
-                          blurRadius: 10, offset: const Offset(0, 3))]),
-                      child: Row(mainAxisSize: MainAxisSize.min, children: [
-                        const Text("✦", style: TextStyle(
-                          color: Colors.white, fontSize: 10, fontWeight: FontWeight.w800)),
-                        const SizedBox(width: 4),
-                        Text(
-                          appLang.languageCode == 'de'
-                            ? 'Verbessere dein Sozialleben'
-                            : appLang.languageCode == 'es'
-                                ? 'Mejora tu vida social'
-                                : appLang.languageCode == 'pt'
-                                    ? 'Melhore a tua vida social'
-                                    : 'Improve your social life',
-                          style: const TextStyle(
-                            color: Colors.white, fontSize: 12,
-                            fontWeight: FontWeight.w700, letterSpacing: 0.2)),
-                      ]),
+                  // Subtítulo localizado, centralizado e sem badge.
+                  Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        appLang.ui(const {
+                          'pt': 'Melhore a falar com garotas',
+                          'en': 'Get better at speaking with girls',
+                          'de': 'Werde besser darin, mit Mädchen zu reden',
+                          'es': 'Mejora al hablar con chicas',
+                          'fr': 'Apprends à mieux parler aux filles',
+                          'it': 'Impara a parlare meglio con le ragazze',
+                          'tr': 'Kızlarla konuşmada daha iyi ol',
+                          'pl': 'Naucz się lepiej rozmawiać z dziewczynami',
+                          'ru': 'Научись лучше общаться с девушками',
+                          'ar': 'تعلّم كيف تتحدث مع الفتيات بشكل أفضل',
+                        }),
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: _textPrimary.withOpacity(0.78),
+                          fontSize: 17,
+                          fontWeight: FontWeight.w600,
+                          height: 1.3,
+                        ),
+                      ),
                     ),
-                  ]),
-                  const SizedBox(height: 36),
+                  ),
+                  const SizedBox(height: 12),
 
                   Expanded(
-                    child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
-                      padding: const EdgeInsets.only(bottom: 100),
-                      child: Column(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) => FittedBox(
+                        fit: BoxFit.scaleDown,
+                        // Centraliza imagem e três cartões como um só bloco
+                        // no espaço entre o subtítulo e a navegação inferior.
+                        alignment: Alignment.center,
+                        child: SizedBox(
+                          width: constraints.maxWidth,
+                          height: 650,
+                          child: Column(
                         children: [
+                          // Ilustração integrada entre o cabeçalho e os cartões.
+                          const HomeHeroImage(),
+                          const SizedBox(height: 30),
                           // ── 1. Screenshot ──────────────────────────────
                           FeatureCard(
                             title: appLang.languageCode == 'de'
@@ -246,62 +258,80 @@ class _HomeContent extends StatelessWidget {
                             icon: Icons.camera_alt_rounded,
                             iconBgColors: const [Color(0xFFFF2D55), Color(0xFFFF6B81)],
                             iconShadowColor: const Color(0xFFFF2D55),
+                            cardBackgroundColor: const Color(0xFFFCE5EB),
                             isDarkMode: _dark,
                             subtitleColor: _dark ? Colors.white70 : const Color(0xFF444444),
                             onTap: () => _openPremiumFeature(context, const ScreenshotScreen()),
                           ),
-                          const SizedBox(height: 14),
+                          const SizedBox(height: 12),
 
-                          // ── 2. Get Pick Lines ──────────────────────────
-                          FeatureCard(
-                            title: appLang.languageCode == 'de'
-                                ? "Erste Nachricht"
-                                : appLang.languageCode == 'es'
-                                    ? "Primer mensaje"
-                                    : appLang.languageCode == 'pt'
-                                        ? "Primeira mensagem"
-                                        : "First message",
-                            subtitle: appLang.languageCode == 'de'
-                                ? "Personalisierte Nachrichten, um jedes Gespräch zu starten"
-                                : appLang.languageCode == 'es'
-                                    ? "Mensajes personalizados para iniciar cualquier conversación"
-                                    : appLang.languageCode == 'pt'
-                                        ? "Mensagens personalizadas para iniciar qualquer conversa"
-                                        : "Personalized messages to start any conversation",
-                            icon: Icons.rocket_launch_rounded,
-                            iconBgColors: const [Color(0xFFFF9500), Color(0xFFFFCC02)],
-                            iconShadowColor: const Color(0xFFFF9500),
-                            isDarkMode: _dark,
-                            subtitleColor: _dark ? Colors.white70 : const Color(0xFF444444),
-                            onTap: () => _openPremiumFeature(context, const PickLinesScreen()),
+                          // ── 2 + 3. Cartões inferiores em triângulo ──
+                          Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: _TriangleFeatureCard(
+                                  title: appLang.languageCode == 'de'
+                                      ? 'Eisbrecher 🧊'
+                                      : appLang.languageCode == 'es'
+                                          ? 'Rompehielos 🧊'
+                                          : appLang.languageCode == 'pt'
+                                              ? 'Quebrar Gelo 🧊'
+                                              : 'Break the Ice 🧊',
+                                  subtitle: appLang.ui(const {
+                                    'pt': 'Responda a stories e comece conversas',
+                                    'en': 'Reply to stories and start conversations',
+                                    'de': 'Antworte auf Storys und starte Gespräche',
+                                    'es': 'Responde a historias e inicia conversaciones',
+                                    'fr': 'Réponds aux stories et lance des conversations',
+                                    'it': 'Rispondi alle storie e avvia conversazioni',
+                                    'tr': 'Hikâyelere yanıt ver ve sohbet başlat',
+                                    'pl': 'Odpowiadaj na relacje i zaczynaj rozmowy',
+                                    'ru': 'Отвечай на истории и начинай общение',
+                                    'ar': 'رد على القصص وابدأ المحادثات',
+                                  }),
+                                  icon: Icons.chat_bubble_rounded,
+                                  colors: const [Color(0xFFFF9500), Color(0xFFFFCC02)],
+                                  cardBackgroundColor: Colors.white,
+                                  dark: _dark,
+                                  onTap: () => _openPremiumFeature(context, const OpenerScreen()),
+                                ),
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: _TriangleFeatureCard(
+                                  title: appLang.languageCode == 'de'
+                                      ? 'Anmachsprüche 💘'
+                                      : appLang.languageCode == 'es'
+                                          ? 'Piropos 💘'
+                                          : appLang.languageCode == 'pt'
+                                              ? 'Cantadas 💘'
+                                              : 'Pickup Lines 💘',
+                                  subtitle: appLang.ui(const {
+                                    'pt': 'Descubra frases para conquistar e flertar',
+                                    'en': 'Discover lines to charm and flirt',
+                                    'de': 'Entdecke Sprüche zum Flirten und Erobern',
+                                    'es': 'Descubre frases para conquistar y coquetear',
+                                    'fr': 'Découvre des phrases pour séduire et flirter',
+                                    'it': 'Scopri frasi per conquistare e flirtare',
+                                    'tr': 'Etkilemek ve flört etmek için sözler keşfet',
+                                    'pl': 'Odkryj teksty na podryw i flirt',
+                                    'ru': 'Найди фразы для знакомства и флирта',
+                                    'ar': 'اكتشف عبارات للإعجاب والمغازلة',
+                                  }),
+                                  icon: Icons.rocket_launch_rounded,
+                                  colors: const [Color(0xFF007AFF), Color(0xFF5AC8FA)],
+                                  cardBackgroundColor: Colors.white,
+                                  dark: _dark,
+                                  onTap: () => _openPremiumFeature(context, const PickLinesScreen()),
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 14),
-
-                          // ── 3. Create Opener ───────────────────────────
-                          FeatureCard(
-                            title: appLang.languageCode == 'de'
-                                ? "Beginne ein Gespräch"
-                                : appLang.languageCode == 'es'
-                                    ? "Inicia una conversación"
-                                    : appLang.languageCode == 'pt'
-                                        ? "Inicie uma conversa"
-                                        : "Start a conversation",
-                            subtitle: appLang.languageCode == 'de'
-                                ? "Sende ein Foto einer Person oder Aktivität, um Gespräche zu starten"
-                                : appLang.languageCode == 'es'
-                                    ? "Envía una foto de una persona o actividad para iniciar conversaciones"
-                                    : appLang.languageCode == 'pt'
-                                        ? "Envie uma foto de uma pessoa ou atividade para iniciar conversas"
-                                        : "Send a photo of a person or activity to start conversations",
-                            icon: Icons.chat_bubble_rounded,
-                            iconBgColors: const [Color(0xFF007AFF), Color(0xFF5AC8FA)],
-                            iconShadowColor: const Color(0xFF007AFF),
-                            isDarkMode: _dark,
-                            subtitleColor: _dark ? Colors.white70 : const Color(0xFF444444),
-                            onTap: () => _openPremiumFeature(context, const OpenerScreen()),
-                          ),
-                          const SizedBox(height: 20),
+                          const SizedBox(height: 12),
                         ],
+                      ),
+                        ),
                       ),
                     ),
                   ),
@@ -313,6 +343,81 @@ class _HomeContent extends StatelessWidget {
       ),
     );
       },
+    );
+  }
+}
+
+// Cartões compactos: apenas os dois cartões inferiores da Home.
+class _TriangleFeatureCard extends StatelessWidget {
+  final String title;
+  final String? subtitle;
+  final IconData icon;
+  final List<Color> colors;
+  final bool dark;
+  final Color cardBackgroundColor;
+  final VoidCallback onTap;
+
+  const _TriangleFeatureCard({
+    required this.title,
+    this.subtitle,
+    required this.icon,
+    required this.colors,
+    required this.dark,
+    required this.cardBackgroundColor,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
+        onTap: onTap,
+        child: Container(
+          constraints: const BoxConstraints(minHeight: 150),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
+          decoration: BoxDecoration(
+            color: dark ? Color.alphaBlend(cardBackgroundColor.withOpacity(0.20), const Color(0xFF19191C)) : cardBackgroundColor,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: dark ? Colors.white.withOpacity(0.08) : Colors.black.withOpacity(0.06)),
+            boxShadow: dark ? [] : [BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 3))],
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(colors: colors),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [BoxShadow(color: colors.first.withOpacity(0.35), blurRadius: 10, offset: const Offset(0, 4))],
+                ),
+                child: Icon(icon, color: Colors.white, size: 26),
+              ),
+              const SizedBox(height: 12),
+              Text(title,
+                textAlign: TextAlign.center,
+                style: TextStyle(color: dark ? Colors.white : const Color(0xFF1C1C1E), fontSize: 15, fontWeight: FontWeight.w800),
+              ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 7),
+                Text(
+                  subtitle!,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: dark ? Colors.white70 : const Color(0xFF62626A),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    height: 1.25,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

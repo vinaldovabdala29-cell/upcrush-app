@@ -9,6 +9,7 @@ class FeatureCard extends StatelessWidget {
   final Color iconShadowColor;
   final bool isDarkMode;
   final Color? subtitleColor;
+  final Color? cardBackgroundColor;
 
   const FeatureCard({
     super.key,
@@ -20,6 +21,7 @@ class FeatureCard extends StatelessWidget {
     required this.iconShadowColor,
     required this.isDarkMode,
     this.subtitleColor,
+    this.cardBackgroundColor,
   });
 
   @override
