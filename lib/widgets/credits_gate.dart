@@ -10,7 +10,14 @@ Future<void> checkCreditsAndProceed({
   required Future<void> Function() onAllowed,
 }) async {
   if (!context.mounted) return;
-  await onAllowed(); // Sem limites nem paywall.
+  if (await CreditsService.isPremium()) {
+    await onAllowed();
+    return;
+  }
+  if (!context.mounted) return;
+  final unlocked = await Navigator.of(context).push<bool>(
+    MaterialPageRoute(builder: (_) => const PaywallFlow()));
+  if (unlocked == true && await CreditsService.isPremium()) await onAllowed();
 
 }
 

@@ -90,7 +90,7 @@ class UpCrushApp extends StatelessWidget {
               appBarTheme: const AppBarTheme(
                 backgroundColor: Colors.transparent, elevation: 0),
             ),
-            home: const _AppEntry(),
+            home: const AppEntry(),
           );
         },
       ),
@@ -98,15 +98,15 @@ class UpCrushApp extends StatelessWidget {
   }
 }
 
-class _AppEntry extends StatefulWidget {
-  const _AppEntry();
+class AppEntry extends StatefulWidget {
+  const AppEntry({super.key});
 
   @override
-  State<_AppEntry> createState() => _AppEntryState();
+  State<AppEntry> createState() => _AppEntryState();
 }
 
-class _AppEntryState extends State<_AppEntry> {
-  late final Future<Map<String, bool>> _entryCheck;
+class _AppEntryState extends State<AppEntry> {
+  late Future<Map<String, bool>> _entryCheck;
 
   @override
   void initState() {
@@ -121,7 +121,7 @@ class _AppEntryState extends State<_AppEntry> {
   static Future<Map<String, bool>> _check() async {
     final prefs = await SharedPreferences.getInstance();
     final onboardingDone = prefs.getBool('onboarding_done') ?? false;
-    const isPremium = true; // Free edition: skip subscription check on launch
+    final isPremium = await RevenueCatService.isPremium();
     return {'onboarding': onboardingDone, 'premium': isPremium};
   }
 
@@ -137,11 +137,13 @@ class _AppEntryState extends State<_AppEntry> {
               child: CircularProgressIndicator(color: Color(0xFFFF2D55))));
         }
         final onboardingDone = snap.data!['onboarding']!;
-
-
-        // 1. Onboarding primeiro
-        // No onboarding: launch directly into the app.
-        // Acesso livre à navegação; paywall apenas nas ações premium.
+        final premium = snap.data!['premium']!;
+        if (!onboardingDone) return const OnboardingScreen();
+        if (!premium) {
+          return _PaywallGate(onSuccess: () {
+            setState(() { _entryCheck = _check(); });
+          });
+        }
         return const HomeScreen();
       },
     );
@@ -150,17 +152,14 @@ class _AppEntryState extends State<_AppEntry> {
 
 // Paywall rígido — sem botão de fechar, bloqueia back
 class _PaywallGate extends StatelessWidget {
-  const _PaywallGate();
+  final VoidCallback onSuccess;
+  const _PaywallGate({required this.onSuccess});
 
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
       onWillPop: () async => false,
-      child: PaywallFlow(
-        onSuccess: () => Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomeScreen())),
-      ),
+      child: PaywallFlow(onSuccess: onSuccess),
     );
   }
 }

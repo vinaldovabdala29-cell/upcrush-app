@@ -1,4 +1,5 @@
 import 'package:shared_preferences/shared_preferences.dart';
+import 'revenue_cat_service.dart';
 
 class CreditsService {
   static const String _keyIsPremium = 'is_premium';
@@ -13,13 +14,15 @@ class CreditsService {
   }
 
   static Future<bool> shouldShowPaywallAfterScan() async {
-    return false; // Versão gratuita: nunca mostrar paywall
+    return !(await isPremium());
   }
 
   // CHATBOT — 3 mensagens grátis
   static Future<bool> canUseChat() async {
-    return true;
+    return isPremium();
   }
+
+  static Future<int> getCredits() async => await isPremium() ? 999999 : 0;
 
   static Future<int> getChatUsesUsed() async {
     final prefs = await SharedPreferences.getInstance();
@@ -27,16 +30,16 @@ class CreditsService {
   }
 
   static Future<int> getChatUsesRemaining() async {
-    return 999999;
+    return await isPremium() ? 999999 : 0;
   }
 
   static Future<void> useChatCredit() async {
-    return; // Sem limite de mensagens
+    return; // O bloqueio é controlado pelo entitlement Premium
   }
 
   // Premium
   static Future<bool> isPremium() async {
-    return true; // Acesso ilimitado local, sem cobrança
+    return RevenueCatService.isPremium();
   }
 
   static Future<void> setPremium(bool value) async {

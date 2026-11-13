@@ -5,15 +5,12 @@ import 'credits_service.dart';
 
 class RevenueCatService {
   // ============================================================
-  // 🔧 DEBUG ONLY — desbloqueia o paywall para testares a app
-  // livremente, sem pagamento real.
-  //
-  // ⚠️ IMPORTANTE: muda para `false` antes de fazeres qualquer
-  // build para a App Store / Play Store / TestFlight público.
-  // Deixar `true` em produção dá acesso premium GRÁTIS a todos
-  // os utilizadores.
+  // BYPASS TEMPORÁRIO PARA TESTES
+  // true  = Premium desbloqueado sem compra
+  // false = RevenueCat / App Store funcionam normalmente
+  // IMPORTANTE: colocar false antes de publicar na App Store.
   // ============================================================
-  static const bool _debugUnlockPremium = false;
+  static const bool testPremiumBypass = false;
 
   static const String _androidKey = "goog_FEoxrNpkLgRjsZTtNJZEYuVDqua";
   static const String _iosKey = "appl_dmwoiqiILydfkRwbGekYzLFWRRb";
@@ -22,12 +19,49 @@ class RevenueCatService {
   // NOVO OFFERING (added) — identifier configurado no RevenueCat
   // para o novo paywall (planos Annual + Weekly sem trial).
   //
-  // Confirmado no RevenueCat: o Offering Identifier ficou gravado
-  // como "Annual" (não "new_paywall" nem "new paywall"), contendo
-  // os packages $rc_weekly (upcrush_premium_weekly_no_trial) e
-  // $rc_annual (upcrush_premium_yearly_trial).
+  // Novo paywall usa o Offering "default", que agora contém
+  // os packages $rc_weekly e $rc_annual associados aos produtos
+  // novos _v2 configurados no App Store Connect / RevenueCat.
   // ============================================================
-  static const String _newOfferingId = 'Annual';
+  static const String _newOfferingId = 'default';
+
+  // Novo plano principal do paywall antigo:
+  // assinatura semanal com 3 dias grátis configurados no App Store Connect.
+  static const String _weekly799VnProductId =
+      'upcrush_premium_weekly_799_vn';
+
+  /// Procura especificamente o package que contém o produto
+  /// upcrush_premium_weekly_799_vn dentro do offering "default".
+  ///
+  /// Fazemos a busca pelo Product ID da App Store em vez de depender
+  /// do identifier do package do RevenueCat. Assim o código continua
+  /// funcionando mesmo sendo um package Custom.
+  static Future<Package?> _getWeekly799VnPackage() async {
+    try {
+      final offerings = await Purchases.getOfferings();
+      final offering = offerings.all[_newOfferingId] ?? offerings.current;
+
+      if (offering == null) {
+        debugPrint('RevenueCat: offering "$_newOfferingId" não encontrado.');
+        return null;
+      }
+
+      for (final package in offering.availablePackages) {
+        if (package.storeProduct.identifier == _weekly799VnProductId) {
+          return package;
+        }
+      }
+
+      debugPrint(
+        'RevenueCat: produto $_weekly799VnProductId não encontrado '
+        'no offering "$_newOfferingId".',
+      );
+      return null;
+    } catch (e) {
+      debugPrint('RevenueCat: erro ao buscar weekly 799 vn: $e');
+      return null;
+    }
+  }
 
   static Future<void> init() async {
     await Purchases.setLogLevel(LogLevel.debug);
@@ -38,10 +72,12 @@ class RevenueCatService {
   }
 
   static Future<void> _syncPremiumStatus() async {
-    if (_debugUnlockPremium) {
-      await CreditsService.setPremium(true); // 🔧 DEBUG — remover/desativar antes de produção
+    if (testPremiumBypass) {
+      await CreditsService.setPremium(true);
+      debugPrint("RevenueCat: TEST BYPASS ativo — Premium desbloqueado.");
       return;
     }
+
     try {
       final info = await Purchases.getCustomerInfo();
       final isPremium = info.entitlements.active.containsKey("premium");
@@ -52,7 +88,11 @@ class RevenueCatService {
   }
 
   static Future<bool> isPremium() async {
-    if (_debugUnlockPremium) return true; // 🔧 DEBUG — remover/desativar antes de produção
+    if (testPremiumBypass) {
+      await CreditsService.setPremium(true);
+      return true;
+    }
+
     try {
       final info = await Purchases.getCustomerInfo();
       return info.entitlements.active.containsKey("premium");
@@ -61,91 +101,127 @@ class RevenueCatService {
     }
   }
 
-  // Retorna o preco real do produto na moeda local do utilizador
-  // (mantido exatamente como estava — continua a usar o offering
-  // "current", que e o antigo com upcrush_premium_weekly).
+  // Retorna o preço real do NOVO plano semanal Trial3 na moeda local
+  // do utilizador. O paywall antigo continua chamando getPrice(),
+  // mas agora recebe o preço de upcrush_premium_weekly_799_vn.
   static Future<String> getPrice() async {
     try {
-      final offerings = await Purchases.getOfferings();
-      final package = offerings.current?.weekly ??
-          offerings.current?.availablePackages.firstOrNull;
-      // Retorna string vazia se nao encontrar — UI mostra loading
+      final package = await _getWeekly799VnPackage();
       return package?.storeProduct.priceString ?? '';
     } catch (e) {
+      debugPrint('RevenueCat getPrice trial3 error: $e');
       return '';
     }
   }
 
-  /// Dados da oferta semanal atual. O preço é sempre o da loja.
-  /// A apresentação do trial é conservadora: só aparece quando a loja
-  /// devolve um período introdutório de 3 dias e não há compras conhecidas.
-  /// A elegibilidade definitiva é determinada pela App Store/Google Play.
-  static Future<WeeklyPaywallOffer> getWeeklyPaywallOffer() async {
+  // ============================================================
+  // ELEGIBILIDADE PARA O TRIAL DE 7 DIAS (added)
+  // ============================================================
+  //
+  // A Apple só permite usar o Free Trial de 3 dias UMA VEZ por
+  // utilizador/produto. Se ele já usou antes (ex: cancelou e está
+  // a voltar), a compra será cobrada diretamente, sem trial.
+  //
+  // Esta função determina isso ANTES da compra, para mostrarmos o
+  // texto certo no paywall ("3 dias grátis..." vs "Billed 6,99€...").
+  //
+  // iOS: usa checkTrialOrIntroductoryPriceEligibility (API oficial
+  // da RevenueCat para isto).
+  // Android: essa API não existe — usamos o fallback recomendado
+  // pela própria RevenueCat: se o utilizador já teve QUALQUER
+  // entitlement antes (mesmo expirado), assumimos que já não é
+  // elegível para trial.
+  //
+  // Em caso de status "unknown" (comum em sandbox/primeira instalação
+  // sem recibo ainda), assumimos elegível — mostrar a oferta de trial
+  // é o comportamento mais seguro; a App Store aplica a regra real
+  // no momento da compra de qualquer forma.
+  // ============================================================
+
+  static Future<bool> isEligibleForTrial() async {
+    if (testPremiumBypass) return true;
+
     try {
-      final offerings = await Purchases.getOfferings();
-      final package = offerings.current?.weekly ??
-          offerings.current?.availablePackages.firstOrNull;
-      if (package == null) return const WeeklyPaywallOffer();
-      final product = package.storeProduct;
-      bool showTrial = false;
-      try {
-        final dynamic intro = (product as dynamic).introductoryPrice;
-        if (intro != null) {
-          final dynamic period = intro.period;
-          final String unit = '${period.unit}'.toLowerCase();
-          final String value = '${period.value}';
-          final dynamic price = intro.price;
-          final isThreeDays = value == '3' && unit.contains('day');
-          final isFree = price is num && price == 0;
-          if (isThreeDays && isFree) {
-            final info = await Purchases.getCustomerInfo();
-            showTrial = info.allPurchasedProductIdentifiers.isEmpty;
-          }
+      if (Platform.isIOS) {
+        final eligibilityMap =
+            await Purchases.checkTrialOrIntroductoryPriceEligibility(
+          [_weekly799VnProductId],
+        );
+
+        final eligibility = eligibilityMap[_weekly799VnProductId];
+
+        if (eligibility == null) return true;
+
+        switch (eligibility.status) {
+          case IntroEligibilityStatus.introEligibilityStatusIneligible:
+            return false;
+          case IntroEligibilityStatus.introEligibilityStatusEligible:
+          case IntroEligibilityStatus.introEligibilityStatusNoIntroOfferExists:
+          case IntroEligibilityStatus.introEligibilityStatusUnknown:
+            return true;
         }
-      } catch (e) {
-        debugPrint('RevenueCat: não foi possível confirmar trial: $e');
+      } else {
+        // Android: sem API dedicada. Fallback recomendado pela
+        // RevenueCat — se já teve algum entitlement (mesmo expirado),
+        // já não é elegível para um novo trial.
+        final info = await Purchases.getCustomerInfo();
+        return info.entitlements.all.isEmpty;
       }
-      return WeeklyPaywallOffer(price: product.priceString, showTrial: showTrial);
     } catch (e) {
-      debugPrint('RevenueCat: erro ao carregar oferta semanal: $e');
-      return const WeeklyPaywallOffer();
+      debugPrint('RevenueCat: erro ao checar elegibilidade de trial: $e');
+      // Em caso de erro, assume elegível — comportamento mais seguro
+      // (a App Store valida a regra real na hora da compra).
+      return true;
     }
   }
 
   static Future<PurchaseServiceResult> buyWeekly() async {
     try {
-      final offerings = await Purchases.getOfferings();
-      final package = offerings.current?.weekly ??
-          offerings.current?.availablePackages.firstOrNull;
+      final package = await _getWeekly799VnPackage();
 
       if (package == null) {
-        return PurchaseServiceResult(
-            success: false, error: "Produto não encontrado");
+        return const PurchaseServiceResult(
+          success: false,
+          error:
+              'Plano semanal com 3 dias grátis não encontrado no RevenueCat.',
+        );
       }
 
       await Purchases.purchasePackage(package);
 
       final info = await Purchases.getCustomerInfo();
-      final isPremium = info.entitlements.active.containsKey("premium");
+      final isPremium = info.entitlements.active.containsKey('premium');
 
       if (isPremium) {
         await CreditsService.setPremium(true);
-        return PurchaseServiceResult(success: true);
+        return const PurchaseServiceResult(success: true);
       }
 
-      return PurchaseServiceResult(
-          success: false, error: "Compra não confirmada");
-
+      return const PurchaseServiceResult(
+        success: false,
+        error: 'Compra não confirmada',
+      );
     } catch (e) {
       final err = e.toString().toLowerCase();
-      if (err.contains("cancel") || err.contains("1")) {
-        return PurchaseServiceResult(success: false, cancelled: true);
+      if (err.contains('cancel') || err.contains('1')) {
+        return const PurchaseServiceResult(
+          success: false,
+          cancelled: true,
+        );
       }
-      return PurchaseServiceResult(success: false, error: e.toString());
+      return PurchaseServiceResult(
+        success: false,
+        error: e.toString(),
+      );
     }
   }
 
   static Future<PurchaseServiceResult> restorePurchases() async {
+    if (testPremiumBypass) {
+      await CreditsService.setPremium(true);
+      return const PurchaseServiceResult(success: true, restored: true);
+    }
+
     try {
       final info = await Purchases.restorePurchases();
       final isPremium = info.entitlements.active.containsKey("premium");
@@ -166,12 +242,10 @@ class RevenueCatService {
   // NOVO OFFERING — FUNÇÕES ADICIONADAS (added)
   // ============================================================
   //
-  // Tudo o que vem a seguir e completamente independente do que
-  // ja existe acima. Busca o offering pelo NOME especifico
-  // (_newOfferingId), nunca por "current" — assim o produto antigo
-  // (upcrush_premium_weekly, usado por buyWeekly() e getPrice())
-  // nunca e afetado, mesmo que decidas mais tarde tornar o novo
-  // offering o "Current Offering" no RevenueCat.
+  // Tudo o que vem a seguir usa explicitamente o Offering "default".
+  // Esse offering contém os novos packages Weekly e Annual.
+  // As funções antigas buyWeekly() e getPrice() continuam preservadas
+  // para compatibilidade com qualquer fluxo legado do app.
   // ============================================================
 
   /// Busca o novo Offering pelo identifier configurado.
@@ -188,14 +262,14 @@ class RevenueCatService {
   }
 
   /// Devolve o package do plano ANUAL do novo offering
-  /// (upcrush_premium_yearly_trial, com trial).
+  /// (upcrush_premium_yearly_trial_v2, com trial).
   static Future<Package?> _getAnnualPackage() async {
     final offering = await _getNewOffering();
     return offering?.annual;
   }
 
   /// Devolve o package do plano SEMANAL sem trial do novo offering
-  /// (upcrush_premium_weekly_no_trial).
+  /// (UpCrush_Premium_Weekly_No_Trial_v2).
   static Future<Package?> _getWeeklyNoTrialPackage() async {
     final offering = await _getNewOffering();
     return offering?.weekly;
@@ -223,7 +297,7 @@ class RevenueCatService {
     }
   }
 
-  /// Compra o plano ANUAL (upcrush_premium_yearly_trial, com trial).
+  /// Compra o plano ANUAL (upcrush_premium_yearly_trial_v2, com trial).
   static Future<PurchaseServiceResult> buyAnnual() async {
     try {
       final package = await _getAnnualPackage();
@@ -256,7 +330,7 @@ class RevenueCatService {
   }
 
   /// Compra o plano SEMANAL sem trial
-  /// (upcrush_premium_weekly_no_trial).
+  /// (UpCrush_Premium_Weekly_No_Trial_v2).
   static Future<PurchaseServiceResult> buyWeeklyNoTrial() async {
     try {
       final package = await _getWeeklyNoTrialPackage();
@@ -292,7 +366,15 @@ class RevenueCatService {
   /// paywall ('annual' ou 'weekly'). Função de conveniência para
   /// o paywall_screen.dart não precisar de decidir qual método
   /// chamar diretamente.
-  static Future<PurchaseServiceResult> buyNewPlan(String planKey) {
+  static Future<PurchaseServiceResult> buyNewPlan(String planKey) async {
+    if (testPremiumBypass) {
+      await CreditsService.setPremium(true);
+      debugPrint(
+        "RevenueCat: TEST BYPASS — plano $planKey liberado sem cobrança.",
+      );
+      return const PurchaseServiceResult(success: true);
+    }
+
     if (planKey == 'annual') {
       return buyAnnual();
     }
@@ -312,9 +394,4 @@ class PurchaseServiceResult {
     this.restored = false,
     this.error,
   });
-}
-class WeeklyPaywallOffer {
-  final String price;
-  final bool showTrial;
-  const WeeklyPaywallOffer({this.price = '', this.showTrial = false});
 }
