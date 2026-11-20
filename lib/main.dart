@@ -2,11 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/home_screen.dart';
-import 'screens/onboarding_screen.dart';
 import 'theme/app_localizations.dart';
 import 'services/credits_service.dart';
 import 'services/revenue_cat_service.dart';
-import 'widgets/paywall_screen.dart';
 import 'services/review_request_service.dart';
 
 final ValueNotifier<AppLocalizations> appLangNotifier =
@@ -90,7 +88,7 @@ class UpCrushApp extends StatelessWidget {
               appBarTheme: const AppBarTheme(
                 backgroundColor: Colors.transparent, elevation: 0),
             ),
-            home: const AppEntry(),
+            home: const _AppEntry(),
           );
         },
       ),
@@ -98,15 +96,15 @@ class UpCrushApp extends StatelessWidget {
   }
 }
 
-class AppEntry extends StatefulWidget {
-  const AppEntry({super.key});
+class _AppEntry extends StatefulWidget {
+  const _AppEntry();
 
   @override
-  State<AppEntry> createState() => _AppEntryState();
+  State<_AppEntry> createState() => _AppEntryState();
 }
 
-class _AppEntryState extends State<AppEntry> {
-  late Future<Map<String, bool>> _entryCheck;
+class _AppEntryState extends State<_AppEntry> {
+  late final Future<Map<String, bool>> _entryCheck;
 
   @override
   void initState() {
@@ -121,7 +119,7 @@ class _AppEntryState extends State<AppEntry> {
   static Future<Map<String, bool>> _check() async {
     final prefs = await SharedPreferences.getInstance();
     final onboardingDone = prefs.getBool('onboarding_done') ?? false;
-    final isPremium = await RevenueCatService.isPremium();
+    const isPremium = true; // Free edition: skip subscription check on launch
     return {'onboarding': onboardingDone, 'premium': isPremium};
   }
 
@@ -136,30 +134,14 @@ class _AppEntryState extends State<AppEntry> {
             body: Center(
               child: CircularProgressIndicator(color: Color(0xFFFF2D55))));
         }
-        final onboardingDone = snap.data!['onboarding']!;
-        final premium = snap.data!['premium']!;
-        if (!onboardingDone) return const OnboardingScreen();
-        if (!premium) {
-          return _PaywallGate(onSuccess: () {
-            setState(() { _entryCheck = _check(); });
-          });
-        }
+
+
+
+        // 1. Onboarding primeiro
+        // No onboarding: launch directly into the app.
+        // Acesso livre à navegação; paywall apenas nas ações premium.
         return const HomeScreen();
       },
-    );
-  }
-}
-
-// Paywall rígido — sem botão de fechar, bloqueia back
-class _PaywallGate extends StatelessWidget {
-  final VoidCallback onSuccess;
-  const _PaywallGate({required this.onSuccess});
-
-  @override
-  Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async => false,
-      child: PaywallFlow(onSuccess: onSuccess),
     );
   }
 }

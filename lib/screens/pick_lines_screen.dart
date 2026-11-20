@@ -173,7 +173,10 @@ class _PickLinesScreenState extends State<PickLinesScreen>
       if (!mounted) return;
 
       if (!await ResponsePaywallGate.allow(context)) {
-        if (mounted) setState(() => _loading = false);
+        // Se o utilizador fechar o paywall após gerar uma cantada,
+        // regressa diretamente à Home, sem mostrar o resultado bloqueado.
+        if (!mounted) return;
+        Navigator.of(context).pop();
         return;
       }
       if (!mounted) return;

@@ -1,5 +1,4 @@
 import 'tone_definition.dart';
-import 'natural_tone.dart';
 import 'romantico_tone.dart';
 import 'charmoso_tone.dart';
 import 'engracado_tone.dart';
@@ -11,7 +10,6 @@ import 'toxico_tone.dart';
 /// Ponto único de seleção. A chave antiga continua compatível.
 class ToneRegistry {
   static const Map<String, ToneDefinition> _tones = {
-    'natural': tomNatural,
     'romantico': tomRomantico,
     'charmoso': tomCharmoso,
     'engraçado': tomEngracado,
@@ -23,11 +21,11 @@ class ToneRegistry {
 
   static String normalize(String key) {
     final value = key.trim().toLowerCase();
-    if (value == 'romântico') return 'romantico';
+    if (value == 'natural' || value == 'romântico') return 'romantico';
     if (value == 'direto') return 'flertar';
     if (value == 'engracado') return 'engraçado';
     if (value == 'tóxico') return 'toxico';
-    return _tones.containsKey(value) ? value : 'natural';
+    return _tones.containsKey(value) ? value : 'romantico';
   }
 
   static ToneDefinition resolve(String key) => _tones[normalize(key)]!;

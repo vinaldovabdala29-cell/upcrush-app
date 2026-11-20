@@ -245,14 +245,13 @@ class _OpenerScreenState extends State<OpenerScreen>
       var respostasFinais = respostas;
       if (respostas.isNotEmpty && !await ResponsePaywallGate.allow(context, returnOnDismiss: false)) {
         if (!mounted) return;
-        final direction = await Navigator.of(context).push<String>(
-          MaterialPageRoute(builder: (_) => LockedReplyPreviewScreen(image: _imagem)));
-        if (!mounted || versao != _versao) return;
-        if (direction == null) { Navigator.of(context).maybePop(); return; }
-        if (direction.isNotEmpty) {
-          respostasFinais = await _pedirUma(base64, _estiloAtual, appLang.languageCode,
-            orientacao: direction);
-        }
+        final screenshot = _imagem;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => LockedReplyPreviewScreen(image: screenshot),
+          ),
+        );
+        return;
       }
       if (!mounted || versao != _versao) return;
       setState(() {
@@ -371,7 +370,20 @@ class _OpenerScreenState extends State<OpenerScreen>
               ),
               onPressed: () => Navigator.pop(context),
             ),
-            title: Text(
+            // Durante o processamento, cabeçalho alinhado à Home.
+            toolbarHeight: _analisando ? 58 : kToolbarHeight,
+            centerTitle: _analisando,
+            title: _analisando ? RichText(
+              text: TextSpan(children: [
+                TextSpan(text: 'Up', style: TextStyle(
+                  fontSize: 35, fontWeight: FontWeight.w900,
+                  color: _dark ? Colors.white : const Color(0xFF1C1C1E),
+                  letterSpacing: -1.4)),
+                const TextSpan(text: 'Crush AI', style: TextStyle(
+                  fontSize: 35, fontWeight: FontWeight.w900,
+                  color: Color(0xFFFF2D55), letterSpacing: -1.4)),
+              ]),
+            ) : Text(
               lang.openerTitle,
               style: TextStyle(
                 color: _textPrimary,
@@ -536,7 +548,7 @@ class _OpenerScreenState extends State<OpenerScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Padding(
+        if (!_analisando) const Padding(
           padding: EdgeInsets.fromLTRB(16, 8, 16, 6),
           child: Text(
             'UpCrush AI',
@@ -549,7 +561,7 @@ class _OpenerScreenState extends State<OpenerScreen>
           ),
         ),
         Container(
-          height: height - 48,
+          height: height - (_analisando ? 0 : 48),
           width: double.infinity,
           margin: const EdgeInsets.symmetric(horizontal: 10),
           decoration: BoxDecoration(
